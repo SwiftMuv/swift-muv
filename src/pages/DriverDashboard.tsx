@@ -5,6 +5,7 @@ import { JobCard } from "@/components/driver/JobCard";
 import { BottomNav } from "@/components/driver/BottomNav";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
+import ProfileScreen from "@/components/driver/ProfileScreen";
 
 export type JobStatus = "available" | "accepted" | "arrived" | "loading" | "transit" | "completed";
 
@@ -129,6 +130,7 @@ const DriverDashboard = () => {
         )}
 
         {activeTab === "wallet" && <WalletScreen />}
+        {activeTab === "profile" && <ProfileScreen />}
       </main>
 
       <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
