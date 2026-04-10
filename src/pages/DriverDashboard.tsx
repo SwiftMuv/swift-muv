@@ -91,38 +91,44 @@ const DriverDashboard = () => {
       <DriverHeader isOnline={isOnline} onToggleOnline={() => setIsOnline(!isOnline)} rating={rating} />
 
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-5">
-        <DriverStats
-          todayEarnings={todayEarnings}
-          weekEarnings={weekEarnings}
-          completedJobs={completedJobs}
-          rating={rating}
-        />
+        {activeTab === "home" && (
+          <>
+            <DriverStats
+              todayEarnings={todayEarnings}
+              weekEarnings={weekEarnings}
+              completedJobs={completedJobs}
+              rating={rating}
+            />
 
-        {!isOnline && (
-          <div className="rounded-xl bg-muted p-4 text-center">
-            <p className="text-muted-foreground text-sm font-medium">You're currently offline</p>
-            <p className="text-muted-foreground text-xs mt-1">Go online to receive job requests</p>
-          </div>
-        )}
+            {!isOnline && (
+              <div className="rounded-xl bg-muted p-4 text-center">
+                <p className="text-muted-foreground text-sm font-medium">You're currently offline</p>
+                <p className="text-muted-foreground text-xs mt-1">Go online to receive job requests</p>
+              </div>
+            )}
 
-        {isOnline && (
-          <section>
-            <h2 className="text-lg font-semibold mb-3">Available Jobs</h2>
-            <div className="space-y-3">
-              {jobs
-                .filter((j) => j.status === "available")
-                .map((job) => (
-                  <JobCard key={job.id} job={job} onAccept={handleAcceptJob} />
-                ))}
-              {jobs.filter((j) => j.status === "available").length === 0 && (
-                <div className="rounded-xl bg-card border p-6 text-center">
-                  <p className="text-muted-foreground text-sm">No jobs available nearby</p>
-                  <p className="text-muted-foreground text-xs mt-1">New requests will appear here</p>
+            {isOnline && (
+              <section>
+                <h2 className="text-lg font-semibold mb-3">Available Jobs</h2>
+                <div className="space-y-3">
+                  {jobs
+                    .filter((j) => j.status === "available")
+                    .map((job) => (
+                      <JobCard key={job.id} job={job} onAccept={handleAcceptJob} />
+                    ))}
+                  {jobs.filter((j) => j.status === "available").length === 0 && (
+                    <div className="rounded-xl bg-card border p-6 text-center">
+                      <p className="text-muted-foreground text-sm">No jobs available nearby</p>
+                      <p className="text-muted-foreground text-xs mt-1">New requests will appear here</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </section>
+              </section>
+            )}
+          </>
         )}
+
+        {activeTab === "wallet" && <WalletScreen />}
       </main>
 
       <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
