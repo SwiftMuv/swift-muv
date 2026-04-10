@@ -4,6 +4,7 @@ import { DriverStats } from "@/components/driver/DriverStats";
 import { JobCard } from "@/components/driver/JobCard";
 import { BottomNav } from "@/components/driver/BottomNav";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
+import WalletScreen from "@/components/driver/WalletScreen";
 
 export type JobStatus = "available" | "accepted" | "arrived" | "loading" | "transit" | "completed";
 
