@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import DriverDashboard from "./pages/DriverDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
+import BookingConfirmation from "./pages/BookingConfirmation.tsx";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/driver" element={<DriverDashboard />} />
           <Route path="/book" element={<BookingPage />} />
+          <Route path="/tracking" element={<BookingConfirmation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
