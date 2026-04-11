@@ -12,10 +12,25 @@ const BookingPage = () => {
   const [dropoff, setDropoff] = useState("");
   const [moveSize, setMoveSize] = useState<MoveSize | null>(null);
 
+  const getTotal = () => {
+    const sizeData = moveSize ? [
+      { id: "small", basePrice: 89 },
+      { id: "medium", basePrice: 199 },
+      { id: "large", basePrice: 349 },
+      { id: "xlarge", basePrice: 599 },
+    ].find(s => s.id === moveSize) : null;
+    if (!sizeData) return 0;
+    const base = sizeData.basePrice;
+    return base + 25 + Math.round(base * 0.1);
+  };
+
   const handleBook = () => {
     toast.success("Move booked successfully!", {
       description: "A driver will be assigned shortly.",
     });
+    const total = getTotal();
+    const label = moveSize ? moveSize.charAt(0).toUpperCase() + moveSize.slice(1) : "";
+    navigate(`/tracking?total=${total.toFixed(2)}&size=${label}`);
   };
 
   return (
