@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/driver/BottomNav";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
+import HistoryScreen from "@/components/driver/HistoryScreen";
 
 export type JobStatus = "available" | "accepted" | "arrived" | "loading" | "transit" | "completed";
 
@@ -130,6 +131,7 @@ const DriverDashboard = () => {
         )}
 
         {activeTab === "wallet" && <WalletScreen />}
+        {activeTab === "history" && <HistoryScreen />}
         {activeTab === "profile" && <ProfileScreen />}
       </main>
 
