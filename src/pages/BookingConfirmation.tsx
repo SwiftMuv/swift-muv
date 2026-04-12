@@ -1,8 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Phone, MessageCircle, Star, Clock, Shield, MapPin, ChevronUp, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import DriverTrackingMap from "@/components/tracking/DriverTrackingMap";
+import { StatusTimeline } from "@/components/tracking/StatusTimeline";
+import { useDriverStatusUpdates } from "@/hooks/useDriverStatusUpdates";
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
