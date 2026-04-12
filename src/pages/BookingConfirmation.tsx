@@ -72,9 +72,20 @@ const BookingConfirmation = () => {
                 <span className="text-sm text-muted-foreground">ETA</span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5">
-              <Clock className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-semibold text-primary">En Route</span>
+            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ${
+              currentStatus === "completed"
+                ? "bg-[hsl(var(--swift-success))]/15 text-[hsl(var(--swift-success))]"
+                : currentStatus === "arrived"
+                ? "bg-[hsl(var(--swift-warning))]/15 text-[hsl(var(--swift-warning))]"
+                : "bg-primary/10 text-primary"
+            }`}>
+              <Clock className="h-3.5 w-3.5" />
+              <span className="text-xs font-semibold">
+                {currentStatus === "assigned" && "Assigned"}
+                {currentStatus === "en_route" && "En Route"}
+                {currentStatus === "arrived" && "Arrived"}
+                {currentStatus === "completed" && "Completed"}
+              </span>
             </div>
           </div>
 
