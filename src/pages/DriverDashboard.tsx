@@ -131,6 +131,7 @@ const DriverDashboard = () => {
         )}
 
         {activeTab === "wallet" && <WalletScreen />}
+        {activeTab === "history" && <HistoryScreen />}
         {activeTab === "profile" && <ProfileScreen />}
       </main>
 
