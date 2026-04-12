@@ -15,10 +15,25 @@ const BookingConfirmation = () => {
 
   const [eta, setEta] = useState(44);
   const [expanded, setExpanded] = useState(false);
+  const { currentStatus, statusHistory, latestUpdate } = useDriverStatusUpdates();
+  const prevStatusRef = useRef(currentStatus);
 
   const handleEtaUpdate = useCallback((minutes: number) => {
     setEta(Math.max(minutes, 2));
   }, []);
+
+  // Fire toast notifications on status changes
+  useEffect(() => {
+    if (latestUpdate && latestUpdate.status !== prevStatusRef.current) {
+      prevStatusRef.current = latestUpdate.status;
+      const icons: Record<string, string> = { assigned: "✅", en_route: "🚛", arrived: "📍", completed: "🎉" };
+      toast(latestUpdate.label, {
+        description: latestUpdate.description,
+        icon: icons[latestUpdate.status],
+        duration: 5000,
+      });
+    }
+  }, [latestUpdate]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
