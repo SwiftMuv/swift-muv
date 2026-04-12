@@ -119,6 +119,12 @@ const BookingConfirmation = () => {
             </div>
           </div>
 
+          {/* Status Timeline */}
+          <div className="rounded-2xl border border-border bg-secondary/20 p-4">
+            <p className="text-sm font-semibold text-foreground mb-3">Live Status</p>
+            <StatusTimeline statusHistory={statusHistory} currentStatus={currentStatus} />
+          </div>
+
           {/* Trip details (expandable) */}
           <button
             onClick={() => setExpanded(!expanded)}
