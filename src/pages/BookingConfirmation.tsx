@@ -1,8 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Phone, MessageCircle, Star, Clock, Shield, MapPin, ChevronUp, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import DriverTrackingMap from "@/components/tracking/DriverTrackingMap";
+import { StatusTimeline } from "@/components/tracking/StatusTimeline";
+import { useDriverStatusUpdates } from "@/hooks/useDriverStatusUpdates";
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
@@ -12,10 +15,25 @@ const BookingConfirmation = () => {
 
   const [eta, setEta] = useState(44);
   const [expanded, setExpanded] = useState(false);
+  const { currentStatus, statusHistory, latestUpdate } = useDriverStatusUpdates();
+  const prevStatusRef = useRef(currentStatus);
 
   const handleEtaUpdate = useCallback((minutes: number) => {
     setEta(Math.max(minutes, 2));
   }, []);
+
+  // Fire toast notifications on status changes
+  useEffect(() => {
+    if (latestUpdate && latestUpdate.status !== prevStatusRef.current) {
+      prevStatusRef.current = latestUpdate.status;
+      const icons: Record<string, string> = { assigned: "✅", en_route: "🚛", arrived: "📍", completed: "🎉" };
+      toast(latestUpdate.label, {
+        description: latestUpdate.description,
+        icon: icons[latestUpdate.status],
+        duration: 5000,
+      });
+    }
+  }, [latestUpdate]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -54,9 +72,20 @@ const BookingConfirmation = () => {
                 <span className="text-sm text-muted-foreground">ETA</span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5">
-              <Clock className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-semibold text-primary">En Route</span>
+            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ${
+              currentStatus === "completed"
+                ? "bg-[hsl(var(--swift-success))]/15 text-[hsl(var(--swift-success))]"
+                : currentStatus === "arrived"
+                ? "bg-[hsl(var(--swift-warning))]/15 text-[hsl(var(--swift-warning))]"
+                : "bg-primary/10 text-primary"
+            }`}>
+              <Clock className="h-3.5 w-3.5" />
+              <span className="text-xs font-semibold">
+                {currentStatus === "assigned" && "Assigned"}
+                {currentStatus === "en_route" && "En Route"}
+                {currentStatus === "arrived" && "Arrived"}
+                {currentStatus === "completed" && "Completed"}
+              </span>
             </div>
           </div>
 
@@ -88,6 +117,12 @@ const BookingConfirmation = () => {
                 <MessageCircle className="h-4 w-4" />
               </button>
             </div>
+          </div>
+
+          {/* Status Timeline */}
+          <div className="rounded-2xl border border-border bg-secondary/20 p-4">
+            <p className="text-sm font-semibold text-foreground mb-3">Live Status</p>
+            <StatusTimeline statusHistory={statusHistory} currentStatus={currentStatus} />
           </div>
 
           {/* Trip details (expandable) */}
