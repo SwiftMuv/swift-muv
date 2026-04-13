@@ -1,5 +1,6 @@
 import { User, Truck, FileCheck, ShieldCheck, Star, Phone, Mail, MapPin, ChevronRight, Camera, CheckCircle2, Clock, XCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 
 interface Document {
