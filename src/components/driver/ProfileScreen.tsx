@@ -24,6 +24,7 @@ const statusConfig = {
 };
 
 const ProfileScreen = () => {
+  const { signOut } = useAuth();
   const verifiedCount = documents.filter((d) => d.status === "verified").length;
   const allVerified = verifiedCount === documents.length;
 
@@ -158,7 +159,7 @@ const ProfileScreen = () => {
       </section>
 
       {/* Sign Out */}
-      <Button variant="ghost" className="w-full rounded-xl h-11 text-sm text-[hsl(var(--swift-danger))] hover:text-[hsl(var(--swift-danger))] hover:bg-[hsl(var(--swift-danger))]/10">
+      <Button variant="ghost" className="w-full rounded-xl h-11 text-sm text-[hsl(var(--swift-danger))] hover:text-[hsl(var(--swift-danger))] hover:bg-[hsl(var(--swift-danger))]/10" onClick={signOut}>
         <LogOut className="w-4 h-4 mr-2" />
         Sign Out
       </Button>
