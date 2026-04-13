@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          base_price: number
+          created_at: string
+          customer_id: string
+          distance_fee: number
+          dropoff_address: string
+          id: string
+          move_size: Database["public"]["Enums"]["move_size"]
+          pickup_address: string
+          scheduled_at: string | null
+          service_fee: number
+          status: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          base_price: number
+          created_at?: string
+          customer_id: string
+          distance_fee?: number
+          dropoff_address: string
+          id?: string
+          move_size: Database["public"]["Enums"]["move_size"]
+          pickup_address: string
+          scheduled_at?: string | null
+          service_fee: number
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          customer_id?: string
+          distance_fee?: number
+          dropoff_address?: string
+          id?: string
+          move_size?: Database["public"]["Enums"]["move_size"]
+          pickup_address?: string
+          scheduled_at?: string | null
+          service_fee?: number
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_profiles: {
         Row: {
           avatar_url: string | null
@@ -104,6 +152,59 @@ export type Database = {
         }
         Relationships: []
       }
+      jobs: {
+        Row: {
+          booking_id: string
+          completed_at: string | null
+          completion_code: string | null
+          created_at: string
+          customer_rating: number | null
+          driver_id: string
+          driver_rating: number | null
+          id: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          tip_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          completed_at?: string | null
+          completion_code?: string | null
+          created_at?: string
+          customer_rating?: number | null
+          driver_id: string
+          driver_rating?: number | null
+          id?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          tip_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          completed_at?: string | null
+          completion_code?: string | null
+          created_at?: string
+          customer_rating?: number | null
+          driver_id?: string
+          driver_rating?: number | null
+          id?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          tip_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -137,9 +238,31 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_customer_for_job: {
+        Args: { _customer_id: string; _job_id: string }
+        Returns: boolean
+      }
+      is_driver_for_booking: {
+        Args: { _booking_id: string; _driver_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "customer" | "driver"
+      booking_status:
+        | "pending"
+        | "assigned"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      job_status:
+        | "assigned"
+        | "en_route"
+        | "arrived"
+        | "loading"
+        | "in_transit"
+        | "completed"
+      move_size: "small" | "medium" | "large" | "xlarge"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -268,6 +391,22 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["customer", "driver"],
+      booking_status: [
+        "pending",
+        "assigned",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      job_status: [
+        "assigned",
+        "en_route",
+        "arrived",
+        "loading",
+        "in_transit",
+        "completed",
+      ],
+      move_size: ["small", "medium", "large", "xlarge"],
     },
   },
 } as const
