@@ -36,9 +36,8 @@ const CustomerLogin = () => {
       const { error } = await signIn(email, password);
       if (error) {
         toast.error(error.message);
-      } else {
-        navigate("/book");
       }
+      // Navigation handled by useEffect when user/role are set
     }
     setLoading(false);
   };
