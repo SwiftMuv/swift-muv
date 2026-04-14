@@ -29,17 +29,17 @@ const CustomerLogin = () => {
       const { error } = await signUp(email, password, "customer", fullName);
       if (error) {
         toast.error(error.message);
-      } else {
-        toast.success("Account created! Check your email to verify.");
+        setLoading(false);
       }
+      // On success, useEffect navigates when user+role are set
     } else {
       const { error } = await signIn(email, password);
       if (error) {
         toast.error(error.message);
+        setLoading(false);
       }
-      // Navigation handled by useEffect when user/role are set
+      // On success, useEffect navigates when user+role are set
     }
-    setLoading(false);
   };
 
   return (
