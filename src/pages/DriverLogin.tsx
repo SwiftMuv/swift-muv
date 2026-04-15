@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,18 @@ import { Truck, ArrowRight } from "lucide-react";
 
 const DriverLogin = () => {
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, role } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && role === "driver") {
+      navigate("/driver", { replace: true });
+    }
+  }, [user, role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,18 +29,15 @@ const DriverLogin = () => {
       const { error } = await signUp(email, password, "driver", fullName);
       if (error) {
         toast.error(error.message);
-      } else {
-        toast.success("Account created! Check your email to verify.");
+        setLoading(false);
       }
     } else {
       const { error } = await signIn(email, password);
       if (error) {
         toast.error(error.message);
-      } else {
-        navigate("/driver");
+        setLoading(false);
       }
     }
-    setLoading(false);
   };
 
   return (
