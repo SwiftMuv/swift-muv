@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import satisfiedCustomers from "@/assets/satisfied-customers.jpg";
 import AddressInput from "@/components/booking/AddressInput";
 import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
 import PriceQuote from "@/components/booking/PriceQuote";
@@ -74,6 +75,28 @@ const BookingPage = () => {
       </header>
 
       <div className="flex-1 space-y-6 p-4 pb-8">
+        <div className="relative overflow-hidden rounded-2xl shadow-lg">
+          <img
+            src={satisfiedCustomers}
+            alt="Satisfied SwiftGo customers smiling outside their new home"
+            width={1280}
+            height={768}
+            className="h-44 w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+              ★ 4.9 from 12,000+ moves
+            </p>
+            <h2
+              className="mt-1 text-xl font-bold leading-tight text-foreground"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              Trusted by happy movers
+            </h2>
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-4 py-2.5">
           <CalendarDays className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium text-foreground">Today, ASAP</span>
