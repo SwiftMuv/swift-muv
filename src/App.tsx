@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import CustomerLogin from "./pages/CustomerLogin.tsx";
+import CustomerHome from "./pages/CustomerHome.tsx";
 import DriverLogin from "./pages/DriverLogin.tsx";
 import DriverDashboard from "./pages/DriverDashboard.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
@@ -31,6 +32,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="driver">
                   <DriverDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerHome />
                 </ProtectedRoute>
               }
             />
