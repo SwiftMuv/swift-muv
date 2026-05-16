@@ -39,7 +39,7 @@ const CustomerLogin = () => {
     e.preventDefault();
     setLoading(true);
     if (isSignUp) {
-      const { error } = await signUp(email, password, "customer", fullName);
+      const { error } = await signUp(email, password, "customer", fullName, { phone, address });
       if (error) {
         toast.error(error.message);
         setLoading(false);
