@@ -45,12 +45,6 @@ export const JobCard = ({ job, onAccept }: JobCardProps) => {
       {/* Meta */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <MapPin className="w-3 h-3" /> {job.distance}
-        </span>
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" /> {job.estimatedTime}
-        </span>
-        <span className="flex items-center gap-1">
           <Package className="w-3 h-3" /> {job.customerName}
         </span>
       </div>
