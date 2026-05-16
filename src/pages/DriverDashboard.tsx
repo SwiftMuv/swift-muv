@@ -67,7 +67,7 @@ const DriverDashboard = () => {
     const { data, error } = await supabase
       .from("bookings")
       .select("id, pickup_address, dropoff_address, move_size, total_price, status")
-      .eq("status", "pending")
+      .eq("status", "available" as never)
       .order("created_at", { ascending: false });
     if (error) return;
     setAvailable(
@@ -149,7 +149,7 @@ const DriverDashboard = () => {
         (payload) => {
           loadAvailable();
           const newRow: any = payload.new;
-          if (payload.eventType === "INSERT" && newRow?.status === "pending") {
+          if (payload.eventType === "INSERT" && newRow?.status === "available") {
             toast.success("New job request available!");
           }
         }
