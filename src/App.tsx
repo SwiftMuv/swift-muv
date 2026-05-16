@@ -68,10 +68,15 @@ const App = () => (
               path="/admin"
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
+                  <AdminLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<AdminOverview />} />
+              <Route path="trips" element={<AdminTrips />} />
+              <Route path="drivers" element={<AdminDrivers />} />
+              <Route path="customers" element={<AdminCustomers />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
