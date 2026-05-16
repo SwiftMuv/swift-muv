@@ -148,6 +148,7 @@ export type Database = {
           created_at: string
           current_lat: number | null
           current_lng: number | null
+          date_of_birth: string | null
           driver_license_url: string | null
           full_name: string | null
           id: string
@@ -177,6 +178,7 @@ export type Database = {
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
+          date_of_birth?: string | null
           driver_license_url?: string | null
           full_name?: string | null
           id?: string
@@ -206,6 +208,7 @@ export type Database = {
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
+          date_of_birth?: string | null
           driver_license_url?: string | null
           full_name?: string | null
           id?: string
