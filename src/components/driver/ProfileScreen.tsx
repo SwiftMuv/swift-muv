@@ -73,6 +73,8 @@ const ProfileScreen = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const docTypeRef = useRef<DocType | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; url: string; isPdf: boolean } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState<DocType | null>(null);
 
   // Editable fields
   const [fullName, setFullName] = useState("");
