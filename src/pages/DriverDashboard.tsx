@@ -198,20 +198,13 @@ const DriverDashboard = () => {
             )}
 
             {isOnline && (
-              <section>
-                <h2 className="text-lg font-semibold mb-3">Available Jobs</h2>
-                <div className="space-y-3">
-                  {available.map((job) => (
-                    <JobCard key={job.id} job={job} onAccept={handleAcceptJob} />
-                  ))}
-                  {available.length === 0 && (
-                    <div className="rounded-xl bg-card border p-6 text-center">
-                      <p className="text-muted-foreground text-sm">No jobs available nearby</p>
-                      <p className="text-muted-foreground text-xs mt-1">New requests will appear here</p>
-                    </div>
-                  )}
-                </div>
-              </section>
+              <DriverJobsTabs
+                loading={loading}
+                available={available}
+                activeJob={activeJob}
+                onAccept={handleAcceptJob}
+                onUpdateStatus={handleUpdateJobStatus}
+              />
             )}
           </>
         )}
