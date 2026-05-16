@@ -1,8 +1,9 @@
-import { Bell, Globe, ChevronDown, DollarSign } from "lucide-react";
+import { Bell, Globe, DollarSign, MoreVertical, LogOut } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -10,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/swiftmuv-logo.png";
 
 interface DriverHeaderProps {
@@ -17,6 +20,7 @@ interface DriverHeaderProps {
   onToggleOnline: () => void;
   rating: number;
   driverName?: string | null;
+  avatarUrl?: string | null;
 }
 
 const LANGUAGES = [
@@ -24,6 +28,14 @@ const LANGUAGES = [
   { code: "fr", label: "Français" },
   { code: "es", label: "Español" },
   { code: "ar", label: "العربية" },
+  { code: "pt", label: "Português" },
+  { code: "de", label: "Deutsch" },
+  { code: "it", label: "Italiano" },
+  { code: "zh", label: "中文" },
+  { code: "ja", label: "日本語" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ru", label: "Русский" },
+  { code: "tr", label: "Türkçe" },
 ];
 
 const CURRENCIES = [
@@ -31,57 +43,116 @@ const CURRENCIES = [
   { code: "USD", label: "USD $" },
   { code: "EUR", label: "EUR €" },
   { code: "GBP", label: "GBP £" },
+  { code: "AUD", label: "AUD $" },
+  { code: "NZD", label: "NZD $" },
+  { code: "CHF", label: "CHF" },
+  { code: "JPY", label: "JPY ¥" },
+  { code: "CNY", label: "CNY ¥" },
+  { code: "INR", label: "INR ₹" },
+  { code: "BRL", label: "BRL R$" },
+  { code: "MXN", label: "MXN $" },
+  { code: "ZAR", label: "ZAR R" },
+  { code: "AED", label: "AED د.إ" },
+  { code: "NGN", label: "NGN ₦" },
 ];
 
-export const DriverHeader = ({ isOnline, onToggleOnline, rating, driverName }: DriverHeaderProps) => {
+export const DriverHeader = ({ isOnline, onToggleOnline, rating, driverName, avatarUrl }: DriverHeaderProps) => {
   const [lang, setLang] = useState("en");
   const [currency, setCurrency] = useState("CAD");
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const displayName = driverName?.trim() || "Driver";
+  const initials = displayName
+    .split(" ")
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/driver/login");
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Powerclipped SwiftMuv logo — clipped into a rounded badge */}
-          <div className="relative shrink-0">
-            <div className="w-11 h-11 rounded-xl bg-primary/10 overflow-hidden flex items-center justify-center ring-1 ring-primary/20">
-              <img
-                src={logo}
-                alt="SwiftMuv"
-                width={44}
-                height={44}
-                loading="lazy"
-                className="w-full h-full object-cover scale-150"
-              />
-            </div>
-            <div
-              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card ${
-                isOnline ? "bg-[hsl(var(--swift-success))]" : "bg-muted-foreground"
-              }`}
+        {/* Far-left: Notifications */}
+        <button
+          className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0"
+          aria-label="Notifications"
+        >
+          <Bell className="w-4 h-4 text-foreground" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[hsl(var(--swift-danger))]" />
+        </button>
+
+        {/* Center: Logo + name */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 justify-center">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 overflow-hidden flex items-center justify-center ring-1 ring-primary/20 shrink-0">
+            <img
+              src={logo}
+              alt="SwiftMuv"
+              width={36}
+              height={36}
+              loading="lazy"
+              className="w-full h-full object-cover scale-150"
             />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 text-center">
             <h1
               className="text-lg font-bold tracking-tight truncate"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               {displayName}
             </h1>
-            <p className="text-xs text-muted-foreground">⭐ {rating} · Verified Driver</p>
+            <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1.5">
+              <span>⭐ {rating}</span>
+              <span>·</span>
+              <span className="inline-flex items-center gap-1">
+                {isOnline ? (
+                  <>
+                    <span className="relative inline-flex w-2 h-2">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--swift-success))] opacity-75 animate-ping" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--swift-success))]" />
+                    </span>
+                    <span className="text-[hsl(var(--swift-success))] font-semibold">Online</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+                    <span>Offline</span>
+                  </>
+                )}
+              </span>
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Far-right: Profile pic with kebab menu underneath */}
+        <div className="flex flex-col items-center gap-1 shrink-0">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-2 ring-primary/30">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold text-foreground">{initials || "DR"}</span>
+              )}
+            </div>
+            {isOnline && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card bg-[hsl(var(--swift-success))] animate-pulse" />
+            )}
+          </div>
+
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 bg-secondary rounded-full px-2.5 py-1.5 text-xs font-semibold hover:bg-secondary/80 transition-colors">
-              <Globe className="w-3.5 h-3.5" />
-              <span className="uppercase">{lang}</span>
-              <span className="text-muted-foreground">·</span>
-              <span>{currency}</span>
-              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            <DropdownMenuTrigger
+              className="h-4 w-7 -mt-0.5 flex items-center justify-center rounded hover:bg-secondary/60 transition-colors"
+              aria-label="Profile menu"
+            >
+              <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto">
               <DropdownMenuLabel className="flex items-center gap-2 text-xs">
                 <Globe className="w-3.5 h-3.5" /> Language
               </DropdownMenuLabel>
@@ -103,28 +174,38 @@ export const DriverHeader = ({ isOnline, onToggleOnline, rating, driverName }: D
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="text-sm text-[hsl(var(--swift-danger))] focus:text-[hsl(var(--swift-danger))]"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <button
-            className="relative w-9 h-9 rounded-full bg-secondary flex items-center justify-center"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4 text-foreground" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[hsl(var(--swift-danger))]" />
-          </button>
-
-          <div className="flex items-center gap-1.5 bg-secondary rounded-full pl-2 pr-1 py-1">
-            <span
-              className={`text-[11px] font-semibold ${
-                isOnline ? "text-[hsl(var(--swift-success))]" : "text-muted-foreground"
-              }`}
-            >
-              {isOnline ? "On" : "Off"}
-            </span>
-            <Switch checked={isOnline} onCheckedChange={onToggleOnline} className="scale-75" />
-          </div>
         </div>
+      </div>
+
+      {/* Hidden online toggle access — kept available via tap on status dot area */}
+      <button
+        onClick={onToggleOnline}
+        className="sr-only"
+        aria-label={isOnline ? "Go offline" : "Go online"}
+      >
+        Toggle online
+      </button>
+
+      {/* Small inline switch row for online toggle (compact) */}
+      <div className="mt-2 flex items-center justify-end gap-2">
+        <span
+          className={`text-[11px] font-semibold ${
+            isOnline ? "text-[hsl(var(--swift-success))]" : "text-muted-foreground"
+          }`}
+        >
+          {isOnline ? "Available for jobs" : "Not accepting jobs"}
+        </span>
+        <Switch checked={isOnline} onCheckedChange={onToggleOnline} className="scale-75" />
       </div>
     </header>
   );
