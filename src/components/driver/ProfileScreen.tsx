@@ -430,8 +430,10 @@ const ProfileScreen = () => {
             const StatusIcon = config.icon;
             const SlotIcon = slot.icon;
             const isUploading = uploadingType === slot.type;
+            const hasDoc = status !== "missing";
+            const isLoadingPreview = previewLoading === slot.type;
             return (
-              <div key={slot.name} className="flex items-center gap-3 px-4 py-3">
+              <div key={slot.name} className="flex items-center gap-2 px-4 py-3">
                 <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                   <SlotIcon className="w-4 h-4 text-foreground" />
                 </div>
@@ -443,6 +445,18 @@ const ProfileScreen = () => {
                   <StatusIcon className="w-3 h-3 mr-1" />
                   {config.label}
                 </Badge>
+                {hasDoc && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-lg h-8 px-2 shrink-0"
+                    onClick={() => handlePreview(slot)}
+                    disabled={isLoadingPreview}
+                    aria-label={`Preview ${slot.name}`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
