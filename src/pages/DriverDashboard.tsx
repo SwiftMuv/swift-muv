@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { DriverHeader } from "@/components/driver/DriverHeader";
 import { DriverStats } from "@/components/driver/DriverStats";
 import { JobCard } from "@/components/driver/JobCard";
@@ -60,10 +62,22 @@ const mockJobs: Job[] = [
 ];
 
 const DriverDashboard = () => {
+  const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
+  const [driverName, setDriverName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("driver_profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setDriverName(data?.full_name ?? null));
+  }, [user]);
 
   const handleAcceptJob = (jobId: string) => {
     setJobs((prev) =>
@@ -90,7 +104,7 @@ const DriverDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col dark">
-      <DriverHeader isOnline={isOnline} onToggleOnline={() => setIsOnline(!isOnline)} rating={rating} />
+      <DriverHeader isOnline={isOnline} onToggleOnline={() => setIsOnline(!isOnline)} rating={rating} driverName={driverName} />
 
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-5">
         {activeTab === "home" && (

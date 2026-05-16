@@ -92,18 +92,63 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_documents: {
+        Row: {
+          created_at: string
+          document_type: Database["public"]["Enums"]["driver_document_type"]
+          driver_id: string
+          file_path: string
+          id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["driver_document_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: Database["public"]["Enums"]["driver_document_type"]
+          driver_id: string
+          file_path: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_document_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["driver_document_type"]
+          driver_id?: string
+          file_path?: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_document_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          background_check_status: Database["public"]["Enums"]["background_check_status"]
+          background_check_url: string | null
           cargo_capacity_lbs: number | null
           cargo_space_cuft: number | null
           created_at: string
+          driver_license_url: string | null
           full_name: string | null
           id: string
           is_online: boolean | null
           is_verified: boolean | null
+          languages: string[] | null
           license_plate: string | null
           phone: string | null
+          profile_picture_url: string | null
           rating: number | null
           updated_at: string
           user_id: string
@@ -111,18 +156,25 @@ export type Database = {
           vehicle_make: string | null
           vehicle_model: string | null
           vehicle_year: number | null
+          verification_status: Database["public"]["Enums"]["driver_verification_status"]
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          background_check_status?: Database["public"]["Enums"]["background_check_status"]
+          background_check_url?: string | null
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
+          driver_license_url?: string | null
           full_name?: string | null
           id?: string
           is_online?: boolean | null
           is_verified?: boolean | null
+          languages?: string[] | null
           license_plate?: string | null
           phone?: string | null
+          profile_picture_url?: string | null
           rating?: number | null
           updated_at?: string
           user_id: string
@@ -130,18 +182,25 @@ export type Database = {
           vehicle_make?: string | null
           vehicle_model?: string | null
           vehicle_year?: number | null
+          verification_status?: Database["public"]["Enums"]["driver_verification_status"]
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          background_check_status?: Database["public"]["Enums"]["background_check_status"]
+          background_check_url?: string | null
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
+          driver_license_url?: string | null
           full_name?: string | null
           id?: string
           is_online?: boolean | null
           is_verified?: boolean | null
+          languages?: string[] | null
           license_plate?: string | null
           phone?: string | null
+          profile_picture_url?: string | null
           rating?: number | null
           updated_at?: string
           user_id?: string
@@ -149,6 +208,7 @@ export type Database = {
           vehicle_make?: string | null
           vehicle_model?: string | null
           vehicle_year?: number | null
+          verification_status?: Database["public"]["Enums"]["driver_verification_status"]
         }
         Relationships: []
       }
@@ -231,6 +291,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          role: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -248,13 +320,22 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "customer" | "driver"
+      app_role: "customer" | "driver" | "admin"
+      background_check_status: "pending" | "approved" | "rejected"
       booking_status:
         | "pending"
         | "assigned"
         | "in_progress"
         | "completed"
         | "cancelled"
+      driver_document_status: "pending" | "approved" | "rejected"
+      driver_document_type:
+        | "police_check"
+        | "license"
+        | "insurance"
+        | "vehicle_registration"
+        | "other"
+      driver_verification_status: "pending" | "approved" | "rejected"
       job_status:
         | "assigned"
         | "en_route"
@@ -390,7 +471,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["customer", "driver"],
+      app_role: ["customer", "driver", "admin"],
+      background_check_status: ["pending", "approved", "rejected"],
       booking_status: [
         "pending",
         "assigned",
@@ -398,6 +480,15 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      driver_document_status: ["pending", "approved", "rejected"],
+      driver_document_type: [
+        "police_check",
+        "license",
+        "insurance",
+        "vehicle_registration",
+        "other",
+      ],
+      driver_verification_status: ["pending", "approved", "rejected"],
       job_status: [
         "assigned",
         "en_route",
