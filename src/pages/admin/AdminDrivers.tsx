@@ -376,6 +376,55 @@ const AdminDrivers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!docsDriver} onOpenChange={(o) => !o && setDocsDriver(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{docsDriver?.full_name || "Driver"} — Documents</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {[
+              { label: "Driver's License", url: docsDriver?.driver_license_url },
+              { label: "Background Check", url: docsDriver?.background_check_url },
+            ].map((doc) => (
+              <div key={doc.label} className="border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold">{doc.label}</p>
+                  {doc.url ? (
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-primary underline"
+                    >
+                      Open in new tab
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Not uploaded</span>
+                  )}
+                </div>
+                {doc.url &&
+                  (/\.(png|jpe?g|webp|gif)$/i.test(doc.url) ? (
+                    <img src={doc.url} alt={doc.label} className="max-h-[40vh] w-full object-contain rounded" />
+                  ) : (
+                    <iframe src={doc.url} title={doc.label} className="w-full h-[40vh] rounded" />
+                  ))}
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="destructive"
+              onClick={() => docsDriver && setVerification(docsDriver, "rejected")}
+            >
+              <XCircle className="w-4 h-4 mr-1" /> Reject Driver
+            </Button>
+            <Button onClick={() => docsDriver && setVerification(docsDriver, "approved")}>
+              <CheckCircle2 className="w-4 h-4 mr-1" /> Approve Driver
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
