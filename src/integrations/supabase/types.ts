@@ -166,6 +166,7 @@ export type Database = {
           phone: string | null
           profile_picture_url: string | null
           rating: number | null
+          stripe_connect_id: string | null
           updated_at: string
           user_id: string
           vehicle_color: string | null
@@ -196,6 +197,7 @@ export type Database = {
           phone?: string | null
           profile_picture_url?: string | null
           rating?: number | null
+          stripe_connect_id?: string | null
           updated_at?: string
           user_id: string
           vehicle_color?: string | null
@@ -226,6 +228,7 @@ export type Database = {
           phone?: string | null
           profile_picture_url?: string | null
           rating?: number | null
+          stripe_connect_id?: string | null
           updated_at?: string
           user_id?: string
           vehicle_color?: string | null
