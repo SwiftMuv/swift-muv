@@ -1,45 +1,76 @@
-import { useEffect, useState } from "react";
-import { User, Truck, FileCheck, ShieldCheck, Star, Phone, Mail, MapPin, ChevronRight, Camera, CheckCircle2, Clock, XCircle, LogOut, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  User,
+  Truck,
+  FileCheck,
+  ShieldCheck,
+  Star,
+  Phone,
+  Mail,
+  ChevronRight,
+  Camera,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  LogOut,
+  Save,
+  Upload,
+  FileText,
+  Landmark,
+  IdCard,
+  ShieldAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables, Database } from "@/integrations/supabase/types";
 
 type DriverProfile = Tables<"driver_profiles">;
-
-interface Document {
-  name: string;
-  status: "verified" | "pending" | "expired" | "missing";
-  expiry?: string;
-}
-
-const documents: Document[] = [
-  { name: "Government ID", status: "verified", expiry: "Dec 2027" },
-  { name: "Commercial Insurance", status: "verified", expiry: "Mar 2026" },
-  { name: "Background Check", status: "pending" },
-  { name: "Vehicle Inspection", status: "expired", expiry: "Jan 2025" },
-];
+type DocRow = Tables<"driver_documents">;
+type DocType = Database["public"]["Enums"]["driver_document_type"];
 
 const statusConfig = {
-  verified: { icon: CheckCircle2, label: "Verified", className: "text-[hsl(var(--swift-success))] bg-[hsl(var(--swift-success))]/15" },
+  approved: { icon: CheckCircle2, label: "Verified", className: "text-[hsl(var(--swift-success))] bg-[hsl(var(--swift-success))]/15" },
   pending: { icon: Clock, label: "Pending", className: "text-[hsl(var(--swift-warning))] bg-[hsl(var(--swift-warning))]/15" },
-  expired: { icon: XCircle, label: "Expired", className: "text-[hsl(var(--swift-danger))] bg-[hsl(var(--swift-danger))]/15" },
-  missing: { icon: XCircle, label: "Missing", className: "text-muted-foreground bg-muted" },
+  rejected: { icon: XCircle, label: "Rejected", className: "text-[hsl(var(--swift-danger))] bg-[hsl(var(--swift-danger))]/15" },
+  missing: { icon: ShieldAlert, label: "Not uploaded", className: "text-muted-foreground bg-muted" },
+} as const;
+
+type DocSlot = {
+  type: DocType;
+  name: string;
+  icon: typeof FileText;
+  description: string;
 };
+
+const DOC_SLOTS: DocSlot[] = [
+  { type: "license", name: "Driver's License", icon: IdCard, description: "Front & back of valid license" },
+  { type: "insurance", name: "Insurance Documents", icon: ShieldCheck, description: "Commercial vehicle insurance" },
+  { type: "vehicle_registration", name: "Vehicle Registration", icon: FileText, description: "Current registration" },
+  { type: "police_check", name: "Background Check", icon: FileCheck, description: "Police clearance certificate" },
+  { type: "other", name: "Bank Details", icon: Landmark, description: "Void cheque or direct deposit form" },
+];
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<DriverProfile | null>(null);
+  const [docs, setDocs] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingType, setUploadingType] = useState<DocType | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const docTypeRef = useRef<DocType | null>(null);
 
   // Editable fields
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [vehicleYear, setVehicleYear] = useState("");
@@ -48,31 +79,34 @@ const ProfileScreen = () => {
   const [cargoCapacity, setCargoCapacity] = useState("");
   const [cargoSpace, setCargoSpace] = useState("");
 
-  useEffect(() => {
+  const loadAll = async () => {
     if (!user) return;
-    const fetch = async () => {
-      const { data, error } = await supabase
-        .from("driver_profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (error) {
-        toast.error("Failed to load profile");
-      } else if (data) {
-        setProfile(data);
-        setFullName(data.full_name ?? "");
-        setPhone(data.phone ?? "");
-        setVehicleMake(data.vehicle_make ?? "");
-        setVehicleModel(data.vehicle_model ?? "");
-        setVehicleYear(data.vehicle_year?.toString() ?? "");
-        setVehicleColor(data.vehicle_color ?? "");
-        setLicensePlate(data.license_plate ?? "");
-        setCargoCapacity(data.cargo_capacity_lbs?.toString() ?? "");
-        setCargoSpace(data.cargo_space_cuft?.toString() ?? "");
-      }
-      setLoading(false);
-    };
-    fetch();
+    const [{ data: prof, error: e1 }, { data: dl, error: e2 }] = await Promise.all([
+      supabase.from("driver_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("driver_documents").select("*").eq("driver_id", user.id).order("created_at", { ascending: false }),
+    ]);
+    if (e1) toast.error("Failed to load profile");
+    if (e2) toast.error("Failed to load documents");
+    if (prof) {
+      setProfile(prof);
+      setFullName(prof.full_name ?? "");
+      setPhone(prof.phone ?? "");
+      setAddress(prof.address ?? "");
+      setVehicleMake(prof.vehicle_make ?? "");
+      setVehicleModel(prof.vehicle_model ?? "");
+      setVehicleYear(prof.vehicle_year?.toString() ?? "");
+      setVehicleColor(prof.vehicle_color ?? "");
+      setLicensePlate(prof.license_plate ?? "");
+      setCargoCapacity(prof.cargo_capacity_lbs?.toString() ?? "");
+      setCargoSpace(prof.cargo_space_cuft?.toString() ?? "");
+    }
+    setDocs(dl ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleSave = async () => {
@@ -83,6 +117,7 @@ const ProfileScreen = () => {
       .update({
         full_name: fullName || null,
         phone: phone || null,
+        address: address || null,
         vehicle_make: vehicleMake || null,
         vehicle_model: vehicleModel || null,
         vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
@@ -93,24 +128,79 @@ const ProfileScreen = () => {
       })
       .eq("user_id", user.id);
 
-    if (error) {
-      toast.error("Failed to save profile");
-    } else {
-      toast.success("Profile updated!");
+    if (error) toast.error("Failed to save profile");
+    else {
+      toast.success("Profile updated");
       setEditing(false);
-      // Refresh profile
-      const { data } = await supabase
-        .from("driver_profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data) setProfile(data);
+      loadAll();
     }
     setSaving(false);
   };
 
-  const verifiedCount = documents.filter((d) => d.status === "verified").length;
+  const handleAvatarChange = async (file: File) => {
+    if (!user) return;
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("driver-avatars").upload(path, file, { upsert: true });
+    if (upErr) {
+      toast.error("Avatar upload failed");
+      setUploadingAvatar(false);
+      return;
+    }
+    const { data: pub } = supabase.storage.from("driver-avatars").getPublicUrl(path);
+    const { error: updErr } = await supabase
+      .from("driver_profiles")
+      .update({ avatar_url: pub.publicUrl, profile_picture_url: pub.publicUrl })
+      .eq("user_id", user.id);
+    if (updErr) toast.error("Failed to save avatar");
+    else {
+      toast.success("Profile picture updated");
+      loadAll();
+    }
+    setUploadingAvatar(false);
+  };
+
+  const handleDocChange = async (file: File) => {
+    if (!user || !docTypeRef.current) return;
+    const docType = docTypeRef.current;
+    setUploadingType(docType);
+    const ext = file.name.split(".").pop() || "pdf";
+    const path = `${user.id}/${docType}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("driver-documents").upload(path, file);
+    if (upErr) {
+      toast.error("Upload failed");
+      setUploadingType(null);
+      return;
+    }
+    const { error: insErr } = await supabase.from("driver_documents").insert({
+      driver_id: user.id,
+      document_type: docType,
+      file_path: path,
+      status: "pending",
+    });
+    if (insErr) toast.error("Failed to save document");
+    else {
+      toast.success("Document uploaded");
+      loadAll();
+    }
+    setUploadingType(null);
+    docTypeRef.current = null;
+  };
+
+  const triggerDocUpload = (type: DocType) => {
+    docTypeRef.current = type;
+    docInputRef.current?.click();
+  };
+
+  const docStatusFor = (type: DocType): keyof typeof statusConfig => {
+    const latest = docs.find((d) => d.document_type === type);
+    if (!latest) return "missing";
+    return (latest.status as keyof typeof statusConfig) ?? "pending";
+  };
+
   const allVerified = profile?.is_verified ?? false;
+  const verifiedCount = DOC_SLOTS.filter((s) => docStatusFor(s.type) === "approved").length;
 
   if (loading) {
     return (
@@ -120,24 +210,49 @@ const ProfileScreen = () => {
     );
   }
 
-  const vehicleLabel = [profile?.vehicle_year, profile?.vehicle_make, profile?.vehicle_model]
-    .filter(Boolean)
-    .join(" ") || "No vehicle set";
-  const vehicleMeta = [
-    profile?.vehicle_color,
-    profile?.license_plate,
-  ].filter(Boolean).join(" · ") || "Add vehicle details";
+  const vehicleLabel =
+    [profile?.vehicle_year, profile?.vehicle_make, profile?.vehicle_model].filter(Boolean).join(" ") ||
+    "No vehicle set";
+  const vehicleMeta =
+    [profile?.vehicle_color, profile?.license_plate].filter(Boolean).join(" · ") || "Add vehicle details";
+
+  const avatarUrl = profile?.avatar_url || profile?.profile_picture_url;
 
   return (
     <div className="space-y-5">
+      {/* Hidden file inputs */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleAvatarChange(e.target.files[0])}
+      />
+      <input
+        ref={docInputRef}
+        type="file"
+        accept="image/*,application/pdf"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleDocChange(e.target.files[0])}
+      />
+
       {/* Avatar & Name */}
       <div className="flex flex-col items-center text-center pt-2">
         <div className="relative">
-          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-            <User className="w-10 h-10 text-primary" />
+          <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-12 h-12 text-primary" />
+            )}
           </div>
-          <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center border-2 border-background">
-            <Camera className="w-3.5 h-3.5 text-primary-foreground" />
+          <button
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center border-2 border-background disabled:opacity-50"
+            aria-label="Upload profile picture"
+          >
+            <Camera className="w-4 h-4 text-primary-foreground" />
           </button>
           {allVerified && (
             <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[hsl(var(--swift-success))] flex items-center justify-center border-2 border-background">
@@ -145,7 +260,7 @@ const ProfileScreen = () => {
             </div>
           )}
         </div>
-        <h2 className="text-lg font-bold mt-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        <h2 className="text-xl font-bold mt-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
           {profile?.full_name || "Driver"}
         </h2>
         <div className="flex items-center gap-2 mt-1">
@@ -161,7 +276,8 @@ const ProfileScreen = () => {
             {allVerified ? "Pro Verified" : "Verification Pending"}
           </Badge>
           <Badge variant="secondary" className="text-xs font-semibold">
-            <Star className="w-3 h-3 mr-1 text-[hsl(var(--swift-warning))]" /> {profile?.rating?.toString() ?? "5.0"}
+            <Star className="w-3 h-3 mr-1 text-[hsl(var(--swift-warning))]" />{" "}
+            {profile?.rating?.toString() ?? "5.0"}
           </Badge>
         </div>
       </div>
@@ -194,18 +310,20 @@ const ProfileScreen = () => {
           <div className="px-4 pb-3 space-y-3">
             <Input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
             <Input placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
         ) : (
           <div className="divide-y divide-border">
             {[
               { icon: Phone, label: profile?.phone || "No phone set" },
               { icon: Mail, label: user?.email || "No email" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-3 px-4 py-3">
+              { icon: User, label: profile?.address || "No address set" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
                   <item.icon className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <span className="text-sm flex-1">{item.label}</span>
+                <span className="text-sm flex-1 truncate">{item.label}</span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
             ))}
@@ -247,7 +365,7 @@ const ProfileScreen = () => {
             </div>
             {(profile?.cargo_capacity_lbs || profile?.cargo_space_cuft) && (
               <div className="grid grid-cols-2 gap-2">
-                {profile.cargo_capacity_lbs && (
+                {profile?.cargo_capacity_lbs && (
                   <div className="rounded-lg bg-secondary p-2 text-center">
                     <p className="text-xs font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {profile.cargo_capacity_lbs.toLocaleString()} lbs
@@ -255,7 +373,7 @@ const ProfileScreen = () => {
                     <p className="text-[10px] text-muted-foreground mt-0.5">Capacity</p>
                   </div>
                 )}
-                {profile.cargo_space_cuft && (
+                {profile?.cargo_space_cuft && (
                   <div className="rounded-lg bg-secondary p-2 text-center">
                     <p className="text-xs font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {profile.cargo_space_cuft} cu ft
@@ -269,48 +387,56 @@ const ProfileScreen = () => {
         )}
       </section>
 
-      {/* Document Verification */}
+      {/* Documents */}
       <section className="rounded-xl bg-card border overflow-hidden">
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Documents
-          </h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Documents & Verification</h3>
           <span className="text-xs text-muted-foreground">
-            {verifiedCount}/{documents.length} verified
+            {verifiedCount}/{DOC_SLOTS.length} verified
           </span>
         </div>
         <div className="divide-y divide-border">
-          {documents.map((doc) => {
-            const config = statusConfig[doc.status];
+          {DOC_SLOTS.map((slot) => {
+            const status = docStatusFor(slot.type);
+            const config = statusConfig[status];
             const StatusIcon = config.icon;
+            const SlotIcon = slot.icon;
+            const isUploading = uploadingType === slot.type;
             return (
-              <div key={doc.name} className="flex items-center gap-3 px-4 py-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${config.className}`}>
-                  <StatusIcon className="w-4 h-4" />
+              <div key={slot.name} className="flex items-center gap-3 px-4 py-3">
+                <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                  <SlotIcon className="w-4 h-4 text-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{doc.name}</p>
-                  {doc.expiry && (
-                    <p className="text-xs text-muted-foreground">Expires {doc.expiry}</p>
-                  )}
+                  <p className="text-sm font-medium truncate">{slot.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{slot.description}</p>
                 </div>
-                <Badge variant="outline" className={`text-[10px] ${config.className} border-0`}>
+                <Badge variant="outline" className={`text-[10px] ${config.className} border-0 shrink-0`}>
+                  <StatusIcon className="w-3 h-3 mr-1" />
                   {config.label}
                 </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-lg h-8 px-2 shrink-0"
+                  onClick={() => triggerDocUpload(slot.type)}
+                  disabled={isUploading}
+                  aria-label={`Upload ${slot.name}`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                </Button>
               </div>
             );
           })}
         </div>
-        <div className="px-4 pb-3 pt-1">
-          <Button variant="outline" className="w-full rounded-xl h-10 text-sm font-medium">
-            <FileCheck className="w-4 h-4 mr-2" />
-            Upload Documents
-          </Button>
-        </div>
       </section>
 
       {/* Sign Out */}
-      <Button variant="ghost" className="w-full rounded-xl h-11 text-sm text-[hsl(var(--swift-danger))] hover:text-[hsl(var(--swift-danger))] hover:bg-[hsl(var(--swift-danger))]/10" onClick={signOut}>
+      <Button
+        variant="ghost"
+        className="w-full rounded-xl h-11 text-sm text-[hsl(var(--swift-danger))] hover:text-[hsl(var(--swift-danger))] hover:bg-[hsl(var(--swift-danger))]/10"
+        onClick={signOut}
+      >
         <LogOut className="w-4 h-4 mr-2" />
         Sign Out
       </Button>
