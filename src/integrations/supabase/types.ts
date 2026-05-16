@@ -24,6 +24,8 @@ export type Database = {
           id: string
           move_size: Database["public"]["Enums"]["move_size"]
           pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
           scheduled_at: string | null
           service_fee: number
           status: Database["public"]["Enums"]["booking_status"]
@@ -39,6 +41,8 @@ export type Database = {
           id?: string
           move_size: Database["public"]["Enums"]["move_size"]
           pickup_address: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           scheduled_at?: string | null
           service_fee: number
           status?: Database["public"]["Enums"]["booking_status"]
@@ -54,6 +58,8 @@ export type Database = {
           id?: string
           move_size?: Database["public"]["Enums"]["move_size"]
           pickup_address?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           scheduled_at?: string | null
           service_fee?: number
           status?: Database["public"]["Enums"]["booking_status"]
@@ -140,6 +146,8 @@ export type Database = {
           cargo_capacity_lbs: number | null
           cargo_space_cuft: number | null
           created_at: string
+          current_lat: number | null
+          current_lng: number | null
           driver_license_url: string | null
           full_name: string | null
           id: string
@@ -147,6 +155,7 @@ export type Database = {
           is_verified: boolean | null
           languages: string[] | null
           license_plate: string | null
+          location_updated_at: string | null
           phone: string | null
           profile_picture_url: string | null
           rating: number | null
@@ -166,6 +175,8 @@ export type Database = {
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           driver_license_url?: string | null
           full_name?: string | null
           id?: string
@@ -173,6 +184,7 @@ export type Database = {
           is_verified?: boolean | null
           languages?: string[] | null
           license_plate?: string | null
+          location_updated_at?: string | null
           phone?: string | null
           profile_picture_url?: string | null
           rating?: number | null
@@ -192,6 +204,8 @@ export type Database = {
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           driver_license_url?: string | null
           full_name?: string | null
           id?: string
@@ -199,6 +213,7 @@ export type Database = {
           is_verified?: boolean | null
           languages?: string[] | null
           license_plate?: string | null
+          location_updated_at?: string | null
           phone?: string | null
           profile_picture_url?: string | null
           rating?: number | null
@@ -291,6 +306,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      driver_within_radius: {
+        Args: { _booking_id: string; _driver_id: string; _km: number }
+        Returns: boolean
+      }
       get_profiles: {
         Args: never
         Returns: {
@@ -309,6 +328,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      haversine_km: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
       }
       is_customer_for_job: {
         Args: { _customer_id: string; _job_id: string }
