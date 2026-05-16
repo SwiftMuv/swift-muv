@@ -77,6 +77,18 @@ const CustomerLogin = () => {
               <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" required />
             </div>
           )}
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telephone Number</Label>
+              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 123 4567" required />
+            </div>
+          )}
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="address">Current Address</Label>
+              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, City" required />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
