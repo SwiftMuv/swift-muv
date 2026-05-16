@@ -125,6 +125,27 @@ const DriverDashboard = () => {
     Promise.all([loadAvailable(), loadActiveJob(), loadStats()]).finally(() => setLoading(false));
   }, [loadAvailable, loadActiveJob, loadStats]);
 
+  // Realtime: refresh available jobs when bookings change
+  useEffect(() => {
+    const channel = supabase
+      .channel("driver-bookings")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings" },
+        (payload) => {
+          loadAvailable();
+          const newRow: any = payload.new;
+          if (payload.eventType === "INSERT" && newRow?.status === "pending") {
+            toast.success("New job request available!");
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadAvailable]);
+
   const handleAcceptJob = async (jobId: string) => {
     if (!user) return;
     if (activeJob) {
