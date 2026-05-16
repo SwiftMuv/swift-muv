@@ -26,13 +26,6 @@ const CustomerLogin = () => {
     if (error) toast.error(error.message);
     else toast.success("Password reset link sent. Check your inbox.");
   };
-  const navigate = useNavigate();
-  const { signIn, signUp, user, role } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user && role === "customer") {
