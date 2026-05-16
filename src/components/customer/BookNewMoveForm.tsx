@@ -90,27 +90,52 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   );
 
   const futureValid = scheduledAt ? scheduledAt.getTime() > Date.now() : false;
+
+  const bookingSchema = z.object({
+    pickup: z.string().trim().min(5, "Pickup address must be at least 5 characters").max(200),
+    dropoff: z.string().trim().min(5, "Drop-off address must be at least 5 characters").max(200),
+    distanceKm: z.number().min(1, "Distance must be at least 1 km").max(2000),
+    itemCount: z.number().min(1, "Select at least one item to move"),
+    scheduledAt: z
+      .date({ required_error: "Pick a date and time" })
+      .refine((d) => d.getTime() > Date.now() + 60_000, "Scheduled time must be in the future"),
+  });
+
   const canSubmit =
     !!user &&
-    pickup.trim() &&
-    dropoff.trim() &&
+    pickup.trim().length >= 5 &&
+    dropoff.trim().length >= 5 &&
     selectedItems.length > 0 &&
     futureValid &&
     !submitting;
 
   const handleSubmit = async () => {
-    if (!canSubmit || !user || !scheduledAt) return;
+    if (!user) {
+      toast.error("You must be signed in to book a move.");
+      return;
+    }
+    const parsed = bookingSchema.safeParse({
+      pickup,
+      dropoff,
+      distanceKm,
+      itemCount: selectedItems.reduce((s, i) => s + i.qty, 0),
+      scheduledAt: scheduledAt ?? undefined,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Please fix the form errors");
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from("bookings").insert({
       customer_id: user.id,
-      pickup_address: pickup,
-      dropoff_address: dropoff,
+      pickup_address: parsed.data.pickup,
+      dropoff_address: parsed.data.dropoff,
       move_size: moveSizeFor(totalVolume),
       base_price: pricing.base,
       distance_fee: pricing.distance,
       service_fee: pricing.service,
       total_price: pricing.total,
-      scheduled_at: scheduledAt.toISOString(),
+      scheduled_at: parsed.data.scheduledAt.toISOString(),
       items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend },
     });
     setSubmitting(false);
@@ -118,7 +143,9 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       toast.error("Booking failed: " + error.message);
       return;
     }
-    toast.success("Move booked!");
+    toast.success("Booking confirmed!", {
+      description: `Your move is scheduled for ${format(parsed.data.scheduledAt, "PPP 'at' p")}. Total $${pricing.total.toFixed(2)}.`,
+    });
     setPickup("");
     setDropoff("");
     setQuantities({});
