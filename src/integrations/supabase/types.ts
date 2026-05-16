@@ -133,6 +133,7 @@ export type Database = {
       }
       driver_profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           background_check_status: Database["public"]["Enums"]["background_check_status"]
           background_check_url: string | null
@@ -158,6 +159,7 @@ export type Database = {
           verification_status: Database["public"]["Enums"]["driver_verification_status"]
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           background_check_status?: Database["public"]["Enums"]["background_check_status"]
           background_check_url?: string | null
@@ -183,6 +185,7 @@ export type Database = {
           verification_status?: Database["public"]["Enums"]["driver_verification_status"]
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           background_check_status?: Database["public"]["Enums"]["background_check_status"]
           background_check_url?: string | null
