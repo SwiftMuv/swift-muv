@@ -157,14 +157,17 @@ const AdminDrivers = () => {
     load();
   };
 
-  const toggleVerification = async (d: any) => {
+  const setVerification = async (d: any, status: "approved" | "rejected") => {
     const { error } = await supabase
       .from("driver_profiles")
-      .update({ is_verified: !d.is_verified })
+      .update({
+        verification_status: status as any,
+        is_verified: status === "approved",
+      })
       .eq("user_id", d.user_id);
     if (error) toast.error(error.message);
     else {
-      toast.success(!d.is_verified ? "Driver approved" : "Driver suspended");
+      toast.success(status === "approved" ? "Driver approved" : "Driver rejected");
       load();
     }
   };
