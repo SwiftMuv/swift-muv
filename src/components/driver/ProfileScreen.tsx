@@ -19,9 +19,16 @@ import {
   Landmark,
   IdCard,
   ShieldAlert,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +73,8 @@ const ProfileScreen = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const docTypeRef = useRef<DocType | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; url: string; isPdf: boolean } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState<DocType | null>(null);
 
   // Editable fields
   const [fullName, setFullName] = useState("");
@@ -191,6 +200,25 @@ const ProfileScreen = () => {
   const triggerDocUpload = (type: DocType) => {
     docTypeRef.current = type;
     docInputRef.current?.click();
+  };
+
+  const handlePreview = async (slot: DocSlot) => {
+    const latest = docs.find((d) => d.document_type === slot.type);
+    if (!latest) return;
+    setPreviewLoading(slot.type);
+    const { data, error } = await supabase.storage
+      .from("driver-documents")
+      .createSignedUrl(latest.file_path, 60 * 10);
+    setPreviewLoading(null);
+    if (error || !data?.signedUrl) {
+      toast.error("Could not load document");
+      return;
+    }
+    setPreviewDoc({
+      name: slot.name,
+      url: data.signedUrl,
+      isPdf: latest.file_path.toLowerCase().endsWith(".pdf"),
+    });
   };
 
   const docStatusFor = (type: DocType): keyof typeof statusConfig => {
@@ -402,8 +430,10 @@ const ProfileScreen = () => {
             const StatusIcon = config.icon;
             const SlotIcon = slot.icon;
             const isUploading = uploadingType === slot.type;
+            const hasDoc = status !== "missing";
+            const isLoadingPreview = previewLoading === slot.type;
             return (
-              <div key={slot.name} className="flex items-center gap-3 px-4 py-3">
+              <div key={slot.name} className="flex items-center gap-2 px-4 py-3">
                 <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                   <SlotIcon className="w-4 h-4 text-foreground" />
                 </div>
@@ -415,6 +445,18 @@ const ProfileScreen = () => {
                   <StatusIcon className="w-3 h-3 mr-1" />
                   {config.label}
                 </Badge>
+                {hasDoc && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-lg h-8 px-2 shrink-0"
+                    onClick={() => handlePreview(slot)}
+                    disabled={isLoadingPreview}
+                    aria-label={`Preview ${slot.name}`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -440,6 +482,35 @@ const ProfileScreen = () => {
         <LogOut className="w-4 h-4 mr-2" />
         Sign Out
       </Button>
+
+      <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="text-base">{previewDoc?.name}</DialogTitle>
+          </DialogHeader>
+          {previewDoc && (
+            <div className="w-full h-[70vh] bg-muted">
+              {previewDoc.isPdf ? (
+                <iframe src={previewDoc.url} className="w-full h-full" title={previewDoc.name} />
+              ) : (
+                <img src={previewDoc.url} alt={previewDoc.name} className="w-full h-full object-contain" />
+              )}
+            </div>
+          )}
+          {previewDoc && (
+            <div className="px-4 py-3 border-t flex justify-end">
+              <a
+                href={previewDoc.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary underline"
+              >
+                Open in new tab
+              </a>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
