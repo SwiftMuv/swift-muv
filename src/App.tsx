@@ -13,7 +13,11 @@ import DriverDashboard from "./pages/DriverDashboard.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
 import BookingConfirmation from "./pages/BookingConfirmation.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import AdminDashboard from "./pages/AdminDashboard.tsx";
+import AdminLayout from "./components/admin/AdminLayout.tsx";
+import AdminOverview from "./pages/admin/AdminOverview.tsx";
+import AdminTrips from "./pages/admin/AdminTrips.tsx";
+import AdminDrivers from "./pages/admin/AdminDrivers.tsx";
+import AdminCustomers from "./pages/admin/AdminCustomers.tsx";
 
 const queryClient = new QueryClient();
 
@@ -64,10 +68,15 @@ const App = () => (
               path="/admin"
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
+                  <AdminLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<AdminOverview />} />
+              <Route path="trips" element={<AdminTrips />} />
+              <Route path="drivers" element={<AdminDrivers />} />
+              <Route path="customers" element={<AdminCustomers />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
