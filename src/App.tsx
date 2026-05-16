@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import DriverDashboard from "./pages/DriverDashboard.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
 import BookingConfirmation from "./pages/BookingConfirmation.tsx";
+import CustomerDashboard from "./pages/CustomerDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
