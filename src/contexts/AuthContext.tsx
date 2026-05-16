@@ -35,33 +35,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq("user_id", userId)
       .maybeSingle();
     setRole((data?.role as AppRole) ?? null);
+    return (data?.role as AppRole) ?? null;
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    // Listener: must NOT await inside callback (avoids Supabase auth deadlock)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchRole(session.user.id);
+          // Defer the supabase call to next tick to avoid deadlock
+          setTimeout(() => {
+            if (mounted) fetchRole(session.user.id).finally(() => mounted && setLoading(false));
+          }, 0);
         } else {
           setRole(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Initial session restore — resolve loading in all branches
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchRole(session.user.id);
-      } else {
-        setLoading(false);
+        await fetchRole(session.user.id);
       }
+      if (mounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, role: AppRole, fullName: string) => {
