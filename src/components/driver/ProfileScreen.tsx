@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import DriverDocumentsSection from "./DriverDocumentsSection";
 
 type DriverProfile = Tables<"driver_profiles">;
 
