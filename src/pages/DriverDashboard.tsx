@@ -121,9 +121,8 @@ const DriverDashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    loadAvailable();
-    loadActiveJob();
-    loadStats();
+    setLoading(true);
+    Promise.all([loadAvailable(), loadActiveJob(), loadStats()]).finally(() => setLoading(false));
   }, [loadAvailable, loadActiveJob, loadStats]);
 
   const handleAcceptJob = async (jobId: string) => {
