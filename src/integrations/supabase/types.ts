@@ -92,9 +92,49 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_documents: {
+        Row: {
+          created_at: string
+          document_type: Database["public"]["Enums"]["driver_document_type"]
+          driver_id: string
+          file_path: string
+          id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["driver_document_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: Database["public"]["Enums"]["driver_document_type"]
+          driver_id: string
+          file_path: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_document_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["driver_document_type"]
+          driver_id?: string
+          file_path?: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_document_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_profiles: {
         Row: {
           avatar_url: string | null
+          background_check_status: Database["public"]["Enums"]["background_check_status"]
           cargo_capacity_lbs: number | null
           cargo_space_cuft: number | null
           created_at: string
@@ -114,6 +154,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          background_check_status?: Database["public"]["Enums"]["background_check_status"]
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
@@ -133,6 +174,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          background_check_status?: Database["public"]["Enums"]["background_check_status"]
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
@@ -248,13 +290,21 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "customer" | "driver"
+      app_role: "customer" | "driver" | "admin"
+      background_check_status: "pending" | "approved" | "rejected"
       booking_status:
         | "pending"
         | "assigned"
         | "in_progress"
         | "completed"
         | "cancelled"
+      driver_document_status: "pending" | "approved" | "rejected"
+      driver_document_type:
+        | "police_check"
+        | "license"
+        | "insurance"
+        | "vehicle_registration"
+        | "other"
       job_status:
         | "assigned"
         | "en_route"
@@ -390,13 +440,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["customer", "driver"],
+      app_role: ["customer", "driver", "admin"],
+      background_check_status: ["pending", "approved", "rejected"],
       booking_status: [
         "pending",
         "assigned",
         "in_progress",
         "completed",
         "cancelled",
+      ],
+      driver_document_status: ["pending", "approved", "rejected"],
+      driver_document_type: [
+        "police_check",
+        "license",
+        "insurance",
+        "vehicle_registration",
+        "other",
       ],
       job_status: [
         "assigned",

@@ -13,6 +13,7 @@ import DriverDashboard from "./pages/DriverDashboard.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
 import BookingConfirmation from "./pages/BookingConfirmation.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AdminDashboard from "./pages/AdminDashboard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="customer">
                   <BookingConfirmation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />
