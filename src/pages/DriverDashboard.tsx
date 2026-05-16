@@ -62,10 +62,22 @@ const mockJobs: Job[] = [
 ];
 
 const DriverDashboard = () => {
+  const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
+  const [driverName, setDriverName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("driver_profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setDriverName(data?.full_name ?? null));
+  }, [user]);
 
   const handleAcceptJob = (jobId: string) => {
     setJobs((prev) =>
