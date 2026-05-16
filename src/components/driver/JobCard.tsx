@@ -1,4 +1,4 @@
-import { MapPin, Clock, Package, ArrowRight } from "lucide-react";
+import { Package, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Job } from "@/pages/DriverDashboard";
 
