@@ -202,6 +202,25 @@ const ProfileScreen = () => {
     docInputRef.current?.click();
   };
 
+  const handlePreview = async (slot: DocSlot) => {
+    const latest = docs.find((d) => d.document_type === slot.type);
+    if (!latest) return;
+    setPreviewLoading(slot.type);
+    const { data, error } = await supabase.storage
+      .from("driver-documents")
+      .createSignedUrl(latest.file_path, 60 * 10);
+    setPreviewLoading(null);
+    if (error || !data?.signedUrl) {
+      toast.error("Could not load document");
+      return;
+    }
+    setPreviewDoc({
+      name: slot.name,
+      url: data.signedUrl,
+      isPdf: latest.file_path.toLowerCase().endsWith(".pdf"),
+    });
+  };
+
   const docStatusFor = (type: DocType): keyof typeof statusConfig => {
     const latest = docs.find((d) => d.document_type === type);
     if (!latest) return "missing";
