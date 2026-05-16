@@ -81,8 +81,59 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
   return (
     <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        {/* Far-left: Profile pic with kebab menu underneath */}
-        <div className="flex flex-col items-center gap-1 shrink-0">
+        {/* Far-left: kebab menu + profile pic */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="h-8 w-6 flex items-center justify-center rounded hover:bg-secondary/60 transition-colors"
+              aria-label="Profile menu"
+            >
+              <MoreVertical className="w-4 h-4 text-muted-foreground" strokeWidth={2.5} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-52">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-sm">
+                  <Globe className="w-4 h-4 mr-2" /> Language
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="max-h-[60vh] overflow-y-auto">
+                    <DropdownMenuRadioGroup value={lang} onValueChange={setLang}>
+                      {LANGUAGES.map((l) => (
+                        <DropdownMenuRadioItem key={l.code} value={l.code} className="text-sm">
+                          {l.label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="text-sm">
+                  <DollarSign className="w-4 h-4 mr-2" /> Currency
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="max-h-[60vh] overflow-y-auto">
+                    <DropdownMenuRadioGroup value={currency} onValueChange={setCurrency}>
+                      {CURRENCIES.map((c) => (
+                        <DropdownMenuRadioItem key={c.code} value={c.code} className="text-sm">
+                          {c.label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="text-sm text-[hsl(var(--swift-danger))] focus:text-[hsl(var(--swift-danger))]"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-2 ring-primary/30">
               {avatarUrl ? (
@@ -95,52 +146,12 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card bg-[hsl(var(--swift-success))] animate-pulse" />
             )}
           </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="h-4 w-7 -mt-0.5 flex items-center justify-center rounded hover:bg-secondary/60 transition-colors"
-              aria-label="Profile menu"
-            >
-              <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 max-h-[70vh] overflow-y-auto">
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <Globe className="w-3.5 h-3.5" /> Language
-              </DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={lang} onValueChange={setLang}>
-                {LANGUAGES.map((l) => (
-                  <DropdownMenuRadioItem key={l.code} value={l.code} className="text-sm">
-                    {l.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <DollarSign className="w-3.5 h-3.5" /> Currency
-              </DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={currency} onValueChange={setCurrency}>
-                {CURRENCIES.map((c) => (
-                  <DropdownMenuRadioItem key={c.code} value={c.code} className="text-sm">
-                    {c.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleSignOut}
-                className="text-sm text-[hsl(var(--swift-danger))] focus:text-[hsl(var(--swift-danger))]"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Center: Driver name + online status */}
         <div className="min-w-0 flex-1 text-center">
           <h1
-            className="text-lg font-bold tracking-tight truncate"
+            className="text-lg font-bold tracking-tight truncate text-white"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             {displayName}
