@@ -10,6 +10,7 @@ import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
+import { useDriverGeolocation } from "@/hooks/useDriverGeolocation";
 
 export type JobStatus = "assigned" | "arrived" | "in_transit" | "completed";
 
@@ -32,6 +33,19 @@ const sizeLabel = (s: string): Job["moveSize"] =>
 const DriverDashboard = () => {
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
+
+  // Stream GPS to driver_profiles while online so the 20km RLS filter works
+  useDriverGeolocation(user?.id, isOnline);
+
+  // Persist online/offline so RLS sees current state
+  const toggleOnline = async () => {
+    const next = !isOnline;
+    setIsOnline(next);
+    if (user) {
+      await supabase.from("driver_profiles").update({ is_online: next }).eq("user_id", user.id);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState("home");
   const [available, setAvailable] = useState<Job[]>([]);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -199,7 +213,7 @@ const DriverDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col dark">
-      <DriverHeader isOnline={isOnline} onToggleOnline={() => setIsOnline(!isOnline)} rating={5.0} driverName={driverName} />
+      <DriverHeader isOnline={isOnline} onToggleOnline={toggleOnline} rating={5.0} driverName={driverName} />
 
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-5">
         {activeTab === "home" && (

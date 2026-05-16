@@ -90,10 +90,32 @@ const ProfileScreen = () => {
 
   const loadAll = async () => {
     if (!user) return;
-    const [{ data: prof, error: e1 }, { data: dl, error: e2 }] = await Promise.all([
-      supabase.from("driver_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("driver_documents").select("*").eq("driver_id", user.id).order("created_at", { ascending: false }),
-    ]);
+    let { data: prof, error: e1 } = await supabase
+      .from("driver_profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    // Safety net: ensure a driver_profiles row exists so the UI renders
+    if (!prof && !e1) {
+      const { data: created } = await supabase
+        .from("driver_profiles")
+        .insert({
+          user_id: user.id,
+          full_name: (user.user_metadata as any)?.full_name ?? null,
+          phone: (user.user_metadata as any)?.phone ?? null,
+        })
+        .select()
+        .maybeSingle();
+      prof = created ?? null;
+    }
+
+    const { data: dl, error: e2 } = await supabase
+      .from("driver_documents")
+      .select("*")
+      .eq("driver_id", user.id)
+      .order("created_at", { ascending: false });
+
     if (e1) toast.error("Failed to load profile");
     if (e2) toast.error("Failed to load documents");
     if (prof) {
