@@ -10,6 +10,7 @@ import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
+import { useDriverGeolocation } from "@/hooks/useDriverGeolocation";
 
 export type JobStatus = "assigned" | "arrived" | "in_transit" | "completed";
 
