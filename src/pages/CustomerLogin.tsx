@@ -17,9 +17,9 @@ const CustomerLogin = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    if (role === "admin") navigate("/admin", { replace: true });
-    else if (role === "customer") navigate("/home", { replace: true });
+    if (user && role === "customer") {
+      navigate("/book", { replace: true });
+    }
   }, [user, role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {

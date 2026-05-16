@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-type AppRole = "customer" | "driver" | "admin";
+type AppRole = "customer" | "driver";
 
 interface AuthContextType {
   user: User | null;
@@ -35,45 +35,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq("user_id", userId)
       .maybeSingle();
     setRole((data?.role as AppRole) ?? null);
-    return (data?.role as AppRole) ?? null;
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    // Listener: must NOT await inside callback (avoids Supabase auth deadlock)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!mounted) return;
+      async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Defer the supabase call to next tick to avoid deadlock
-          setTimeout(() => {
-            if (mounted) fetchRole(session.user.id).finally(() => mounted && setLoading(false));
-          }, 0);
+          await fetchRole(session.user.id);
         } else {
           setRole(null);
-          setLoading(false);
         }
+        setLoading(false);
       }
     );
 
-    // Initial session restore — resolve loading in all branches
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchRole(session.user.id);
+        fetchRole(session.user.id);
+      } else {
+        setLoading(false);
       }
-      if (mounted) setLoading(false);
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, role: AppRole, fullName: string) => {

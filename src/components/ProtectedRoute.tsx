@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   children: React.ReactNode;
-  requiredRole?: "customer" | "driver" | "admin";
+  requiredRole?: "customer" | "driver";
 }
 
 const ProtectedRoute = ({ children, requiredRole }: Props) => {
@@ -22,8 +22,7 @@ const ProtectedRoute = ({ children, requiredRole }: Props) => {
   }
 
   if (requiredRole && role !== requiredRole) {
-    const home = role === "driver" ? "/driver" : role === "admin" ? "/admin" : "/home";
-    return <Navigate to={home} replace />;
+    return <Navigate to={role === "driver" ? "/driver" : "/book"} replace />;
   }
 
   return <>{children}</>;
