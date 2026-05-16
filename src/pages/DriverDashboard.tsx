@@ -37,6 +37,7 @@ const DriverDashboard = () => {
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
