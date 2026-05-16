@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DriverHeader } from "@/components/driver/DriverHeader";
 import { DriverStats } from "@/components/driver/DriverStats";
-import { JobCard } from "@/components/driver/JobCard";
+import { DriverJobsTabs } from "@/components/driver/DriverJobsTabs";
 import { BottomNav } from "@/components/driver/BottomNav";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
@@ -37,6 +37,7 @@ const DriverDashboard = () => {
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -120,9 +121,8 @@ const DriverDashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    loadAvailable();
-    loadActiveJob();
-    loadStats();
+    setLoading(true);
+    Promise.all([loadAvailable(), loadActiveJob(), loadStats()]).finally(() => setLoading(false));
   }, [loadAvailable, loadActiveJob, loadStats]);
 
   const handleAcceptJob = async (jobId: string) => {
@@ -198,20 +198,13 @@ const DriverDashboard = () => {
             )}
 
             {isOnline && (
-              <section>
-                <h2 className="text-lg font-semibold mb-3">Available Jobs</h2>
-                <div className="space-y-3">
-                  {available.map((job) => (
-                    <JobCard key={job.id} job={job} onAccept={handleAcceptJob} />
-                  ))}
-                  {available.length === 0 && (
-                    <div className="rounded-xl bg-card border p-6 text-center">
-                      <p className="text-muted-foreground text-sm">No jobs available nearby</p>
-                      <p className="text-muted-foreground text-xs mt-1">New requests will appear here</p>
-                    </div>
-                  )}
-                </div>
-              </section>
+              <DriverJobsTabs
+                loading={loading}
+                available={available}
+                activeJob={activeJob}
+                onAccept={handleAcceptJob}
+                onUpdateStatus={handleUpdateJobStatus}
+              />
             )}
           </>
         )}
