@@ -22,6 +22,7 @@ export type Database = {
           distance_fee: number
           dropoff_address: string
           id: string
+          items_summary: Json | null
           move_size: Database["public"]["Enums"]["move_size"]
           pickup_address: string
           pickup_lat: number | null
@@ -39,6 +40,7 @@ export type Database = {
           distance_fee?: number
           dropoff_address: string
           id?: string
+          items_summary?: Json | null
           move_size: Database["public"]["Enums"]["move_size"]
           pickup_address: string
           pickup_lat?: number | null
@@ -56,6 +58,7 @@ export type Database = {
           distance_fee?: number
           dropoff_address?: string
           id?: string
+          items_summary?: Json | null
           move_size?: Database["public"]["Enums"]["move_size"]
           pickup_address?: string
           pickup_lat?: number | null

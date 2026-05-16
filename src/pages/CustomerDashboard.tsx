@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import BookNewMoveForm from "@/components/customer/BookNewMoveForm";
 
 interface Booking {
   id: string;
@@ -18,23 +19,27 @@ const CustomerDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadBookings = useCallback(async () => {
     if (!user) return;
-    (async () => {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("id, pickup_address, dropoff_address, total_price, status, created_at")
-        .eq("customer_id", user.id)
-        .order("created_at", { ascending: false });
-      if (!error && data) setBookings(data as Booking[]);
-      setLoading(false);
-    })();
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("id, pickup_address, dropoff_address, total_price, status, created_at")
+      .eq("customer_id", user.id)
+      .order("created_at", { ascending: false });
+    if (!error && data) setBookings(data as Booking[]);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
 
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="mx-auto max-w-3xl space-y-4">
         <h1 className="text-2xl font-bold text-foreground">My Bookings</h1>
+        <BookNewMoveForm onBooked={loadBookings} />
         {loading && <p className="text-muted-foreground">Loading…</p>}
         {!loading && bookings.length === 0 && (
           <p className="text-muted-foreground">No bookings yet.</p>
