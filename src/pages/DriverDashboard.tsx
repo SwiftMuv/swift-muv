@@ -33,6 +33,19 @@ const sizeLabel = (s: string): Job["moveSize"] =>
 const DriverDashboard = () => {
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
+
+  // Stream GPS to driver_profiles while online so the 20km RLS filter works
+  useDriverGeolocation(user?.id, isOnline);
+
+  // Persist online/offline so RLS sees current state
+  const toggleOnline = async () => {
+    const next = !isOnline;
+    setIsOnline(next);
+    if (user) {
+      await supabase.from("driver_profiles").update({ is_online: next }).eq("user_id", user.id);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState("home");
   const [available, setAvailable] = useState<Job[]>([]);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
