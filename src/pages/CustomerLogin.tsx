@@ -31,7 +31,7 @@ const CustomerLogin = () => {
 
   useEffect(() => {
     if (user && role === "customer") {
-      navigate("/book", { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [user, role, navigate]);
 
