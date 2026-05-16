@@ -15,6 +15,8 @@ const CustomerLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -37,7 +39,7 @@ const CustomerLogin = () => {
     e.preventDefault();
     setLoading(true);
     if (isSignUp) {
-      const { error } = await signUp(email, password, "customer", fullName);
+      const { error } = await signUp(email, password, "customer", fullName, { phone, address });
       if (error) {
         toast.error(error.message);
         setLoading(false);
@@ -73,6 +75,18 @@ const CustomerLogin = () => {
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" required />
+            </div>
+          )}
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telephone Number</Label>
+              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 123 4567" required />
+            </div>
+          )}
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="address">Current Address</Label>
+              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, City" required />
             </div>
           )}
           <div className="space-y-2">
