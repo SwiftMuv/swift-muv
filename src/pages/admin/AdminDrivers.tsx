@@ -71,6 +71,7 @@ const AdminDrivers = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [rejectDoc, setRejectDoc] = useState<any | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [docsDriver, setDocsDriver] = useState<any | null>(null);
 
   const load = async () => {
     const [d, docs] = await Promise.all([
