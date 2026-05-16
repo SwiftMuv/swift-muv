@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +10,6 @@ import CustomerLogin from "./pages/CustomerLogin.tsx";
 import DriverLogin from "./pages/DriverLogin.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import DriverDashboard from "./pages/DriverDashboard.tsx";
-import BookingPage from "./pages/BookingPage.tsx";
 import BookingConfirmation from "./pages/BookingConfirmation.tsx";
 import CustomerDashboard from "./pages/CustomerDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -41,7 +40,7 @@ const App = () => (
               path="/book"
               element={
                 <ProtectedRoute requiredRole="customer">
-                  <BookingPage />
+                  <Navigate to="/dashboard" replace />
                 </ProtectedRoute>
               }
             />
