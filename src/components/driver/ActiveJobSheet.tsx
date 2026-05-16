@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck, Package } from "lucide-react";
+import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck } from "lucide-react";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
 
 interface ActiveJobSheetProps {
@@ -11,10 +11,9 @@ interface ActiveJobSheetProps {
 }
 
 const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; color: string }[] = [
-  { status: "arrived", label: "I've Arrived", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
-  { status: "loading", label: "Started Loading", icon: <Package className="w-4 h-4" />, color: "bg-[hsl(var(--swift-warning))]" },
-  { status: "transit", label: "In Transit", icon: <Truck className="w-4 h-4" />, color: "bg-primary" },
-  { status: "completed", label: "Complete Job", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
+  { status: "arrived", label: "Arrived at Pickup", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
+  { status: "in_transit", label: "Start Trip (In Transit)", icon: <Truck className="w-4 h-4" />, color: "bg-primary" },
+  { status: "completed", label: "Complete Trip", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
 ];
 
 export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => {
