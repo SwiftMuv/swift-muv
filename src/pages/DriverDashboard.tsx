@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { DriverHeader } from "@/components/driver/DriverHeader";
 import { DriverStats } from "@/components/driver/DriverStats";
 import { JobCard } from "@/components/driver/JobCard";
@@ -10,64 +11,32 @@ import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
 
-export type JobStatus = "available" | "accepted" | "arrived" | "loading" | "transit" | "completed";
+export type JobStatus = "assigned" | "arrived" | "in_transit" | "completed";
 
 export interface Job {
-  id: string;
+  id: string; // jobs.id (or booking.id when not yet accepted)
+  bookingId: string;
+  jobId?: string;
   customerName: string;
   pickupAddress: string;
   dropoffAddress: string;
   moveSize: "Small" | "Medium" | "Large";
-  distance: string;
-  estimatedTime: string;
   price: number;
-  status: JobStatus;
+  status: JobStatus | "available";
   completionCode?: string;
 }
 
-const mockJobs: Job[] = [
-  {
-    id: "SG-4821",
-    customerName: "Marie Dupont",
-    pickupAddress: "45 Rue Saint-Denis, Montreal",
-    dropoffAddress: "120 Avenue du Parc, Montreal",
-    moveSize: "Medium",
-    distance: "8.2 km",
-    estimatedTime: "35 min",
-    price: 185,
-    status: "available",
-  },
-  {
-    id: "SG-4822",
-    customerName: "James Chen",
-    pickupAddress: "88 King St W, Toronto",
-    dropoffAddress: "250 University Ave, Toronto",
-    moveSize: "Small",
-    distance: "3.1 km",
-    estimatedTime: "15 min",
-    price: 75,
-    status: "available",
-  },
-  {
-    id: "SG-4823",
-    customerName: "Aisha Khan",
-    pickupAddress: "15 Bloor St E, Toronto",
-    dropoffAddress: "400 Lake Shore Blvd, Toronto",
-    moveSize: "Large",
-    distance: "12.5 km",
-    estimatedTime: "55 min",
-    price: 320,
-    status: "available",
-  },
-];
+const sizeLabel = (s: string): Job["moveSize"] =>
+  s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
 
 const DriverDashboard = () => {
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
+  const [available, setAvailable] = useState<Job[]>([]);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
+  const [stats, setStats] = useState({ today: 0, week: 0, completed: 0 });
 
   useEffect(() => {
     if (!user) return;
@@ -79,41 +48,146 @@ const DriverDashboard = () => {
       .then(({ data }) => setDriverName(data?.full_name ?? null));
   }, [user]);
 
-  const handleAcceptJob = (jobId: string) => {
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, status: "accepted" as JobStatus, completionCode: "4729" } : j))
+  const loadAvailable = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("id, pickup_address, dropoff_address, move_size, total_price, status")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    if (error) return;
+    setAvailable(
+      (data ?? []).map((b) => ({
+        id: b.id,
+        bookingId: b.id,
+        customerName: "Customer",
+        pickupAddress: b.pickup_address,
+        dropoffAddress: b.dropoff_address,
+        moveSize: sizeLabel(b.move_size as string),
+        price: Number(b.total_price),
+        status: "available",
+      }))
     );
-    const job = jobs.find((j) => j.id === jobId);
-    if (job) setActiveJob({ ...job, status: "accepted", completionCode: "4729" });
+  }, []);
+
+  const loadActiveJob = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("jobs")
+      .select("id, booking_id, status, completion_code, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price)")
+      .eq("driver_id", user.id)
+      .neq("status", "completed")
+      .maybeSingle();
+    if (!data || !data.bookings) {
+      setActiveJob(null);
+      return;
+    }
+    const b: any = data.bookings;
+    setActiveJob({
+      id: data.id,
+      jobId: data.id,
+      bookingId: data.booking_id,
+      customerName: "Customer",
+      pickupAddress: b.pickup_address,
+      dropoffAddress: b.dropoff_address,
+      moveSize: sizeLabel(b.move_size),
+      price: Number(b.total_price),
+      status: data.status as JobStatus,
+      completionCode: data.completion_code ?? undefined,
+    });
+  }, [user]);
+
+  const loadStats = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("jobs")
+      .select("id, completed_at, bookings:booking_id(total_price)")
+      .eq("driver_id", user.id)
+      .eq("status", "completed");
+    const rows = data ?? [];
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfDay);
+    startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+    let today = 0;
+    let week = 0;
+    rows.forEach((r: any) => {
+      const price = Number(r.bookings?.total_price ?? 0);
+      const dt = r.completed_at ? new Date(r.completed_at) : null;
+      if (dt && dt >= startOfDay) today += price;
+      if (dt && dt >= startOfWeek) week += price;
+    });
+    setStats({ today, week, completed: rows.length });
+  }, [user]);
+
+  useEffect(() => {
+    loadAvailable();
+    loadActiveJob();
+    loadStats();
+  }, [loadAvailable, loadActiveJob, loadStats]);
+
+  const handleAcceptJob = async (jobId: string) => {
+    if (!user) return;
+    if (activeJob) {
+      toast.error("Finish your current job first");
+      return;
+    }
+    const booking = available.find((j) => j.id === jobId);
+    if (!booking) return;
+    const code = String(Math.floor(1000 + Math.random() * 9000));
+    const { data, error } = await supabase
+      .from("jobs")
+      .insert({
+        booking_id: booking.bookingId,
+        driver_id: user.id,
+        status: "assigned",
+        completion_code: code,
+      })
+      .select()
+      .single();
+    if (error) return toast.error(error.message);
+    await supabase.from("bookings").update({ status: "assigned" }).eq("id", booking.bookingId);
+    toast.success("Job accepted");
+    setActiveJob({ ...booking, jobId: data.id, id: data.id, status: "assigned", completionCode: code });
+    loadAvailable();
   };
 
-  const handleUpdateJobStatus = (nextStatus: JobStatus) => {
-    if (!activeJob) return;
-    const updated = { ...activeJob, status: nextStatus };
-    setActiveJob(updated);
-    setJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
+  const handleUpdateJobStatus = async (nextStatus: JobStatus) => {
+    if (!activeJob?.jobId) return;
+    const patch: Record<string, unknown> = { status: nextStatus };
+    if (nextStatus === "in_transit" && !activeJob.status.includes("transit")) patch.started_at = new Date().toISOString();
+    if (nextStatus === "completed") patch.completed_at = new Date().toISOString();
+
+    const { error } = await supabase.from("jobs").update(patch).eq("id", activeJob.jobId);
+    if (error) return toast.error(error.message);
+
+    // mirror booking status
+    const bookingStatus = nextStatus === "completed" ? "completed" : "in_progress";
+    await supabase.from("bookings").update({ status: bookingStatus }).eq("id", activeJob.bookingId);
+
+    setActiveJob({ ...activeJob, status: nextStatus });
+
     if (nextStatus === "completed") {
-      setTimeout(() => setActiveJob(null), 2000);
+      toast.success("Job completed!");
+      setTimeout(() => {
+        setActiveJob(null);
+        loadAvailable();
+        loadStats();
+      }, 1800);
     }
   };
 
-  const todayEarnings = 485;
-  const weekEarnings = 2340;
-  const completedJobs = 12;
-  const rating = 4.9;
-
   return (
     <div className="min-h-screen bg-background flex flex-col dark">
-      <DriverHeader isOnline={isOnline} onToggleOnline={() => setIsOnline(!isOnline)} rating={rating} driverName={driverName} />
+      <DriverHeader isOnline={isOnline} onToggleOnline={() => setIsOnline(!isOnline)} rating={5.0} driverName={driverName} />
 
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-5">
         {activeTab === "home" && (
           <>
             <DriverStats
-              todayEarnings={todayEarnings}
-              weekEarnings={weekEarnings}
-              completedJobs={completedJobs}
-              rating={rating}
+              todayEarnings={stats.today}
+              weekEarnings={stats.week}
+              completedJobs={stats.completed}
+              rating={5.0}
             />
 
             {!isOnline && (
@@ -127,12 +201,10 @@ const DriverDashboard = () => {
               <section>
                 <h2 className="text-lg font-semibold mb-3">Available Jobs</h2>
                 <div className="space-y-3">
-                  {jobs
-                    .filter((j) => j.status === "available")
-                    .map((job) => (
-                      <JobCard key={job.id} job={job} onAccept={handleAcceptJob} />
-                    ))}
-                  {jobs.filter((j) => j.status === "available").length === 0 && (
+                  {available.map((job) => (
+                    <JobCard key={job.id} job={job} onAccept={handleAcceptJob} />
+                  ))}
+                  {available.length === 0 && (
                     <div className="rounded-xl bg-card border p-6 text-center">
                       <p className="text-muted-foreground text-sm">No jobs available nearby</p>
                       <p className="text-muted-foreground text-xs mt-1">New requests will appear here</p>
