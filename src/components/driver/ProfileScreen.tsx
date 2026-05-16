@@ -482,6 +482,35 @@ const ProfileScreen = () => {
         <LogOut className="w-4 h-4 mr-2" />
         Sign Out
       </Button>
+
+      <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="text-base">{previewDoc?.name}</DialogTitle>
+          </DialogHeader>
+          {previewDoc && (
+            <div className="w-full h-[70vh] bg-muted">
+              {previewDoc.isPdf ? (
+                <iframe src={previewDoc.url} className="w-full h-full" title={previewDoc.name} />
+              ) : (
+                <img src={previewDoc.url} alt={previewDoc.name} className="w-full h-full object-contain" />
+              )}
+            </div>
+          )}
+          {previewDoc && (
+            <div className="px-4 py-3 border-t flex justify-end">
+              <a
+                href={previewDoc.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary underline"
+              >
+                Open in new tab
+              </a>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
