@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children, requiredRole }: Props) => {
   }
 
   if (requiredRole && role !== requiredRole) {
-    return <Navigate to={role === "driver" ? "/driver" : "/book"} replace />;
+    return <Navigate to={role === "driver" ? "/driver" : "/dashboard"} replace />;
   }
 
   return <>{children}</>;
