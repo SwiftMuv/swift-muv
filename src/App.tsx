@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import CustomerLogin from "./pages/CustomerLogin.tsx";
 import DriverLogin from "./pages/DriverLogin.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import DriverDashboard from "./pages/DriverDashboard.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
 import BookingConfirmation from "./pages/BookingConfirmation.tsx";
