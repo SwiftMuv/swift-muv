@@ -135,15 +135,19 @@ export type Database = {
         Row: {
           avatar_url: string | null
           background_check_status: Database["public"]["Enums"]["background_check_status"]
+          background_check_url: string | null
           cargo_capacity_lbs: number | null
           cargo_space_cuft: number | null
           created_at: string
+          driver_license_url: string | null
           full_name: string | null
           id: string
           is_online: boolean | null
           is_verified: boolean | null
+          languages: string[] | null
           license_plate: string | null
           phone: string | null
+          profile_picture_url: string | null
           rating: number | null
           updated_at: string
           user_id: string
@@ -151,19 +155,24 @@ export type Database = {
           vehicle_make: string | null
           vehicle_model: string | null
           vehicle_year: number | null
+          verification_status: Database["public"]["Enums"]["driver_verification_status"]
         }
         Insert: {
           avatar_url?: string | null
           background_check_status?: Database["public"]["Enums"]["background_check_status"]
+          background_check_url?: string | null
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
+          driver_license_url?: string | null
           full_name?: string | null
           id?: string
           is_online?: boolean | null
           is_verified?: boolean | null
+          languages?: string[] | null
           license_plate?: string | null
           phone?: string | null
+          profile_picture_url?: string | null
           rating?: number | null
           updated_at?: string
           user_id: string
@@ -171,19 +180,24 @@ export type Database = {
           vehicle_make?: string | null
           vehicle_model?: string | null
           vehicle_year?: number | null
+          verification_status?: Database["public"]["Enums"]["driver_verification_status"]
         }
         Update: {
           avatar_url?: string | null
           background_check_status?: Database["public"]["Enums"]["background_check_status"]
+          background_check_url?: string | null
           cargo_capacity_lbs?: number | null
           cargo_space_cuft?: number | null
           created_at?: string
+          driver_license_url?: string | null
           full_name?: string | null
           id?: string
           is_online?: boolean | null
           is_verified?: boolean | null
+          languages?: string[] | null
           license_plate?: string | null
           phone?: string | null
+          profile_picture_url?: string | null
           rating?: number | null
           updated_at?: string
           user_id?: string
@@ -191,6 +205,7 @@ export type Database = {
           vehicle_make?: string | null
           vehicle_model?: string | null
           vehicle_year?: number | null
+          verification_status?: Database["public"]["Enums"]["driver_verification_status"]
         }
         Relationships: []
       }
@@ -317,6 +332,7 @@ export type Database = {
         | "insurance"
         | "vehicle_registration"
         | "other"
+      driver_verification_status: "pending" | "approved" | "rejected"
       job_status:
         | "assigned"
         | "en_route"
@@ -469,6 +485,7 @@ export const Constants = {
         "vehicle_registration",
         "other",
       ],
+      driver_verification_status: ["pending", "approved", "rejected"],
       job_status: [
         "assigned",
         "en_route",

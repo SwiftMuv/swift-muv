@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +71,7 @@ const AdminDrivers = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [rejectDoc, setRejectDoc] = useState<any | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [docsDriver, setDocsDriver] = useState<any | null>(null);
 
   const load = async () => {
     const [d, docs] = await Promise.all([
@@ -155,14 +157,17 @@ const AdminDrivers = () => {
     load();
   };
 
-  const toggleVerification = async (d: any) => {
+  const setVerification = async (d: any, status: "approved" | "rejected") => {
     const { error } = await supabase
       .from("driver_profiles")
-      .update({ is_verified: !d.is_verified })
+      .update({
+        verification_status: status as any,
+        is_verified: status === "approved",
+      })
       .eq("user_id", d.user_id);
     if (error) toast.error(error.message);
     else {
-      toast.success(!d.is_verified ? "Driver approved" : "Driver suspended");
+      toast.success(status === "approved" ? "Driver approved" : "Driver rejected");
       load();
     }
   };
@@ -178,31 +183,45 @@ const AdminDrivers = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Driver</TableHead>
+                <TableHead>Languages</TableHead>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Background</TableHead>
+                <TableHead>Verification</TableHead>
                 <TableHead>Rating</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {drivers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
                     No drivers yet.
                   </TableCell>
                 </TableRow>
               )}
               {drivers.map((d) => {
                 const ds = driverDisplayStatus(d);
+                const vs = d.verification_status ?? (d.is_verified ? "approved" : "pending");
+                const langs: string[] = Array.isArray(d.languages) ? d.languages : [];
                 return (
                   <TableRow key={d.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Truck className="w-4 h-4 text-primary" />
-                        </div>
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={d.profile_picture_url || d.avatar_url || undefined} alt={d.full_name || "Driver"} />
+                          <AvatarFallback>
+                            <Truck className="w-4 h-4 text-primary" />
+                          </AvatarFallback>
+                        </Avatar>
                         <span className="text-sm font-medium">{d.full_name || "Unnamed"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1 max-w-[160px]">
+                        {langs.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                        {langs.map((l) => (
+                          <Badge key={l} variant="secondary" className="text-[10px]">{l}</Badge>
+                        ))}
                       </div>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
@@ -216,20 +235,33 @@ const AdminDrivers = () => {
                     <TableCell>
                       <Badge
                         variant="secondary"
-                        className={`text-[10px] capitalize ${statusBadge(d.background_check_status ?? "pending")}`}
+                        className={`text-[10px] capitalize ${statusBadge(vs)}`}
                       >
-                        {d.background_check_status ?? "pending"}
+                        {vs}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">★ {Number(d.rating ?? 5).toFixed(1)}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant={d.is_verified ? "outline" : "default"}
-                        onClick={() => toggleVerification(d)}
-                      >
-                        {d.is_verified ? "Suspend" : "Approve"}
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setDocsDriver(d)}>
+                          <FileText className="w-4 h-4 mr-1" /> Documents
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => setVerification(d, "approved")}
+                          disabled={vs === "approved"}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setVerification(d, "rejected")}
+                          disabled={vs === "rejected"}
+                        >
+                          <XCircle className="w-4 h-4 mr-1" /> Reject
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -341,6 +373,55 @@ const AdminDrivers = () => {
               Cancel
             </Button>
             <Button onClick={submitReject}>Confirm Rejection</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!docsDriver} onOpenChange={(o) => !o && setDocsDriver(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{docsDriver?.full_name || "Driver"} — Documents</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {[
+              { label: "Driver's License", url: docsDriver?.driver_license_url },
+              { label: "Background Check", url: docsDriver?.background_check_url },
+            ].map((doc) => (
+              <div key={doc.label} className="border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold">{doc.label}</p>
+                  {doc.url ? (
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-primary underline"
+                    >
+                      Open in new tab
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Not uploaded</span>
+                  )}
+                </div>
+                {doc.url &&
+                  (/\.(png|jpe?g|webp|gif)$/i.test(doc.url) ? (
+                    <img src={doc.url} alt={doc.label} className="max-h-[40vh] w-full object-contain rounded" />
+                  ) : (
+                    <iframe src={doc.url} title={doc.label} className="w-full h-[40vh] rounded" />
+                  ))}
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="destructive"
+              onClick={() => docsDriver && setVerification(docsDriver, "rejected")}
+            >
+              <XCircle className="w-4 h-4 mr-1" /> Reject Driver
+            </Button>
+            <Button onClick={() => docsDriver && setVerification(docsDriver, "approved")}>
+              <CheckCircle2 className="w-4 h-4 mr-1" /> Approve Driver
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
