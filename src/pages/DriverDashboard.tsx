@@ -130,7 +130,7 @@ const DriverDashboard = () => {
 
   const advanceJob = async (next: JobRow["status"]) => {
     if (!activeJob) return;
-    const patch: Record<string, unknown> = { status: next };
+    const patch: { status: JobRow["status"]; started_at?: string; completed_at?: string } = { status: next };
     if (next === "in_transit") patch.started_at = new Date().toISOString();
     if (next === "completed") patch.completed_at = new Date().toISOString();
     const { error } = await supabase.from("jobs").update(patch).eq("id", activeJob.id);
