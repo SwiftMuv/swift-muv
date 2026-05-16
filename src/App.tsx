@@ -27,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<CustomerLogin />} />
             <Route path="/driver/login" element={<DriverLogin />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/driver"
               element={
