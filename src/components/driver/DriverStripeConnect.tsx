@@ -37,9 +37,9 @@ const DriverStripeConnect = () => {
 
       if (stripeConnectId) {
         const { error: updateError } = await supabase
-          .from("profiles" as never)
-          .update({ stripe_connect_id: stripeConnectId } as never)
-          .eq("id", user.id);
+          .from("driver_profiles")
+          .update({ stripe_connect_id: stripeConnectId })
+          .eq("user_id", user.id);
 
         if (updateError) {
           console.error("Failed to save stripe_connect_id", updateError);
