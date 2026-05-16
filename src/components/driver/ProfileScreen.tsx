@@ -269,45 +269,7 @@ const ProfileScreen = () => {
         )}
       </section>
 
-      {/* Document Verification */}
-      <section className="rounded-xl bg-card border overflow-hidden">
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Documents
-          </h3>
-          <span className="text-xs text-muted-foreground">
-            {verifiedCount}/{documents.length} verified
-          </span>
-        </div>
-        <div className="divide-y divide-border">
-          {documents.map((doc) => {
-            const config = statusConfig[doc.status];
-            const StatusIcon = config.icon;
-            return (
-              <div key={doc.name} className="flex items-center gap-3 px-4 py-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${config.className}`}>
-                  <StatusIcon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{doc.name}</p>
-                  {doc.expiry && (
-                    <p className="text-xs text-muted-foreground">Expires {doc.expiry}</p>
-                  )}
-                </div>
-                <Badge variant="outline" className={`text-[10px] ${config.className} border-0`}>
-                  {config.label}
-                </Badge>
-              </div>
-            );
-          })}
-        </div>
-        <div className="px-4 pb-3 pt-1">
-          <Button variant="outline" className="w-full rounded-xl h-10 text-sm font-medium">
-            <FileCheck className="w-4 h-4 mr-2" />
-            Upload Documents
-          </Button>
-        </div>
-      </section>
+      <DriverDocumentsSection />
 
       {/* Sign Out */}
       <Button variant="ghost" className="w-full rounded-xl h-11 text-sm text-[hsl(var(--swift-danger))] hover:text-[hsl(var(--swift-danger))] hover:bg-[hsl(var(--swift-danger))]/10" onClick={signOut}>
