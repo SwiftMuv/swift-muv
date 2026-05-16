@@ -149,7 +149,7 @@ const DriverDashboard = () => {
         (payload) => {
           loadAvailable();
           const newRow: any = payload.new;
-          if (payload.eventType === "INSERT" && newRow?.status === "pending") {
+          if (payload.eventType === "INSERT" && newRow?.status === "available") {
             toast.success("New job request available!");
           }
         }
