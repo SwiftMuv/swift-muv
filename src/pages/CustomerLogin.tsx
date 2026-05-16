@@ -1,13 +1,31 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Package, ArrowRight } from "lucide-react";
+import { Package, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 const CustomerLogin = () => {
+  const navigate = useNavigate();
+  const { signIn, signUp, user, role } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!email) return toast.error("Enter your email above first");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success("Password reset link sent. Check your inbox.");
+  };
   const navigate = useNavigate();
   const { signIn, signUp, user, role } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
