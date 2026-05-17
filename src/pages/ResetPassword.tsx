@@ -17,19 +17,35 @@ const ResetPassword = () => {
   const [showRepeat, setShowRepeat] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
+    // Detect recovery via URL hash (Supabase puts type=recovery there)
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) setIsRecovery(true);
+
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+        setReady(true);
+        setEmail(session?.user?.email ?? null);
+      } else if (event === "SIGNED_IN") {
         setReady(true);
         setEmail(session?.user?.email ?? null);
       }
     });
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
         setReady(true);
         setEmail(data.session.user?.email ?? null);
+        const { data: roleRow } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.session.user.id)
+          .maybeSingle();
+        setUserRole((roleRow?.role as string) ?? null);
       }
     });
     return () => sub.subscription.unsubscribe();
@@ -45,8 +61,8 @@ const ResetPassword = () => {
     }
     setLoading(true);
 
-    // Verify old password by attempting sign-in
-    if (email) {
+    // Only verify old password when NOT in recovery flow (recovery users forgot it)
+    if (!isRecovery && email) {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: oldPassword,
@@ -61,8 +77,9 @@ const ResetPassword = () => {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Password updated. Please sign in.");
+    const redirectTo = userRole === "driver" ? "/driver/login" : "/login";
     await supabase.auth.signOut();
-    navigate("/login", { replace: true });
+    navigate(redirectTo, { replace: true });
   };
 
   const PwInput = ({
