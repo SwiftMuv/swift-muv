@@ -75,6 +75,9 @@ const ProfileScreen = () => {
   const docTypeRef = useRef<DocType | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{ name: string; url: string; isPdf: boolean } | null>(null);
   const [previewLoading, setPreviewLoading] = useState<DocType | null>(null);
+  const [thumbs, setThumbs] = useState<Partial<Record<DocType, { url: string; isPdf: boolean }>>>({});
+
+  const THUMB_TYPES: DocType[] = ["license", "insurance", "police_check"];
 
   // Editable fields
   const [fullName, setFullName] = useState("");
