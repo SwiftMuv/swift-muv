@@ -38,20 +38,16 @@ const CustomerLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    if (isSignUp) {
-      const { error } = await signUp(email, password, "customer", fullName, { phone, address });
-      if (error) {
-        toast.error(error.message);
-        setLoading(false);
+    try {
+      if (isSignUp) {
+        const { error } = await signUp(email, password, "customer", fullName, { phone, address });
+        if (error) toast.error(error.message);
+      } else {
+        const { error } = await signIn(email, password);
+        if (error) toast.error(error.message);
       }
-      // On success, useEffect navigates when user+role are set
-    } else {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(error.message);
-        setLoading(false);
-      }
-      // On success, useEffect navigates when user+role are set
+    } finally {
+      setLoading(false);
     }
   };
 
