@@ -143,6 +143,29 @@ const ProfileScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Generate signed-URL thumbnails for key documents
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const next: Partial<Record<DocType, { url: string; isPdf: boolean }>> = {};
+      for (const t of THUMB_TYPES) {
+        const latest = docs.find((d) => d.document_type === t);
+        if (!latest) continue;
+        const { data } = await supabase.storage
+          .from("driver-documents")
+          .createSignedUrl(latest.file_path, 60 * 30);
+        if (data?.signedUrl) {
+          next[t] = { url: data.signedUrl, isPdf: latest.file_path.toLowerCase().endsWith(".pdf") };
+        }
+      }
+      if (!cancelled) setThumbs(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docs]);
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
