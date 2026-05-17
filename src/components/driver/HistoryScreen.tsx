@@ -47,6 +47,13 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
             <span className="text-[10px] text-[hsl(var(--swift-success))] font-medium">+${job.tip} tip</span>
           )}
         </div>
+        <button
+          onClick={() => onRebook(job)}
+          className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-xs font-semibold px-3 py-1 hover:bg-primary/25 transition-colors"
+        >
+          <RotateCw className="w-3 h-3" />
+          Rebook
+        </button>
       </div>
 
       <button
