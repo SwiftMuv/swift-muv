@@ -68,7 +68,7 @@ const DriverStripeConnect = () => {
       <CardContent className="space-y-5">
         <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-          <p>Secure onboarding handled by Stripe. SwiftGo never sees your banking details.</p>
+          <p>Secure onboarding handled by Stripe. SwiftMuv never sees your banking details.</p>
         </div>
         <Button onClick={handleConnect} disabled={loading} className="w-full" size="lg">
           {loading ? (

@@ -44,7 +44,7 @@ const CustomerDashboard = () => {
   const completed = bookings.filter((b) => b.status === "completed");
 
   const titles: Record<string, string> = {
-    home: "SwiftGo",
+    home: "SwiftMuv",
     bookings: "Book a Move",
     activities: "Activities",
     account: "Account",
