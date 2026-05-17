@@ -75,6 +75,9 @@ const ProfileScreen = () => {
   const docTypeRef = useRef<DocType | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{ name: string; url: string; isPdf: boolean } | null>(null);
   const [previewLoading, setPreviewLoading] = useState<DocType | null>(null);
+  const [thumbs, setThumbs] = useState<Partial<Record<DocType, { url: string; isPdf: boolean }>>>({});
+
+  const THUMB_TYPES: DocType[] = ["license", "insurance", "police_check"];
 
   // Editable fields
   const [fullName, setFullName] = useState("");
@@ -139,6 +142,29 @@ const ProfileScreen = () => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Generate signed-URL thumbnails for key documents
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const next: Partial<Record<DocType, { url: string; isPdf: boolean }>> = {};
+      for (const t of THUMB_TYPES) {
+        const latest = docs.find((d) => d.document_type === t);
+        if (!latest) continue;
+        const { data } = await supabase.storage
+          .from("driver-documents")
+          .createSignedUrl(latest.file_path, 60 * 30);
+        if (data?.signedUrl) {
+          next[t] = { url: data.signedUrl, isPdf: latest.file_path.toLowerCase().endsWith(".pdf") };
+        }
+      }
+      if (!cancelled) setThumbs(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docs]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -456,9 +482,38 @@ const ProfileScreen = () => {
             const isLoadingPreview = previewLoading === slot.type;
             return (
               <div key={slot.name} className="flex items-center gap-2 px-4 py-3">
-                <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                  <SlotIcon className="w-4 h-4 text-foreground" />
-                </div>
+                {(() => {
+                  const thumb = thumbs[slot.type];
+                  if (thumb && !thumb.isPdf) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => handlePreview(slot)}
+                        className="w-9 h-9 rounded-xl overflow-hidden shrink-0 ring-1 ring-border hover:ring-primary transition"
+                        aria-label={`Preview ${slot.name}`}
+                      >
+                        <img src={thumb.url} alt={slot.name} className="w-full h-full object-cover" />
+                      </button>
+                    );
+                  }
+                  if (thumb && thumb.isPdf) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => handlePreview(slot)}
+                        className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 hover:bg-primary/20 transition"
+                        aria-label={`Preview ${slot.name}`}
+                      >
+                        <FileText className="w-4 h-4 text-primary" />
+                      </button>
+                    );
+                  }
+                  return (
+                    <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                      <SlotIcon className="w-4 h-4 text-foreground" />
+                    </div>
+                  );
+                })()}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{slot.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{slot.description}</p>
