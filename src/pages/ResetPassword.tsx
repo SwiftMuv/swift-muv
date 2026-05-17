@@ -133,11 +133,17 @@ const ResetPassword = () => {
             Set new password
           </h1>
           <p className="text-sm text-muted-foreground">
-            {ready ? "Enter your current and new password below" : "Validating recovery link..."}
+            {ready
+              ? isRecovery
+                ? "Enter your new password below"
+                : "Enter your current and new password below"
+              : "Validating recovery link..."}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <PwInput id="old-password" label="Old Password" value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
+          {!isRecovery && (
+            <PwInput id="old-password" label="Old Password" value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
+          )}
           <PwInput id="new-password" label="New Password" value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
           <PwInput id="repeat-password" label="Repeat New Password" value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading || !ready}>
