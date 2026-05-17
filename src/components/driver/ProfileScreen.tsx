@@ -482,9 +482,38 @@ const ProfileScreen = () => {
             const isLoadingPreview = previewLoading === slot.type;
             return (
               <div key={slot.name} className="flex items-center gap-2 px-4 py-3">
-                <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                  <SlotIcon className="w-4 h-4 text-foreground" />
-                </div>
+                {(() => {
+                  const thumb = thumbs[slot.type];
+                  if (thumb && !thumb.isPdf) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => handlePreview(slot)}
+                        className="w-9 h-9 rounded-xl overflow-hidden shrink-0 ring-1 ring-border hover:ring-primary transition"
+                        aria-label={`Preview ${slot.name}`}
+                      >
+                        <img src={thumb.url} alt={slot.name} className="w-full h-full object-cover" />
+                      </button>
+                    );
+                  }
+                  if (thumb && thumb.isPdf) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => handlePreview(slot)}
+                        className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 hover:bg-primary/20 transition"
+                        aria-label={`Preview ${slot.name}`}
+                      >
+                        <FileText className="w-4 h-4 text-primary" />
+                      </button>
+                    );
+                  }
+                  return (
+                    <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                      <SlotIcon className="w-4 h-4 text-foreground" />
+                    </div>
+                  );
+                })()}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{slot.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{slot.description}</p>
