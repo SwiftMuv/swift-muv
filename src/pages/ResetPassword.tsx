@@ -9,24 +9,54 @@ import { KeyRound, Eye, EyeOff } from "lucide-react";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
-  const [show, setShow] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showRepeat, setShowRepeat] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        setReady(true);
+        setEmail(session?.user?.email ?? null);
+      }
     });
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
+      if (data.session) {
+        setReady(true);
+        setEmail(data.session.user?.email ?? null);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      return toast.error("New passwords do not match");
+    }
+    if (password.length < 6) {
+      return toast.error("Password must be at least 6 characters");
+    }
     setLoading(true);
+
+    // Verify old password by attempting sign-in
+    if (email) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: oldPassword,
+      });
+      if (signInError) {
+        setLoading(false);
+        return toast.error("Old password is incorrect");
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -34,6 +64,46 @@ const ResetPassword = () => {
     await supabase.auth.signOut();
     navigate("/login", { replace: true });
   };
+
+  const PwInput = ({
+    id,
+    label,
+    value,
+    onChange,
+    show,
+    setShow,
+  }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    show: boolean;
+    setShow: (fn: (s: boolean) => boolean) => void;
+  }) => (
+    <div className="space-y-2">
+      <Label htmlFor={id} className="text-white">{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="••••••••"
+          required
+          minLength={6}
+          className="pr-10"
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          aria-label={show ? "Hide password" : "Show password"}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
@@ -46,33 +116,13 @@ const ResetPassword = () => {
             Set new password
           </h1>
           <p className="text-sm text-muted-foreground">
-            {ready ? "Enter your new password below" : "Validating recovery link..."}
+            {ready ? "Enter your current and new password below" : "Validating recovery link..."}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground">New Password</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={show ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShow((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={show ? "Hide password" : "Show password"}
-              >
-                {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
+          <PwInput id="old-password" label="Old Password" value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
+          <PwInput id="new-password" label="New Password" value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
+          <PwInput id="repeat-password" label="Repeat New Password" value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading || !ready}>
             {loading ? "Updating..." : "Update Password"}
           </Button>

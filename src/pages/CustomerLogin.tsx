@@ -94,14 +94,7 @@ const CustomerLogin = () => {
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              {!isSignUp && (
-                <button type="button" onClick={handleForgotPassword} className="text-xs font-medium text-primary hover:underline">
-                  Forgot password?
-                </button>
-              )}
-            </div>
+            <Label htmlFor="password" className="text-white">Password</Label>
             <div className="relative">
               <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="pr-10" />
               <button
@@ -113,6 +106,13 @@ const CustomerLogin = () => {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {!isSignUp && (
+              <div className="flex justify-end">
+                <button type="button" onClick={handleForgotPassword} className="text-xs font-medium text-primary hover:underline">
+                  Forgot password?
+                </button>
+              </div>
+            )}
           </div>
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading}>
             {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
