@@ -237,14 +237,7 @@ const DriverLogin = () => {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-foreground">Password</Label>
-              {!isSignUp && (
-                <button type="button" onClick={handleForgotPassword} className="text-xs font-medium text-primary hover:underline">
-                  Forgot password?
-                </button>
-              )}
-            </div>
+            <Label htmlFor="password" className="text-white">Password</Label>
             <div className="relative">
               <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="pr-10" />
               <button
@@ -256,6 +249,13 @@ const DriverLogin = () => {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {!isSignUp && (
+              <div className="flex justify-end">
+                <button type="button" onClick={handleForgotPassword} className="text-xs font-medium text-primary hover:underline">
+                  Forgot password?
+                </button>
+              </div>
+            )}
           </div>
 
           {isSignUp && (
