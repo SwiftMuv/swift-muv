@@ -81,7 +81,7 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
   );
 };
 
-const HistoryScreen = () => {
+const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
   const { user } = useAuth();
   const [items, setItems] = useState<CompletedJob[]>([]);
   const [loading, setLoading] = useState(true);
