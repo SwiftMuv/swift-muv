@@ -22,7 +22,7 @@ const moveSizeBadge: Record<string, string> = {
 const sizeLabel = (s?: string): CompletedJob["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
 
-const HistoryCard = ({ job }: { job: CompletedJob }) => {
+const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: CompletedJob) => void }) => {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="rounded-2xl bg-card border p-4 space-y-3">
