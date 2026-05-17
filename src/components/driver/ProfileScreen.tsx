@@ -482,7 +482,7 @@ const ProfileScreen = () => {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="rounded-lg h-8 px-2 shrink-0"
+                  className="rounded-lg h-8 px-2 shrink-0 bg-green-300 hover:bg-green-400 text-green-900"
                   onClick={() => triggerDocUpload(slot.type)}
                   disabled={isUploading}
                   aria-label={`Upload ${slot.name}`}
