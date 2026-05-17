@@ -136,7 +136,7 @@ const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
             <p className="text-muted-foreground text-sm">No completed trips yet</p>
           </div>
         ) : (
-          items.map((job) => <HistoryCard key={job.id} job={job} />)
+          items.map((job) => <HistoryCard key={job.id} job={job} onRebook={() => onRebook?.()} />)
         )}
       </div>
     </div>
