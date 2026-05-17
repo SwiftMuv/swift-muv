@@ -5,21 +5,35 @@ import heroWallpaper from "@/assets/home-hero-wallpaper.jpg";
 const testimonials = [
   {
     name: "Amelia R.",
-    quote: "SwiftMuv made our cross-town move effortless. The driver was on time and so careful with our furniture.",
+    location: "Studio move • Brooklyn → Queens",
+    quote: "My SwiftMuv driver wrapped my vintage dresser like it was his own. Door-to-door in under 90 minutes — I didn't lift a thing.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop",
+    photo: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=80&auto=format&fit=crop",
   },
   {
     name: "Marcus T.",
-    quote: "Booked in under a minute and tracked the truck the whole way. Best moving experience ever.",
+    location: "2-bedroom apartment • Downtown LA",
+    quote: "Booked a SwiftMuv truck on a Sunday night, driver pulled up Monday at 8am sharp. Live tracking + a 4-digit handoff code felt seriously legit.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop",
+    photo: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=900&q=80&auto=format&fit=crop",
   },
   {
     name: "Priya S.",
-    quote: "Polite, professional and quick. Pricing was transparent — no surprises at the end.",
+    location: "Office relocation • Mission District",
+    quote: "We moved our whole studio with SwiftMuv. Pro Verified driver, padded blankets, transparent quote — zero surprises on the invoice.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80&auto=format&fit=crop",
+    photo: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=900&q=80&auto=format&fit=crop",
+  },
+  {
+    name: "Daniel & Sofia K.",
+    location: "First home • Austin, TX",
+    quote: "Moving into our first house was stressful until SwiftMuv showed up. The crew handled our nursery furniture with so much care.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&q=80&auto=format&fit=crop",
+    photo: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80&auto=format&fit=crop",
   },
 ];
 
