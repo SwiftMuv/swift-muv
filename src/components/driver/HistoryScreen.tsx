@@ -1,4 +1,4 @@
-import { Calendar, DollarSign, ChevronDown } from "lucide-react";
+import { Calendar, DollarSign, ChevronDown, RotateCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
