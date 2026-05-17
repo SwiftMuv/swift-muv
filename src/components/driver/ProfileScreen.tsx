@@ -310,7 +310,7 @@ const ProfileScreen = () => {
             </div>
           )}
         </div>
-        <h2 className="text-xl font-bold mt-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        <h2 className="text-xl font-bold mt-3 text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
           {profile?.full_name || "Driver"}
         </h2>
         <div className="flex items-center gap-2 mt-1">
@@ -335,7 +335,7 @@ const ProfileScreen = () => {
       {/* Edit toggle */}
       <div className="flex justify-end">
         {!editing ? (
-          <Button variant="outline" size="sm" className="rounded-xl text-xs" onClick={() => setEditing(true)}>
+          <Button variant="outline" size="sm" className="rounded-xl text-xs bg-orange-500 hover:bg-orange-600 border-orange-500 text-white hover:text-white" onClick={() => setEditing(true)}>
             Edit Profile
           </Button>
         ) : (
