@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { KeyRound, Eye, EyeOff } from "lucide-react";
+import { KeyRound, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
+
+type LinkState = "validating" | "valid" | "invalid";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -20,35 +22,110 @@ const ResetPassword = () => {
   const [isRecovery, setIsRecovery] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [linkState, setLinkState] = useState<LinkState>("validating");
+  const [linkError, setLinkError] = useState<string>("");
 
   useEffect(() => {
-    // Detect recovery via URL hash (Supabase puts type=recovery there)
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) setIsRecovery(true);
+    const hash = window.location.hash || "";
+    const query = window.location.search || "";
+    const hashParams = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+    const queryParams = new URLSearchParams(query);
+
+    const hashType = hashParams.get("type");
+    const queryType = queryParams.get("type");
+    const errorCode =
+      hashParams.get("error_code") ||
+      hashParams.get("error") ||
+      queryParams.get("error_code") ||
+      queryParams.get("error");
+    const errorDescription =
+      hashParams.get("error_description") || queryParams.get("error_description");
+
+    const hasRecoveryIntent =
+      hashType === "recovery" ||
+      queryType === "recovery" ||
+      hashParams.has("access_token") ||
+      queryParams.has("code");
+
+    // Supabase reports expired/invalid links via error params in the URL.
+    if (errorCode) {
+      const friendly =
+        errorCode.includes("expired") || (errorDescription || "").toLowerCase().includes("expired")
+          ? "This password reset link has expired. Please request a new one."
+          : "This password reset link is invalid or has already been used. Please request a new one.";
+      setLinkState("invalid");
+      setLinkError(errorDescription ? `${friendly}` : friendly);
+      return;
+    }
+
+    if (hasRecoveryIntent) setIsRecovery(true);
+
+    // Handle PKCE-style ?code=... reset links
+    const code = queryParams.get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) {
+          setLinkState("invalid");
+          setLinkError(
+            "This password reset link is invalid or has expired. Please request a new one.",
+          );
+          return;
+        }
+        setIsRecovery(true);
+        setReady(true);
+        setLinkState("valid");
+        setEmail(data.session?.user?.email ?? null);
+      });
+    }
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
         setReady(true);
+        setLinkState("valid");
         setEmail(session?.user?.email ?? null);
-      } else if (event === "SIGNED_IN") {
+      } else if (event === "SIGNED_IN" && session) {
         setReady(true);
-        setEmail(session?.user?.email ?? null);
+        setEmail(session.user?.email ?? null);
+        if (linkState === "validating") setLinkState("valid");
       }
     });
+
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
         setReady(true);
         setEmail(data.session.user?.email ?? null);
+        setLinkState((prev) => (prev === "invalid" ? prev : "valid"));
         const { data: roleRow } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", data.session.user.id)
           .maybeSingle();
         setUserRole((roleRow?.role as string) ?? null);
+      } else if (!hasRecoveryIntent && !code) {
+        // No active session and no recovery intent in URL — treat as invalid entry.
+        setLinkState("invalid");
+        setLinkError(
+          "No valid password reset link detected. Please request a new reset email.",
+        );
+      } else if (hasRecoveryIntent && !code) {
+        // Wait briefly for PASSWORD_RECOVERY event; if it never comes the link is bad.
+        window.setTimeout(() => {
+          setLinkState((prev) => {
+            if (prev === "validating") {
+              setLinkError(
+                "This password reset link is invalid or has expired. Please request a new one.",
+              );
+              return "invalid";
+            }
+            return prev;
+          });
+        }, 4000);
       }
     });
+
     return () => sub.subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +138,6 @@ const ResetPassword = () => {
     }
     setLoading(true);
 
-    // Only verify old password when NOT in recovery flow (recovery users forgot it)
     if (!isRecovery && email) {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -75,7 +151,15 @@ const ResetPassword = () => {
 
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("expired") || msg.includes("invalid") || msg.includes("session")) {
+        setLinkState("invalid");
+        setLinkError("Your reset session has expired. Please request a new reset email.");
+        return;
+      }
+      return toast.error(error.message);
+    }
     toast.success("Password updated. Please sign in.");
     const redirectTo = userRole === "driver" ? "/driver/login" : "/login";
     await supabase.auth.signOut();
@@ -121,6 +205,46 @@ const ResetPassword = () => {
       </div>
     </div>
   );
+
+  if (linkState === "invalid") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
+            <AlertTriangle className="h-7 w-7 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h1
+              className="text-2xl font-bold text-foreground"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              Link invalid or expired
+            </h1>
+            <p className="text-sm text-muted-foreground">{linkError}</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button asChild className="w-full rounded-xl h-11 font-semibold">
+              <Link to="/login">Request a new reset link</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full rounded-xl h-11">
+              <Link to="/driver/login">Driver sign in</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (linkState === "validating") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Validating reset link…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
