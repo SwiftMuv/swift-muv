@@ -9,8 +9,8 @@ const tabs = [
   { id: "home", label: "Home", icon: Home },
   { id: "search", label: "Find Jobs", icon: Search },
   { id: "wallet", label: "Wallet", icon: Wallet },
-  { id: "history", label: "History", icon: Clock },
-  { id: "profile", label: "Profile", icon: User },
+  { id: "history", label: "Activity", icon: Clock },
+  { id: "profile", label: "Account", icon: User },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {

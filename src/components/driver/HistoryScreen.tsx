@@ -1,4 +1,4 @@
-import { Calendar, DollarSign, ChevronDown } from "lucide-react";
+import { Calendar, DollarSign, ChevronDown, RotateCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,7 +22,7 @@ const moveSizeBadge: Record<string, string> = {
 const sizeLabel = (s?: string): CompletedJob["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
 
-const HistoryCard = ({ job }: { job: CompletedJob }) => {
+const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: CompletedJob) => void }) => {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="rounded-2xl bg-card border p-4 space-y-3">
@@ -47,6 +47,13 @@ const HistoryCard = ({ job }: { job: CompletedJob }) => {
             <span className="text-[10px] text-[hsl(var(--swift-success))] font-medium">+${job.tip} tip</span>
           )}
         </div>
+        <button
+          onClick={() => onRebook(job)}
+          className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-xs font-semibold px-3 py-1 hover:bg-primary/25 transition-colors"
+        >
+          <RotateCw className="w-3 h-3" />
+          Rebook
+        </button>
       </div>
 
       <button
@@ -74,7 +81,7 @@ const HistoryCard = ({ job }: { job: CompletedJob }) => {
   );
 };
 
-const HistoryScreen = () => {
+const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
   const { user } = useAuth();
   const [items, setItems] = useState<CompletedJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +136,7 @@ const HistoryScreen = () => {
             <p className="text-muted-foreground text-sm">No completed trips yet</p>
           </div>
         ) : (
-          items.map((job) => <HistoryCard key={job.id} job={job} />)
+          items.map((job) => <HistoryCard key={job.id} job={job} onRebook={() => onRebook?.()} />)
         )}
       </div>
     </div>
