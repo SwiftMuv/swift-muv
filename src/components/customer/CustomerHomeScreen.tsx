@@ -1,6 +1,10 @@
 import { Star, Quote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import heroWallpaper from "@/assets/home-hero-wallpaper.jpg";
+import vehicle1 from "@/assets/customer-vehicle-1.jpg";
+import vehicle2 from "@/assets/customer-vehicle-2.jpg";
+import vehicle3 from "@/assets/customer-vehicle-3.jpg";
+import vehicle4 from "@/assets/customer-vehicle-4.jpg";
 
 const testimonials = [
   {
@@ -9,7 +13,7 @@ const testimonials = [
     quote: "My SwiftMuv driver wrapped my vintage dresser like it was his own. Door-to-door in under 90 minutes — I didn't lift a thing.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop",
-    photo: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=80&auto=format&fit=crop",
+    photo: vehicle1,
   },
   {
     name: "Marcus T.",
@@ -17,7 +21,7 @@ const testimonials = [
     quote: "Booked a SwiftMuv truck on a Sunday night, driver pulled up Monday at 8am sharp. Live tracking + a 4-digit handoff code felt seriously legit.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop",
-    photo: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=900&q=80&auto=format&fit=crop",
+    photo: vehicle2,
   },
   {
     name: "Priya S.",
@@ -25,7 +29,7 @@ const testimonials = [
     quote: "We moved our whole studio with SwiftMuv. Pro Verified driver, padded blankets, transparent quote — zero surprises on the invoice.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80&auto=format&fit=crop",
-    photo: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=900&q=80&auto=format&fit=crop",
+    photo: vehicle3,
   },
   {
     name: "Daniel & Sofia K.",
@@ -33,7 +37,7 @@ const testimonials = [
     quote: "Moving into our first house was stressful until SwiftMuv showed up. The crew handled our nursery furniture with so much care.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&q=80&auto=format&fit=crop",
-    photo: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80&auto=format&fit=crop",
+    photo: vehicle4,
   },
 ];
 
