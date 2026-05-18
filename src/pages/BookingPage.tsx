@@ -25,7 +25,7 @@ const getCheckoutErrorMessage = (payload: CheckoutPayload | null | undefined, in
   if (typeof payload?.error === "string" && payload.error.trim()) return payload.error;
   if (typeof payload?.details === "string" && payload.details.trim()) return payload.details;
   if (!payload) return "Checkout returned an empty response.";
-  if (typeof payload.url !== "string" || !payload.url.trim()) return "Checkout response did not include a Stripe URL.";
+  if (typeof payload.clientSecret !== "string" || !payload.clientSecret.trim()) return "Checkout response did not include a Stripe client secret.";
   return "Checkout failed.";
 };
 
