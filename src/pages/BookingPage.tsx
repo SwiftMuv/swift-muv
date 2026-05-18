@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AddressInput from "@/components/booking/AddressInput";
 import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
 import PriceQuote from "@/components/booking/PriceQuote";
+import { closePreparedCheckoutWindow, prepareCheckoutRedirectWindow, redirectToCheckoutUrl } from "@/lib/checkoutRedirect";
 
 const sizeData = [
   { id: "small", basePrice: 89 },
@@ -34,33 +35,38 @@ const BookingPage = () => {
 
   const handleBook = async () => {
     if (!user || !moveSize) return;
+    let checkoutWindow: Window | null = null;
     setBooking(true);
 
-    const { base, distance, service, total } = getPricing();
-
-    const { data: inserted, error } = await supabase
-      .from("bookings")
-      .insert({
-        customer_id: user.id,
-        pickup_address: pickup,
-        dropoff_address: dropoff,
-        move_size: moveSize,
-        base_price: base,
-        distance_fee: distance,
-        service_fee: service,
-        total_price: total,
-      })
-      .select("id")
-      .single();
-
-    if (error || !inserted) {
-      toast.error("Booking failed: " + (error?.message ?? "unknown error"));
-      setBooking(false);
-      return;
-    }
-
-    // Call live Supabase Edge Function: stripe-checkout
     try {
+      const { base, distance, service, total } = getPricing();
+      checkoutWindow = prepareCheckoutRedirectWindow();
+      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
+
+      const { data: inserted, error } = await supabase
+        .from("bookings")
+        .insert({
+          customer_id: user.id,
+          pickup_address: pickup,
+          dropoff_address: dropoff,
+          move_size: moveSize,
+          base_price: base,
+          distance_fee: distance,
+          service_fee: service,
+          total_price: total,
+        })
+        .select("id")
+        .single();
+
+      if (error || !inserted) {
+        console.error("[Booking] ❌ Insert failed:", error);
+        toast.error("Booking failed: " + (error?.message ?? "unknown error"));
+        closePreparedCheckoutWindow(checkoutWindow);
+        setBooking(false);
+        return;
+      }
+
+      console.log("[Booking] ✅ Inserted booking:", inserted);
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const endpoint = `https://${projectId}.supabase.co/functions/v1/stripe-checkout`;
       const { data: sessionData } = await supabase.auth.getSession();
@@ -81,10 +87,14 @@ const BookingPage = () => {
         throw new Error(payload?.error ?? "Checkout failed");
       }
 
-      window.location.href = payload.url;
+      console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
+      const redirectMethod = redirectToCheckoutUrl(payload.url, checkoutWindow);
+      console.log("[Stripe] ✅ Redirect triggered via:", redirectMethod);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Checkout error";
+      console.error("[Booking] ❌ Booking/checkout pipeline failed:", e);
       toast.error("Could not start checkout: " + msg);
+      closePreparedCheckoutWindow(checkoutWindow);
       setBooking(false);
     }
   };
