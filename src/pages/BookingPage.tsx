@@ -10,6 +10,23 @@ import PriceQuote from "@/components/booking/PriceQuote";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
 
+type CheckoutPayload = {
+  url?: unknown;
+  sessionId?: string;
+  error?: string;
+  fallback?: boolean;
+  details?: string;
+};
+
+const getCheckoutErrorMessage = (payload: CheckoutPayload | null | undefined, invokeError?: Error | null) => {
+  if (invokeError?.message) return invokeError.message;
+  if (typeof payload?.error === "string" && payload.error.trim()) return payload.error;
+  if (typeof payload?.details === "string" && payload.details.trim()) return payload.details;
+  if (!payload) return "Checkout returned an empty response.";
+  if (typeof payload.url !== "string" || !payload.url.trim()) return "Checkout response did not include a Stripe URL.";
+  return "Checkout failed.";
+};
+
 const sizeData = [
   { id: "small", basePrice: 89 },
   { id: "medium", basePrice: 199 },
@@ -81,19 +98,40 @@ const BookingPage = () => {
       };
       console.log("[Stripe] invoke →", CHECKOUT_FUNCTION, requestBody);
 
-      const { data: payload, error: checkoutError } = await supabase.functions.invoke(CHECKOUT_FUNCTION, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: requestBody,
-      });
-
-      if (checkoutError || !payload?.url) {
-        throw new Error(checkoutError?.message ?? payload?.error ?? "Checkout failed");
+      let payload: CheckoutPayload | null = null;
+      let checkoutError: Error | null = null;
+      try {
+        const result = await supabase.functions.invoke<CheckoutPayload>(CHECKOUT_FUNCTION, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: requestBody,
+        });
+        payload = result.data ?? null;
+        checkoutError = result.error ?? null;
+      } catch (invokeError) {
+        checkoutError = invokeError instanceof Error ? invokeError : new Error(String(invokeError));
       }
 
-      console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
-      window.location.href = payload.url;
+      console.log("[Stripe] Edge function payload:", payload);
+
+      if (checkoutError || payload?.fallback || typeof payload?.url !== "string" || !payload.url.trim()) {
+        const reason = getCheckoutErrorMessage(payload, checkoutError);
+        console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
+        toast.error("Could not start checkout: " + reason);
+        setBooking(false);
+        return;
+      }
+
+      try {
+        console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
+        window.location.assign(payload.url);
+      } catch (redirectError) {
+        const reason = redirectError instanceof Error ? redirectError.message : String(redirectError);
+        console.error("[Stripe] ❌ Redirect failed:", redirectError);
+        toast.error("Could not redirect to Stripe: " + reason);
+        setBooking(false);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Checkout error";
       console.error("[Booking] ❌ Booking/checkout pipeline failed:", e);
