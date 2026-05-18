@@ -37,10 +37,14 @@ const BookingPage = () => {
 
   const handleBook = async () => {
     if (!user || !moveSize) return;
-    let checkoutWindow: Window | null = null;
     setBooking(true);
 
     try {
+      console.log("[Stripe] Checkout endpoint locked to:", CHECKOUT_ENDPOINT);
+      if (CHECKOUT_ENDPOINT !== "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout") {
+        throw new Error(`Checkout endpoint mismatch: ${CHECKOUT_ENDPOINT}`);
+      }
+
       const { base, distance, service, total } = getPricing();
 
       const { data: inserted, error } = await supabase
@@ -67,27 +71,28 @@ const BookingPage = () => {
 
       console.log("[Booking] ✅ Inserted booking:", inserted);
 
-      // Only open the payment tab AFTER booking row is confirmed
-      checkoutWindow = prepareCheckoutRedirectWindow();
-      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
-
-      const endpoint = `https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout`;
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       const customerEmail = sessionData.session?.user?.email ?? user.email ?? "";
+      if (!accessToken) {
+        throw new Error("Missing auth session token for checkout.");
+      }
+      if (!customerEmail) {
+        throw new Error("Missing customer email for checkout.");
+      }
       const requestBody = {
         bookingId: inserted.id,
         amount: Math.round(total * 100),
         customerEmail,
       };
-      console.log("[Stripe] POST →", endpoint, requestBody);
+      console.log("[Stripe] POST →", CHECKOUT_ENDPOINT, requestBody);
 
-      const res = await fetch(endpoint, {
+      const res = await fetch(CHECKOUT_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: SUPABASE_ANON_KEY,
         },
         body: JSON.stringify(requestBody),
       });
@@ -98,13 +103,11 @@ const BookingPage = () => {
       }
 
       console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
-      const redirectMethod = redirectToCheckoutUrl(payload.url, checkoutWindow);
-      console.log("[Stripe] ✅ Redirect triggered via:", redirectMethod);
+      window.location.href = payload.url;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Checkout error";
       console.error("[Booking] ❌ Booking/checkout pipeline failed:", e);
       toast.error("Could not start checkout: " + msg);
-      closePreparedCheckoutWindow(checkoutWindow);
       setBooking(false);
     }
   };
