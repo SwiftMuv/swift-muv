@@ -16,6 +16,12 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 const checkoutErrorResponse = (error: string, details?: string) =>
   jsonResponse({ error, details, fallback: true }, 200);
 
+const getAppReturnUrl = (origin: string, path: string, params: Record<string, string>) => {
+  const url = new URL(path, origin);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  return url.toString();
+};
+
 const getRequestOrigin = (req: Request) => {
   const origin = req.headers.get('origin');
   if (origin) return origin;
@@ -90,6 +96,7 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
     const origin = getRequestOrigin(req);
+    const returnParams = { booking: booking.id };
 
     let session: Stripe.Checkout.Session;
     try {
@@ -110,8 +117,8 @@ Deno.serve(async (req) => {
             quantity: 1,
           },
         ],
-        success_url: `${origin}/customer?checkout=success&booking=${booking.id}`,
-        cancel_url: `${origin}/customer?checkout=cancel&booking=${booking.id}`,
+        success_url: getAppReturnUrl(origin, '/dashboard', { ...returnParams, checkout: 'success' }),
+        cancel_url: getAppReturnUrl(origin, '/dashboard', { ...returnParams, checkout: 'cancel' }),
         metadata: { booking_id: booking.id, customer_id: userId },
       });
     } catch (stripeErr) {
