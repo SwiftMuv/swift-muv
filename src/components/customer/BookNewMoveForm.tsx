@@ -162,10 +162,13 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       if (insertError || !inserted) {
         console.error("[Booking] ❌ Insert failed:", insertError);
         toast.error("Booking failed: " + (insertError?.message ?? "unknown error"));
-        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
+
+      // Booking row exists — now safe to open the payment tab
+      checkoutWindow = prepareCheckoutRedirectWindow();
+      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
 
       console.log("[Booking] ✅ Inserted booking:", inserted);
       toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
