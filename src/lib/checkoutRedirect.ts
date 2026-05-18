@@ -82,6 +82,32 @@ export const openStripeCheckout = (checkoutUrl: string, reservedWindow: Window |
   const target = stripeUrl.toString();
 
   if (reservedWindow && !reservedWindow.closed) {
+    // Navigate the reserved tab directly to Stripe. document.write handoff pages
+    // can fail silently inside sandboxed/preview iframes and leave a blank tab.
+    let navigated = false;
+    try {
+      reservedWindow.location.replace(target);
+      navigated = true;
+    } catch (_err) {
+      try {
+        reservedWindow.location.href = target;
+        navigated = true;
+      } catch (_err2) {
+        navigated = false;
+      }
+    }
+
+    if (navigated) {
+      // Best-effort fallback: also write a manual link in case the navigation
+      // is blocked but the tab remains open on about:blank.
+      try {
+        writeCheckoutHandoffPage(reservedWindow, target);
+      } catch (_err) {
+        // ignore
+      }
+      return "opened";
+    }
+
     try {
       writeCheckoutHandoffPage(reservedWindow, target);
       return "opened";
