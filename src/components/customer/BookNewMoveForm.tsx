@@ -136,8 +136,6 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
       const isInstant = !scheduledAt;
       const effectiveScheduledAt = scheduledAt ?? new Date();
-      checkoutWindow = prepareCheckoutRedirectWindow();
-      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
 
       setSubmitting(true);
 
