@@ -98,15 +98,17 @@ export const openStripeCheckout = (checkoutUrl: string, reservedWindow: Window |
     }
 
     if (navigated) {
-      // Best-effort fallback: also write a manual link in case the navigation
-      // is blocked but the tab remains open on about:blank.
-      try {
-        writeCheckoutHandoffPage(reservedWindow, target);
-      } catch (_err) {
-        // ignore
-      }
       return "opened";
     }
+
+    try {
+      writeCheckoutHandoffPage(reservedWindow, target);
+      return "opened";
+    } catch (_err) {
+      showReservedCheckoutError(reservedWindow, "Your browser blocked the Stripe checkout redirect. Please return to SwiftGo and try again with popups enabled.");
+      throw new Error("Your browser blocked the Stripe checkout redirect. Please allow popups and try again.");
+    }
+  }
 
     try {
       writeCheckoutHandoffPage(reservedWindow, target);
