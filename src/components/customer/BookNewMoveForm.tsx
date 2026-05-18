@@ -122,7 +122,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   });
 
   const handleSubmit = async () => {
-    const reservedCheckoutWindow = reserveStripeCheckoutWindow();
+    let reservedCheckoutWindow: Window | null = null;
 
     try {
       // ---- Form validation ----
@@ -138,6 +138,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       const isInstant = !scheduledAt;
       const effectiveScheduledAt = scheduledAt ?? new Date();
 
+      reservedCheckoutWindow = reserveStripeCheckoutWindow();
       setSubmitting(true);
 
       // ---- Step 1: insert booking ----
