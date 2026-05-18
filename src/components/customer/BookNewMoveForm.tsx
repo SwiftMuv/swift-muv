@@ -244,7 +244,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </div>
 
         <Button onClick={handleSubmit} disabled={submitting || !user} className="w-full">
-          {submitting ? "Booking…" : "Book Move"}
+          {submitting ? "Booking…" : date ? "Schedule Move" : "Book Instantly"}
         </Button>
       </CardContent>
     </Card>
