@@ -56,6 +56,14 @@ const App = () => (
               }
             />
             <Route
+              path="/customer"
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/tracking"
               element={
                 <ProtectedRoute requiredRole="customer">
