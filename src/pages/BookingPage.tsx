@@ -172,6 +172,14 @@ const BookingPage = () => {
           isBooking={booking}
         />
       </div>
+      </div>
+
+      <StripeCheckoutModal
+        open={checkoutOpen}
+        clientSecret={clientSecret}
+        publishableKey={publishableKey}
+        onClose={handleCloseCheckout}
+      />
     </div>
   );
 };
