@@ -1,4 +1,4 @@
 project_id = "hntpunbpmomjvggftcvv"
 
-[functions.stripe-checkout]
+[functions.stripe_checkout]
 verify_jwt = false

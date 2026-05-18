@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 type Item = { id: string; name: string; volume: number };
 
-const CHECKOUT_FUNCTION = "stripe-checkout";
+const CHECKOUT_FUNCTION = "stripe_checkout";
 
 const ITEMS: Item[] = [
   { id: "sofa", name: "Sofa", volume: 35 },
