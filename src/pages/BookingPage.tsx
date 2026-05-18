@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { closeReservedCheckoutWindow, openStripeCheckout, reserveStripeCheckoutWindow } from "@/lib/checkoutRedirect";
 import AddressInput from "@/components/booking/AddressInput";
 import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
 import PriceQuote from "@/components/booking/PriceQuote";
@@ -53,6 +54,7 @@ const BookingPage = () => {
 
   const handleBook = async () => {
     if (!user || !moveSize) return;
+    const reservedCheckoutWindow = reserveStripeCheckoutWindow();
     setBooking(true);
 
     try {
@@ -75,6 +77,7 @@ const BookingPage = () => {
 
       if (error || !inserted) {
         console.error("[Booking] ❌ Insert failed:", error);
+        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Booking failed: " + (error?.message ?? "unknown error"));
         setBooking(false);
         return;
@@ -118,6 +121,7 @@ const BookingPage = () => {
       if (checkoutError || payload?.fallback || typeof payload?.url !== "string" || !payload.url.trim()) {
         const reason = getCheckoutErrorMessage(payload, checkoutError);
         console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
+        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Could not start checkout: " + reason);
         setBooking(false);
         return;
@@ -125,16 +129,20 @@ const BookingPage = () => {
 
       try {
         console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
-        window.location.assign(payload.url);
+        const redirectMode = openStripeCheckout(payload.url, reservedCheckoutWindow);
+        toast.success(redirectMode === "opened" ? "Stripe checkout opened in a new tab." : "Redirecting to Stripe…");
+        if (redirectMode === "opened") setBooking(false);
       } catch (redirectError) {
         const reason = redirectError instanceof Error ? redirectError.message : String(redirectError);
         console.error("[Stripe] ❌ Redirect failed:", redirectError);
+        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Could not redirect to Stripe: " + reason);
         setBooking(false);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Checkout error";
       console.error("[Booking] ❌ Booking/checkout pipeline failed:", e);
+      closeReservedCheckoutWindow(reservedCheckoutWindow);
       toast.error("Could not start checkout: " + msg);
       setBooking(false);
     }
