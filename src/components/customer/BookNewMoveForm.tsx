@@ -101,19 +101,16 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       .refine((d) => d.getTime() > Date.now() + 60_000, "Scheduled time must be in the future"),
   });
 
-  const canSubmit =
-    !!user &&
-    pickup.trim().length >= 5 &&
-    dropoff.trim().length >= 5 &&
-    selectedItems.length > 0 &&
-    futureValid &&
-    !submitting;
-
   const handleSubmit = async () => {
     if (!user) {
       toast.error("You must be signed in to book a move.");
       return;
     }
+    if (pickup.trim().length < 5) return toast.error("Enter a pickup address (min 5 chars).");
+    if (dropoff.trim().length < 5) return toast.error("Enter a drop-off address (min 5 chars).");
+    if (selectedItems.length === 0) return toast.error("Select at least one item to move.");
+    if (!scheduledAt) return toast.error("Pick a date and time for your move.");
+    if (!futureValid) return toast.error("Scheduled time must be in the future.");
     const parsed = bookingSchema.safeParse({
       pickup,
       dropoff,
