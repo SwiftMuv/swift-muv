@@ -127,10 +127,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   });
 
   const handleSubmit = async () => {
-    let reservedCheckoutWindow: Window | null = null;
-
     try {
-      // ---- Form validation ----
       if (!user) {
         toast.error("You must be signed in to book a move.");
         return;
@@ -143,10 +140,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       const isInstant = !scheduledAt;
       const effectiveScheduledAt = scheduledAt ?? new Date();
 
-      reservedCheckoutWindow = reserveStripeCheckoutWindow();
       setSubmitting(true);
 
-      // ---- Step 1: insert booking ----
       console.log("[Booking] Inserting booking for customer:", user.id);
       toast.info("Creating booking…");
       const { data: inserted, error: insertError } = await supabase
@@ -174,14 +169,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       }
 
       console.log("[Booking] ✅ Inserted booking:", inserted);
-      toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
-        description: isInstant
-          ? "Dispatching a driver now. Redirecting to payment…"
-          : `Scheduled for ${format(effectiveScheduledAt, "PPP 'at' p")}. Redirecting to payment…`,
-      });
       onBooked?.();
 
-      // ---- Step 2: call Stripe edge function ----
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("[Stripe] getSession error:", sessionError);
@@ -191,27 +180,21 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       }
       const accessToken = sessionData.session?.access_token;
       const customerEmail = sessionData.session?.user?.email ?? user.email ?? "";
-      if (!accessToken) {
-        throw new Error("Missing auth session token for checkout.");
-      }
-      if (!customerEmail) {
-        throw new Error("Missing customer email for checkout.");
-      }
+      if (!accessToken) throw new Error("Missing auth session token for checkout.");
+      if (!customerEmail) throw new Error("Missing customer email for checkout.");
+
       const requestBody = {
         bookingId: inserted.id,
         amount: Math.round(pricing.total * 100),
         customerEmail,
       };
       console.log("[Stripe] invoke →", CHECKOUT_FUNCTION, requestBody);
-      toast.info("Contacting Stripe…", { description: `Booking ${inserted.id.slice(0, 8)}…` });
 
       let payload: CheckoutPayload | null = null;
       let checkoutError: Error | null = null;
       try {
         const result = await supabase.functions.invoke<CheckoutPayload>(CHECKOUT_FUNCTION, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
           body: requestBody,
         });
         payload = result.data ?? null;
@@ -222,34 +205,36 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
       console.log("[Stripe] Edge function payload:", payload);
 
-      if (checkoutError || payload?.fallback || typeof payload?.url !== "string" || !payload.url.trim()) {
+      if (
+        checkoutError ||
+        payload?.fallback ||
+        typeof payload?.clientSecret !== "string" ||
+        !payload.clientSecret.trim() ||
+        typeof payload?.publishableKey !== "string" ||
+        !payload.publishableKey.trim()
+      ) {
         const reason = getCheckoutErrorMessage(payload, checkoutError);
         console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
-        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Could not start checkout: " + reason);
         setSubmitting(false);
         return;
       }
 
-      try {
-        console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
-        const redirectMode = openStripeCheckout(payload.url, reservedCheckoutWindow);
-        toast.success(redirectMode === "opened" ? "Stripe checkout opened in a new tab." : "Redirecting to Stripe…");
-        if (redirectMode === "opened") setSubmitting(false);
-      } catch (redirectError) {
-        const reason = redirectError instanceof Error ? redirectError.message : String(redirectError);
-        console.error("[Stripe] ❌ Redirect failed:", redirectError);
-        closeReservedCheckoutWindow(reservedCheckoutWindow);
-        toast.error("Could not redirect to Stripe: " + reason);
-        setSubmitting(false);
-      }
+      setClientSecret(payload.clientSecret);
+      setPublishableKey(payload.publishableKey);
+      setCheckoutOpen(true);
+      setSubmitting(false);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[Booking] ❌ Unexpected error in handleSubmit:", e);
-      closeReservedCheckoutWindow(reservedCheckoutWindow);
       toast.error("Unexpected error: " + msg);
       setSubmitting(false);
     }
+  };
+
+  const handleCloseCheckout = () => {
+    setCheckoutOpen(false);
+    setClientSecret(null);
   };
 
   const itemCount = selectedItems.reduce((s, i) => s + i.qty, 0);
