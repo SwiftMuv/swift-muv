@@ -194,9 +194,21 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-2">
-            <Label>Date</Label>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Schedule for later <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+            {date && (
+              <button
+                type="button"
+                onClick={() => setDate(undefined)}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">Leave empty to book instantly — we'll dispatch a driver right now.</p>
+          <div className="grid grid-cols-2 gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
@@ -215,15 +227,12 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
                 />
               </PopoverContent>
             </Popover>
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={!date} />
           </div>
-          <div className="space-y-2">
-            <Label>Time</Label>
-            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-          </div>
+          {date && !futureValid && (
+            <p className="text-xs text-destructive">Please choose a future date and time.</p>
+          )}
         </div>
-        {date && !futureValid && (
-          <p className="text-xs text-destructive">Please choose a future date and time.</p>
-        )}
 
         <div className="rounded-lg bg-secondary p-4 space-y-1 text-sm">
           <div className="flex justify-between"><span className="text-muted-foreground">Base rate</span><span>${pricing.base.toFixed(2)}</span></div>
