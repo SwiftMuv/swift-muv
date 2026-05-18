@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Minus, Plus } from "lucide-react";
+import { CalendarIcon, MapPin, Navigation, Package, Receipt, Sparkles, Clock, Minus, Plus, Route } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
