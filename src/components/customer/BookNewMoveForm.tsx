@@ -12,9 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { closePreparedCheckoutWindow, prepareCheckoutRedirectWindow, redirectToCheckoutUrl } from "@/lib/checkoutRedirect";
 
 type Item = { id: string; name: string; volume: number };
+
+const CHECKOUT_ENDPOINT = "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImhudHB1bmJwbW9tanZnZ2Z0Y3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODg4NzIsImV4cCI6MjA5MTY2NDg3Mn0.uIOwN02FvhkNYzr4JCJIkJNAsEf7Cu3zHYHuP8yPXCI";
 
 const ITEMS: Item[] = [
   { id: "sofa", name: "Sofa", volume: 35 },
