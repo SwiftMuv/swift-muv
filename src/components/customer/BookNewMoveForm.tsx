@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Minus, Plus } from "lucide-react";
+import { CalendarIcon, MapPin, Navigation, Package, Receipt, Sparkles, Clock, Minus, Plus, Route } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -192,47 +192,109 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     }
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Book a New Move</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-2">
-          <Label>Pickup address</Label>
-          <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="123 Main St" />
-        </div>
-        <div className="space-y-2">
-          <Label>Drop-off address</Label>
-          <Input value={dropoff} onChange={(e) => setDropoff(e.target.value)} placeholder="456 Oak Ave" />
-        </div>
-        <div className="space-y-2">
-          <Label>Estimated distance (km)</Label>
-          <Input
-            type="number"
-            min={1}
-            value={distanceKm}
-            onChange={(e) => setDistanceKm(Math.max(1, Number(e.target.value) || 0))}
-          />
-        </div>
+  const itemCount = selectedItems.reduce((s, i) => s + i.qty, 0);
+  const moveSize = moveSizeFor(totalVolume);
+  const sizeLabel: Record<string, string> = {
+    small: "Small move",
+    medium: "Medium move",
+    large: "Large move",
+    xlarge: "XL move",
+  };
 
-        <div className="space-y-2">
-          <Label>Items to move</Label>
-          <div className="space-y-2 rounded-lg border border-border p-3">
+  return (
+    <div className="space-y-4">
+      {/* Hero summary */}
+      <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card">
+        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
+        <CardContent className="relative p-5">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            {date ? "Scheduled move" : "Instant booking"}
+          </div>
+          <div className="mt-2 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-3xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                ${pricing.total.toFixed(2)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {itemCount > 0 ? `${itemCount} item${itemCount > 1 ? "s" : ""} · ${sizeLabel[moveSize]}` : "Add items to get an estimate"}
+              </p>
+            </div>
+            <div className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+              {distanceKm} km
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Route */}
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <Route className="h-4 w-4" />
+            </div>
+            <h3 className="font-semibold text-foreground">Route</h3>
+          </div>
+
+          <div className="relative space-y-3 pl-7">
+            <span className="absolute left-2.5 top-5 h-[calc(100%-2.5rem)] w-px border-l-2 border-dashed border-border" />
+            <div className="relative">
+              <span className="absolute -left-7 top-3.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <MapPin className="h-3 w-3" />
+              </span>
+              <Label className="text-xs text-muted-foreground">Pickup</Label>
+              <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="123 Main St" className="mt-1" />
+            </div>
+            <div className="relative">
+              <span className="absolute -left-7 top-3.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                <Navigation className="h-3 w-3" />
+              </span>
+              <Label className="text-xs text-muted-foreground">Drop-off</Label>
+              <Input value={dropoff} onChange={(e) => setDropoff(e.target.value)} placeholder="456 Oak Ave" className="mt-1" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs text-muted-foreground">Estimated distance (km)</Label>
+            <Input
+              type="number"
+              min={1}
+              value={distanceKm}
+              onChange={(e) => setDistanceKm(Math.max(1, Number(e.target.value) || 0))}
+              className="mt-1"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Items */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                <Package className="h-4 w-4" />
+              </div>
+              <h3 className="font-semibold text-foreground">Items</h3>
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">{totalVolume} cu ft</span>
+          </div>
+          <div className="divide-y divide-border rounded-lg border border-border">
             {ITEMS.map((item) => {
               const qty = quantities[item.id] ?? 0;
               return (
-                <div key={item.id} className="flex items-center justify-between gap-2">
+                <div key={item.id} className={cn("flex items-center justify-between gap-2 px-3 py-2.5 transition-colors", qty > 0 && "bg-primary/5")}>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">{item.name}</p>
                     <p className="text-xs text-muted-foreground">~{item.volume} cu ft</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button type="button" size="icon" variant="outline" className="h-8 w-8" onClick={() => setQty(item.id, -1)} disabled={qty === 0}>
+                    <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => setQty(item.id, -1)} disabled={qty === 0}>
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="w-6 text-center text-sm font-semibold">{qty}</span>
-                    <Button type="button" size="icon" variant="outline" className="h-8 w-8" onClick={() => setQty(item.id, +1)}>
+                    <span className="w-5 text-center text-sm font-semibold tabular-nums">{qty}</span>
+                    <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => setQty(item.id, +1)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -240,22 +302,28 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
               );
             })}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="space-y-2">
+      {/* Schedule */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
           <div className="flex items-center justify-between">
-            <Label>Schedule for later <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                <Clock className="h-4 w-4" />
+              </div>
+              <h3 className="font-semibold text-foreground">When</h3>
+            </div>
             {date && (
-              <button
-                type="button"
-                onClick={() => setDate(undefined)}
-                className="text-xs font-medium text-primary hover:underline"
-              >
+              <button type="button" onClick={() => setDate(undefined)} className="text-xs font-medium text-primary hover:underline">
                 Clear
               </button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">Leave empty to book instantly — we'll dispatch a driver right now.</p>
+          <p className="text-xs text-muted-foreground">
+            Leave empty to book instantly — we'll dispatch a driver right now.
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -280,22 +348,34 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           {date && !futureValid && (
             <p className="text-xs text-destructive">Please choose a future date and time.</p>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="rounded-lg bg-secondary p-4 space-y-1 text-sm">
+      {/* Price breakdown */}
+      <Card>
+        <CardContent className="space-y-2 p-5 text-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <Receipt className="h-4 w-4" />
+            </div>
+            <h3 className="font-semibold text-foreground">Price breakdown</h3>
+          </div>
           <div className="flex justify-between"><span className="text-muted-foreground">Base rate</span><span>${pricing.base.toFixed(2)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Distance ({distanceKm} km)</span><span>${pricing.distance.toFixed(2)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Volume ({totalVolume} cu ft)</span><span>${(totalVolume * PER_VOLUME).toFixed(2)}</span></div>
-          {isWeekend && <div className="flex justify-between text-primary"><span>Weekend peak ×{PEAK_MULTIPLIER}</span><span></span></div>}
+          {isWeekend && <div className="flex justify-between text-primary"><span>Weekend peak ×{PEAK_MULTIPLIER}</span><span>applied</span></div>}
           <div className="flex justify-between"><span className="text-muted-foreground">Service fee</span><span>${pricing.service.toFixed(2)}</span></div>
-          <div className="flex justify-between border-t border-border pt-2 font-bold text-base"><span>Total</span><span>${pricing.total.toFixed(2)}</span></div>
-        </div>
+          <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold"><span>Total</span><span className="text-primary">${pricing.total.toFixed(2)}</span></div>
+        </CardContent>
+      </Card>
 
-        <Button onClick={handleSubmit} disabled={submitting || !user} className="w-full">
-          {submitting ? "Booking…" : date ? "Schedule Move" : "Book Instantly"}
+      {/* Sticky CTA */}
+      <div className="sticky bottom-20 z-30 -mx-4 border-t border-border bg-card/90 px-4 py-3 backdrop-blur-xl">
+        <Button onClick={handleSubmit} disabled={submitting || !user} className="h-12 w-full text-base font-semibold">
+          {submitting ? "Booking…" : date ? `Schedule Move · $${pricing.total.toFixed(2)}` : `Book Instantly · $${pricing.total.toFixed(2)}`}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
