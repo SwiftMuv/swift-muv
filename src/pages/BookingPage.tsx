@@ -8,8 +8,7 @@ import AddressInput from "@/components/booking/AddressInput";
 import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
 import PriceQuote from "@/components/booking/PriceQuote";
 
-const CHECKOUT_ENDPOINT = "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhudHB1bmJwbW9tanZnZ2Z0Y3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODg4NzIsImV4cCI6MjA5MTY2NDg3Mn0.uIOwN02FvhkNYzr4JCJIkJNAsEf7Cu3zHYHuP8yPXCI";
+const CHECKOUT_FUNCTION = "stripe-checkout";
 
 const sizeData = [
   { id: "small", basePrice: 89 },
@@ -40,11 +39,6 @@ const BookingPage = () => {
     setBooking(true);
 
     try {
-      console.log("[Stripe] Checkout endpoint locked to:", CHECKOUT_ENDPOINT);
-      if (CHECKOUT_ENDPOINT !== "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout") {
-        throw new Error(`Checkout endpoint mismatch: ${CHECKOUT_ENDPOINT}`);
-      }
-
       const { base, distance, service, total } = getPricing();
 
       const { data: inserted, error } = await supabase
@@ -85,21 +79,17 @@ const BookingPage = () => {
         amount: Math.round(total * 100),
         customerEmail,
       };
-      console.log("[Stripe] POST →", CHECKOUT_ENDPOINT, requestBody);
+      console.log("[Stripe] invoke →", CHECKOUT_FUNCTION, requestBody);
 
-      const res = await fetch(CHECKOUT_ENDPOINT, {
-        method: "POST",
+      const { data: payload, error: checkoutError } = await supabase.functions.invoke(CHECKOUT_FUNCTION, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
-          apikey: SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify(requestBody),
+        body: requestBody,
       });
 
-      const payload = await res.json();
-      if (!res.ok || !payload?.url) {
-        throw new Error(payload?.error ?? "Checkout failed");
+      if (checkoutError || !payload?.url) {
+        throw new Error(checkoutError?.message ?? payload?.error ?? "Checkout failed");
       }
 
       console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);

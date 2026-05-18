@@ -15,8 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 type Item = { id: string; name: string; volume: number };
 
-const CHECKOUT_ENDPOINT = "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhudHB1bmJwbW9tanZnZ2Z0Y3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODg4NzIsImV4cCI6MjA5MTY2NDg3Mn0.uIOwN02FvhkNYzr4JCJIkJNAsEf7Cu3zHYHuP8yPXCI";
+const CHECKOUT_FUNCTION = "stripe-checkout";
 
 const ITEMS: Item[] = [
   { id: "sofa", name: "Sofa", volume: 35 },
@@ -106,11 +105,6 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
   const handleSubmit = async () => {
     try {
-      console.log("[Stripe] Checkout endpoint locked to:", CHECKOUT_ENDPOINT);
-      if (CHECKOUT_ENDPOINT !== "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout") {
-        throw new Error(`Checkout endpoint mismatch: ${CHECKOUT_ENDPOINT}`);
-      }
-
       // ---- Form validation ----
       if (!user) {
         toast.error("You must be signed in to book a move.");
@@ -182,40 +176,23 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         amount: Math.round(pricing.total * 100),
         customerEmail,
       };
-      console.log("[Stripe] POST →", CHECKOUT_ENDPOINT, requestBody);
+      console.log("[Stripe] invoke →", CHECKOUT_FUNCTION, requestBody);
       toast.info("Contacting Stripe…", { description: `Booking ${inserted.id.slice(0, 8)}…` });
 
-      let res: Response;
-      try {
-        res = await fetch(CHECKOUT_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-            apikey: SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify(requestBody),
-        });
-      } catch (fetchErr) {
-        const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-        console.error("[Stripe] ❌ Network/fetch failure:", fetchErr);
-        toast.error("Network error reaching Stripe edge function: " + msg);
-        setSubmitting(false);
-        return;
-      }
-
-      console.log("[Stripe] Edge function HTTP status:", res.status);
-      const raw = await res.text();
-      let payload: { url?: string; error?: string } | null = null;
-      try {
-        payload = raw ? JSON.parse(raw) : null;
-      } catch (parseErr) {
-        console.error("[Stripe] Failed to parse JSON response. Raw:", raw, parseErr);
-      }
+      const { data: payload, error: checkoutError } = await supabase.functions.invoke<{
+        url?: string;
+        sessionId?: string;
+        error?: string;
+      }>(CHECKOUT_FUNCTION, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: requestBody,
+      });
       console.log("[Stripe] Edge function payload:", payload);
 
-      if (!res.ok || !payload?.url) {
-        const reason = payload?.error ?? `HTTP ${res.status} ${raw?.slice(0, 200) ?? ""}`;
+      if (checkoutError || !payload?.url) {
+        const reason = checkoutError?.message ?? payload?.error ?? "Checkout failed";
         console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
         toast.error("Could not start checkout: " + reason);
         setSubmitting(false);
