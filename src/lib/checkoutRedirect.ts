@@ -110,15 +110,6 @@ export const openStripeCheckout = (checkoutUrl: string, reservedWindow: Window |
     }
   }
 
-    try {
-      writeCheckoutHandoffPage(reservedWindow, target);
-      return "opened";
-    } catch (_err) {
-      showReservedCheckoutError(reservedWindow, "Your browser blocked the Stripe checkout redirect. Please return to SwiftGo and try again with popups enabled.");
-      throw new Error("Your browser blocked the Stripe checkout redirect. Please allow popups and try again.");
-    }
-  }
-
   if (isEmbeddedWindow()) {
     let checkoutWindow: Window | null = null;
     try {
