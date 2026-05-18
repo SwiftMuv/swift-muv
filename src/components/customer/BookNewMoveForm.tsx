@@ -4,6 +4,7 @@ import { CalendarIcon, MapPin, Navigation, Package, Receipt, Sparkles, Clock, Mi
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { closeReservedCheckoutWindow, openStripeCheckout, reserveStripeCheckoutWindow } from "@/lib/checkoutRedirect";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -32,34 +33,6 @@ const getCheckoutErrorMessage = (payload: CheckoutPayload | null | undefined, in
   if (!payload) return "Checkout returned an empty response.";
   if (typeof payload.url !== "string" || !payload.url.trim()) return "Checkout response did not include a Stripe URL.";
   return "Checkout failed.";
-};
-
-const openStripeCheckout = (checkoutUrl: string): "redirected" | "opened" => {
-  const stripeUrl = new URL(checkoutUrl);
-  if (stripeUrl.origin !== "https://checkout.stripe.com") {
-    throw new Error("Checkout returned an unexpected redirect URL.");
-  }
-
-  const isEmbedded = (() => {
-    try {
-      return window.self !== window.top;
-    } catch (_err) {
-      return true;
-    }
-  })();
-
-  if (isEmbedded) {
-    const checkoutWindow = window.open(stripeUrl.toString(), "_blank");
-    if (checkoutWindow) {
-      checkoutWindow.opener = null;
-      return "opened";
-    }
-
-    throw new Error("Your browser blocked the Stripe checkout window. Please allow popups and try again.");
-  }
-
-  window.location.assign(stripeUrl.toString());
-  return "redirected";
 };
 
 const ITEMS: Item[] = [
@@ -149,6 +122,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   });
 
   const handleSubmit = async () => {
+    const reservedCheckoutWindow = reserveStripeCheckoutWindow();
+
     try {
       // ---- Form validation ----
       if (!user) {
@@ -244,6 +219,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       if (checkoutError || payload?.fallback || typeof payload?.url !== "string" || !payload.url.trim()) {
         const reason = getCheckoutErrorMessage(payload, checkoutError);
         console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
+        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Could not start checkout: " + reason);
         setSubmitting(false);
         return;
@@ -251,18 +227,20 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
       try {
         console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
-        const redirectMode = openStripeCheckout(payload.url);
+        const redirectMode = openStripeCheckout(payload.url, reservedCheckoutWindow);
         toast.success(redirectMode === "opened" ? "Stripe checkout opened in a new tab." : "Redirecting to Stripe…");
         if (redirectMode === "opened") setSubmitting(false);
       } catch (redirectError) {
         const reason = redirectError instanceof Error ? redirectError.message : String(redirectError);
         console.error("[Stripe] ❌ Redirect failed:", redirectError);
+        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Could not redirect to Stripe: " + reason);
         setSubmitting(false);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[Booking] ❌ Unexpected error in handleSubmit:", e);
+      closeReservedCheckoutWindow(reservedCheckoutWindow);
       toast.error("Unexpected error: " + msg);
       setSubmitting(false);
     }
