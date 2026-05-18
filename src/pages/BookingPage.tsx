@@ -1,18 +1,19 @@
 import { useState } from "react";
-import { ArrowLeft, CalendarDays, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { closeReservedCheckoutWindow, openStripeCheckout, reserveStripeCheckoutWindow } from "@/lib/checkoutRedirect";
 import AddressInput from "@/components/booking/AddressInput";
 import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
 import PriceQuote from "@/components/booking/PriceQuote";
+import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
 
 type CheckoutPayload = {
-  url?: unknown;
+  clientSecret?: string;
+  publishableKey?: string;
   sessionId?: string;
   error?: string;
   fallback?: boolean;
