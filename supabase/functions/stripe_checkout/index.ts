@@ -7,6 +7,31 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
+const checkoutErrorResponse = (error: string, details?: string) =>
+  jsonResponse({ error, details, fallback: true }, 200);
+
+const getRequestOrigin = (req: Request) => {
+  const origin = req.headers.get('origin');
+  if (origin) return origin;
+
+  const referer = req.headers.get('referer');
+  if (referer) {
+    try {
+      return new URL(referer).origin;
+    } catch (_err) {
+      console.error('Invalid referer URL for checkout redirect:', referer);
+    }
+  }
+
+  return 'https://example.com';
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -15,10 +40,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return checkoutErrorResponse('Unauthorized');
     }
 
     const supabase = createClient(
@@ -30,10 +52,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return checkoutErrorResponse('Unauthorized', claimsError?.message);
     }
 
     const userId = claimsData.claims.sub as string;
@@ -42,10 +61,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const bookingId: string | undefined = body.bookingId;
     if (!bookingId) {
-      return new Response(JSON.stringify({ error: 'bookingId is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return checkoutErrorResponse('bookingId is required');
     }
 
     // Load booking & validate ownership
@@ -56,69 +72,63 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (bErr || !booking) {
-      return new Response(JSON.stringify({ error: 'Booking not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return checkoutErrorResponse('Booking not found', bErr?.message);
     }
     if (booking.customer_id !== userId) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return checkoutErrorResponse('Forbidden');
     }
 
     const amount = Math.round(Number(booking.total_price) * 100);
     if (!amount || amount <= 0) {
-      return new Response(JSON.stringify({ error: 'Invalid booking amount' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return checkoutErrorResponse('Invalid booking amount');
     }
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
-      return new Response(JSON.stringify({ error: 'Stripe is not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return checkoutErrorResponse('Stripe is not configured');
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
-    const origin = req.headers.get('origin') ?? req.headers.get('referer') ?? 'https://example.com';
+    const origin = getRequestOrigin(req);
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      customer_email: userEmail,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            unit_amount: amount,
-            product_data: {
-              name: 'SwiftMuv Move',
-              description: `${booking.pickup_address} → ${booking.dropoff_address}`,
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        customer_email: userEmail,
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              unit_amount: amount,
+              product_data: {
+                name: 'SwiftMuv Move',
+                description: `${booking.pickup_address} → ${booking.dropoff_address}`,
+              },
             },
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      success_url: `${origin}/customer?checkout=success&booking=${booking.id}`,
-      cancel_url: `${origin}/customer?checkout=cancel&booking=${booking.id}`,
-      metadata: { booking_id: booking.id, customer_id: userId },
-    });
+        ],
+        success_url: `${origin}/customer?checkout=success&booking=${booking.id}`,
+        cancel_url: `${origin}/customer?checkout=cancel&booking=${booking.id}`,
+        metadata: { booking_id: booking.id, customer_id: userId },
+      });
+    } catch (stripeErr) {
+      const message = stripeErr instanceof Error ? stripeErr.message : 'Stripe checkout request failed';
+      console.error('stripe_checkout Stripe API error', stripeErr);
+      return checkoutErrorResponse(message);
+    }
 
-    return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    if (!session.url) {
+      console.error('stripe_checkout missing checkout URL', { sessionId: session.id });
+      return checkoutErrorResponse('Stripe checkout did not return a redirect URL.');
+    }
+
+    return jsonResponse({ url: session.url, sessionId: session.id });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('stripe-checkout error', err);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('stripe_checkout unexpected error', err);
+    return checkoutErrorResponse(message);
   }
 });
