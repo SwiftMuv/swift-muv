@@ -1,4 +1,4 @@
-import { Zap, Clock, Shield } from "lucide-react";
+import { Zap, Clock, Shield, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MoveSize } from "./MoveSizeSelector";
 import { MOVE_SIZES } from "./MoveSizeSelector";
@@ -8,9 +8,10 @@ interface PriceQuoteProps {
   hasPickup: boolean;
   hasDropoff: boolean;
   onBook: () => void;
+  isBooking?: boolean;
 }
 
-const PriceQuote = ({ moveSize, hasPickup, hasDropoff, onBook }: PriceQuoteProps) => {
+const PriceQuote = ({ moveSize, hasPickup, hasDropoff, onBook, isBooking = false }: PriceQuoteProps) => {
   const isReady = moveSize && hasPickup && hasDropoff;
   const sizeData = MOVE_SIZES.find((s) => s.id === moveSize);
   const basePrice = sizeData?.basePrice ?? 0;
@@ -60,8 +61,9 @@ const PriceQuote = ({ moveSize, hasPickup, hasDropoff, onBook }: PriceQuoteProps
         <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Insured</span>
       </div>
 
-      <Button onClick={onBook} className="h-12 w-full rounded-xl text-sm font-semibold">
-        Book Now — ${total.toFixed(2)}
+      <Button onClick={onBook} disabled={isBooking} className="h-12 w-full rounded-xl text-sm font-semibold">
+        {isBooking && <Loader2 className="h-4 w-4 animate-spin" />}
+        {isBooking ? "Processing checkout…" : `Book Now — $${total.toFixed(2)}`}
       </Button>
     </div>
   );
