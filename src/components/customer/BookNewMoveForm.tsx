@@ -102,92 +102,132 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   });
 
   const handleSubmit = async () => {
-    if (!user) {
-      toast.error("You must be signed in to book a move.");
-      return;
-    }
-    if (pickup.trim().length < 5) return toast.error("Enter a pickup address (min 5 chars).");
-    if (dropoff.trim().length < 5) return toast.error("Enter a drop-off address (min 5 chars).");
-    if (selectedItems.length === 0) return toast.error("Select at least one item to move.");
-    if (scheduledAt && !futureValid) return toast.error("Scheduled time must be in the future.");
-
-    const isInstant = !scheduledAt;
-    const effectiveScheduledAt = scheduledAt ?? new Date();
-
-    setSubmitting(true);
-    const { data: inserted, error } = await supabase
-      .from("bookings")
-      .insert({
-        customer_id: user.id,
-        pickup_address: pickup.trim(),
-        dropoff_address: dropoff.trim(),
-        move_size: moveSizeFor(totalVolume),
-        base_price: pricing.base,
-        distance_fee: pricing.distance,
-        service_fee: pricing.service,
-        total_price: pricing.total,
-        scheduled_at: effectiveScheduledAt.toISOString(),
-        items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend, instant: isInstant },
-      })
-      .select("id")
-      .single();
-
-    if (error || !inserted) {
-      setSubmitting(false);
-      console.error("[Booking] Insert failed:", error);
-      toast.error("Booking failed: " + (error?.message ?? "unknown error"));
-      return;
-    }
-
-    console.log("[Booking] Inserted booking:", inserted);
-    toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
-      description: isInstant
-        ? `Dispatching a driver now. Redirecting to payment…`
-        : `Scheduled for ${format(effectiveScheduledAt, "PPP 'at' p")}. Redirecting to payment…`,
-    });
-
-    onBooked?.();
-
-    // Redirect to Stripe Checkout via edge function
+    // Wrap the ENTIRE booking + checkout pipeline so nothing can fail silently to a white screen.
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const endpoint = `https://${projectId}.supabase.co/functions/v1/stripe-checkout`;
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      // ---- Sanity-check the Supabase client config (must be live URL + anon key, not placeholders) ----
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+      const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+      console.log("[Config] Supabase URL:", SUPABASE_URL, "Project ID:", SUPABASE_PROJECT_ID, "Anon key present:", !!SUPABASE_ANON);
+      if (!SUPABASE_URL || !SUPABASE_PROJECT_ID || !SUPABASE_ANON) {
+        const msg = "Supabase client is not configured (missing URL or anon key).";
+        console.error("[Config] " + msg);
+        toast.error(msg);
+        return;
+      }
+      if (!/^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(SUPABASE_URL)) {
+        console.error("[Config] Suspicious VITE_SUPABASE_URL value:", SUPABASE_URL);
+        toast.error("Invalid Supabase URL: " + SUPABASE_URL);
+        return;
+      }
 
+      // ---- Form validation ----
+      if (!user) {
+        toast.error("You must be signed in to book a move.");
+        return;
+      }
+      if (pickup.trim().length < 5) { toast.error("Enter a pickup address (min 5 chars)."); return; }
+      if (dropoff.trim().length < 5) { toast.error("Enter a drop-off address (min 5 chars)."); return; }
+      if (selectedItems.length === 0) { toast.error("Select at least one item to move."); return; }
+      if (scheduledAt && !futureValid) { toast.error("Scheduled time must be in the future."); return; }
+
+      const isInstant = !scheduledAt;
+      const effectiveScheduledAt = scheduledAt ?? new Date();
+
+      setSubmitting(true);
+
+      // ---- Step 1: insert booking ----
+      console.log("[Booking] Inserting booking for customer:", user.id);
+      toast.info("Creating booking…");
+      const { data: inserted, error: insertError } = await supabase
+        .from("bookings")
+        .insert({
+          customer_id: user.id,
+          pickup_address: pickup.trim(),
+          dropoff_address: dropoff.trim(),
+          move_size: moveSizeFor(totalVolume),
+          base_price: pricing.base,
+          distance_fee: pricing.distance,
+          service_fee: pricing.service,
+          total_price: pricing.total,
+          scheduled_at: effectiveScheduledAt.toISOString(),
+          items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend, instant: isInstant },
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !inserted) {
+        console.error("[Booking] ❌ Insert failed:", insertError);
+        toast.error("Booking failed: " + (insertError?.message ?? "unknown error"));
+        setSubmitting(false);
+        return;
+      }
+
+      console.log("[Booking] ✅ Inserted booking:", inserted);
+      toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
+        description: isInstant
+          ? "Dispatching a driver now. Redirecting to payment…"
+          : `Scheduled for ${format(effectiveScheduledAt, "PPP 'at' p")}. Redirecting to payment…`,
+      });
+      onBooked?.();
+
+      // ---- Step 2: call Stripe edge function ----
+      const endpoint = `${SUPABASE_URL}/functions/v1/stripe-checkout`;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("[Stripe] getSession error:", sessionError);
+        toast.error("Auth session error: " + sessionError.message);
+        setSubmitting(false);
+        return;
+      }
+      const accessToken = sessionData.session?.access_token;
       console.log("[Stripe] Calling edge function", { endpoint, bookingId: inserted.id, hasToken: !!accessToken });
       toast.info("Contacting Stripe…", { description: `Booking ${inserted.id.slice(0, 8)}…` });
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ bookingId: inserted.id }),
-      });
+      let res: Response;
+      try {
+        res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+            apikey: SUPABASE_ANON,
+          },
+          body: JSON.stringify({ bookingId: inserted.id }),
+        });
+      } catch (fetchErr) {
+        const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        console.error("[Stripe] ❌ Network/fetch failure:", fetchErr);
+        toast.error("Network error reaching Stripe edge function: " + msg);
+        setSubmitting(false);
+        return;
+      }
 
       console.log("[Stripe] Edge function HTTP status:", res.status);
-      const payload = await res.json().catch((parseErr) => {
-        console.error("[Stripe] Failed to parse JSON response:", parseErr);
-        return null;
-      });
+      const raw = await res.text();
+      let payload: { url?: string; error?: string } | null = null;
+      try {
+        payload = raw ? JSON.parse(raw) : null;
+      } catch (parseErr) {
+        console.error("[Stripe] Failed to parse JSON response. Raw:", raw, parseErr);
+      }
       console.log("[Stripe] Edge function payload:", payload);
 
       if (!res.ok || !payload?.url) {
-        const reason = payload?.error ?? `HTTP ${res.status}`;
-        console.error("[Stripe] Invalid checkout response:", reason, payload);
-        throw new Error(reason);
+        const reason = payload?.error ?? `HTTP ${res.status} ${raw?.slice(0, 200) ?? ""}`;
+        console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
+        toast.error("Could not start checkout: " + reason);
+        setSubmitting(false);
+        return;
       }
 
       console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
       toast.success("Redirecting to Stripe…", { description: payload.url });
       window.location.href = payload.url;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Checkout error";
-      console.error("[Stripe] ❌ Checkout error:", e);
-      toast.error("Could not start checkout: " + msg);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[Booking] ❌ Unexpected error in handleSubmit:", e);
+      toast.error("Unexpected error: " + msg);
       setSubmitting(false);
     }
   };
