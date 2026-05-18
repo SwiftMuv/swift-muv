@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, MapPin, Navigation, Package, Receipt, Sparkles, Clock, Minus, Plus, Route } from "lucide-react";
+import { CalendarIcon, MapPin, Navigation, Package, Receipt, Sparkles, Clock, Minus, Plus, Route, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -105,25 +105,10 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   });
 
   const handleSubmit = async () => {
-    let checkoutWindow: Window | null = null;
-
-    // Wrap the ENTIRE booking + checkout pipeline so nothing can fail silently to a white screen.
     try {
-      // ---- Sanity-check the Supabase client config (must be live URL + anon key, not placeholders) ----
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-      const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
-      const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-      console.log("[Config] Supabase URL:", SUPABASE_URL, "Project ID:", SUPABASE_PROJECT_ID, "Anon key present:", !!SUPABASE_ANON);
-      if (!SUPABASE_URL || !SUPABASE_PROJECT_ID || !SUPABASE_ANON) {
-        const msg = "Supabase client is not configured (missing URL or anon key).";
-        console.error("[Config] " + msg);
-        toast.error(msg);
-        return;
-      }
-      if (!/^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(SUPABASE_URL)) {
-        console.error("[Config] Suspicious VITE_SUPABASE_URL value:", SUPABASE_URL);
-        toast.error("Invalid Supabase URL: " + SUPABASE_URL);
-        return;
+      console.log("[Stripe] Checkout endpoint locked to:", CHECKOUT_ENDPOINT);
+      if (CHECKOUT_ENDPOINT !== "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout") {
+        throw new Error(`Checkout endpoint mismatch: ${CHECKOUT_ENDPOINT}`);
       }
 
       // ---- Form validation ----
@@ -168,10 +153,6 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         return;
       }
 
-      // Booking row exists — now safe to open the payment tab
-      checkoutWindow = prepareCheckoutRedirectWindow();
-      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
-
       console.log("[Booking] ✅ Inserted booking:", inserted);
       toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
         description: isInstant
@@ -181,33 +162,37 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       onBooked?.();
 
       // ---- Step 2: call Stripe edge function ----
-      const endpoint = `https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout`;
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("[Stripe] getSession error:", sessionError);
         toast.error("Auth session error: " + sessionError.message);
-        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
       const accessToken = sessionData.session?.access_token;
       const customerEmail = sessionData.session?.user?.email ?? user.email ?? "";
+      if (!accessToken) {
+        throw new Error("Missing auth session token for checkout.");
+      }
+      if (!customerEmail) {
+        throw new Error("Missing customer email for checkout.");
+      }
       const requestBody = {
         bookingId: inserted.id,
         amount: Math.round(pricing.total * 100),
         customerEmail,
       };
-      console.log("[Stripe] POST →", endpoint, requestBody);
+      console.log("[Stripe] POST →", CHECKOUT_ENDPOINT, requestBody);
       toast.info("Contacting Stripe…", { description: `Booking ${inserted.id.slice(0, 8)}…` });
 
       let res: Response;
       try {
-        res = await fetch(endpoint, {
+        res = await fetch(CHECKOUT_ENDPOINT, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
-            apikey: SUPABASE_ANON,
+            apikey: SUPABASE_ANON_KEY,
           },
           body: JSON.stringify(requestBody),
         });
@@ -215,7 +200,6 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
         console.error("[Stripe] ❌ Network/fetch failure:", fetchErr);
         toast.error("Network error reaching Stripe edge function: " + msg);
-        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
@@ -234,20 +218,17 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         const reason = payload?.error ?? `HTTP ${res.status} ${raw?.slice(0, 200) ?? ""}`;
         console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
         toast.error("Could not start checkout: " + reason);
-        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
 
       console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
       toast.success("Redirecting to Stripe…", { description: payload.url });
-      const redirectMethod = redirectToCheckoutUrl(payload.url, checkoutWindow);
-      console.log("[Stripe] ✅ Redirect triggered via:", redirectMethod);
+      window.location.href = payload.url;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[Booking] ❌ Unexpected error in handleSubmit:", e);
       toast.error("Unexpected error: " + msg);
-      closePreparedCheckoutWindow(checkoutWindow);
       setSubmitting(false);
     }
   };
@@ -432,7 +413,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       {/* Sticky CTA */}
       <div className="sticky bottom-20 z-30 -mx-4 border-t border-border bg-card/90 px-4 py-3 backdrop-blur-xl">
         <Button onClick={handleSubmit} disabled={submitting || !user} className="h-12 w-full text-base font-semibold">
-          {submitting ? "Booking…" : date ? `Schedule Move · $${pricing.total.toFixed(2)}` : `Book Instantly · $${pricing.total.toFixed(2)}`}
+          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          {submitting ? "Processing checkout…" : date ? `Schedule Move · $${pricing.total.toFixed(2)}` : `Book Instantly · $${pricing.total.toFixed(2)}`}
         </Button>
       </div>
     </div>
