@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
             quantity: 1,
           },
         ],
-        success_url: getAppReturnUrl(origin, '/dashboard', { ...returnParams, checkout: 'success' }),
+        success_url: getAppReturnUrl(origin, '/dashboard', { checkout: 'success' }),
         cancel_url: getAppReturnUrl(origin, '/dashboard', { ...returnParams, checkout: 'cancel' }),
         metadata: { booking_id: booking.id, customer_id: userId },
       });
