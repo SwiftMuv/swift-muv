@@ -134,10 +134,12 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
     if (error || !inserted) {
       setSubmitting(false);
+      console.error("[Booking] Insert failed:", error);
       toast.error("Booking failed: " + (error?.message ?? "unknown error"));
       return;
     }
 
+    console.log("[Booking] Inserted booking:", inserted);
     toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
       description: isInstant
         ? `Dispatching a driver now. Redirecting to payment…`
@@ -153,6 +155,9 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
+      console.log("[Stripe] Calling edge function", { endpoint, bookingId: inserted.id, hasToken: !!accessToken });
+      toast.info("Contacting Stripe…", { description: `Booking ${inserted.id.slice(0, 8)}…` });
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -163,13 +168,25 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         body: JSON.stringify({ bookingId: inserted.id }),
       });
 
-      const payload = await res.json();
+      console.log("[Stripe] Edge function HTTP status:", res.status);
+      const payload = await res.json().catch((parseErr) => {
+        console.error("[Stripe] Failed to parse JSON response:", parseErr);
+        return null;
+      });
+      console.log("[Stripe] Edge function payload:", payload);
+
       if (!res.ok || !payload?.url) {
-        throw new Error(payload?.error ?? "Checkout failed");
+        const reason = payload?.error ?? `HTTP ${res.status}`;
+        console.error("[Stripe] Invalid checkout response:", reason, payload);
+        throw new Error(reason);
       }
+
+      console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
+      toast.success("Redirecting to Stripe…", { description: payload.url });
       window.location.href = payload.url;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Checkout error";
+      console.error("[Stripe] ❌ Checkout error:", e);
       toast.error("Could not start checkout: " + msg);
       setSubmitting(false);
     }
