@@ -179,7 +179,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       onBooked?.();
 
       // ---- Step 2: call Stripe edge function ----
-      const endpoint = `${SUPABASE_URL}/functions/v1/stripe-checkout`;
+      const endpoint = `https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout`;
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("[Stripe] getSession error:", sessionError);
@@ -189,7 +189,13 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         return;
       }
       const accessToken = sessionData.session?.access_token;
-      console.log("[Stripe] Calling edge function", { endpoint, bookingId: inserted.id, hasToken: !!accessToken });
+      const customerEmail = sessionData.session?.user?.email ?? user.email ?? "";
+      const requestBody = {
+        bookingId: inserted.id,
+        amount: Math.round(pricing.total * 100),
+        customerEmail,
+      };
+      console.log("[Stripe] POST →", endpoint, requestBody);
       toast.info("Contacting Stripe…", { description: `Booking ${inserted.id.slice(0, 8)}…` });
 
       let res: Response;
@@ -201,7 +207,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             Authorization: `Bearer ${accessToken}`,
             apikey: SUPABASE_ANON,
           },
-          body: JSON.stringify({ bookingId: inserted.id }),
+          body: JSON.stringify(requestBody),
         });
       } catch (fetchErr) {
         const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
