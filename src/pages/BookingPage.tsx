@@ -8,7 +8,7 @@ import AddressInput from "@/components/booking/AddressInput";
 import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
 import PriceQuote from "@/components/booking/PriceQuote";
 
-const CHECKOUT_FUNCTION = "stripe-checkout";
+const CHECKOUT_FUNCTION = "stripe_checkout";
 
 const sizeData = [
   { id: "small", basePrice: 89 },
