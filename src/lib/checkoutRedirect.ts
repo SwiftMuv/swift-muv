@@ -43,6 +43,16 @@ const showReservedCheckoutError = (checkoutWindow: Window | null, message: strin
   }
 };
 
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char] ?? char);
+
+const writeCheckoutHandoffPage = (checkoutWindow: Window, target: string) => {
+  const safeTarget = escapeHtml(target);
+  checkoutWindow.document.open();
+  checkoutWindow.document.write(`<!doctype html><html><head><title>Opening Stripe checkout…</title><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="1;url=${safeTarget}"><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f172a;color:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{text-align:center;padding:24px;max-width:460px}p{color:#cbd5e1;line-height:1.5}.spinner{width:36px;height:36px;border:4px solid #334155;border-top-color:#22c55e;border-radius:999px;margin:0 auto 18px;animation:spin 1s linear infinite}a{display:inline-flex;margin-top:12px;border-radius:10px;background:#22c55e;color:#052e16;font-weight:800;padding:12px 16px;text-decoration:none}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><main><div class="spinner"></div><h1>Opening Stripe checkout…</h1><p>If this page does not continue automatically, tap the button below.</p><a href="${safeTarget}" rel="noreferrer">Open checkout</a><script>setTimeout(function(){ window.location.href = ${JSON.stringify(target)}; }, 100);</script></main></body></html>`);
+  checkoutWindow.document.close();
+};
+
 const isAllowedStripeUrl = (url: URL) => {
   if (url.protocol !== "https:") return false;
   const host = url.hostname.toLowerCase();
@@ -73,7 +83,7 @@ export const openStripeCheckout = (checkoutUrl: string, reservedWindow: Window |
 
   if (reservedWindow && !reservedWindow.closed) {
     try {
-      reservedWindow.location.replace(target);
+      writeCheckoutHandoffPage(reservedWindow, target);
       return "opened";
     } catch (_err) {
       showReservedCheckoutError(reservedWindow, "Your browser blocked the Stripe checkout redirect. Please return to SwiftGo and try again with popups enabled.");
