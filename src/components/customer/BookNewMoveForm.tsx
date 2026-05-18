@@ -132,8 +132,10 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       toast.error("Booking failed: " + error.message);
       return;
     }
-    toast.success("Booking confirmed!", {
-      description: `Your move is scheduled for ${format(parsed.data.scheduledAt, "PPP 'at' p")}. Total $${pricing.total.toFixed(2)}.`,
+    toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
+      description: isInstant
+        ? `Dispatching a driver now. Total $${pricing.total.toFixed(2)}.`
+        : `Your move is scheduled for ${format(effectiveScheduledAt, "PPP 'at' p")}. Total $${pricing.total.toFixed(2)}.`,
     });
     setPickup("");
     setDropoff("");
