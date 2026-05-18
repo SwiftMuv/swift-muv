@@ -109,31 +109,23 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     if (pickup.trim().length < 5) return toast.error("Enter a pickup address (min 5 chars).");
     if (dropoff.trim().length < 5) return toast.error("Enter a drop-off address (min 5 chars).");
     if (selectedItems.length === 0) return toast.error("Select at least one item to move.");
-    if (!scheduledAt) return toast.error("Pick a date and time for your move.");
-    if (!futureValid) return toast.error("Scheduled time must be in the future.");
-    const parsed = bookingSchema.safeParse({
-      pickup,
-      dropoff,
-      distanceKm,
-      itemCount: selectedItems.reduce((s, i) => s + i.qty, 0),
-      scheduledAt: scheduledAt ?? undefined,
-    });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Please fix the form errors");
-      return;
-    }
+    if (scheduledAt && !futureValid) return toast.error("Scheduled time must be in the future.");
+
+    const isInstant = !scheduledAt;
+    const effectiveScheduledAt = scheduledAt ?? new Date();
+
     setSubmitting(true);
     const { error } = await supabase.from("bookings").insert({
       customer_id: user.id,
-      pickup_address: parsed.data.pickup,
-      dropoff_address: parsed.data.dropoff,
+      pickup_address: pickup.trim(),
+      dropoff_address: dropoff.trim(),
       move_size: moveSizeFor(totalVolume),
       base_price: pricing.base,
       distance_fee: pricing.distance,
       service_fee: pricing.service,
       total_price: pricing.total,
-      scheduled_at: parsed.data.scheduledAt.toISOString(),
-      items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend },
+      scheduled_at: effectiveScheduledAt.toISOString(),
+      items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend, instant: isInstant },
     });
     setSubmitting(false);
     if (error) {
