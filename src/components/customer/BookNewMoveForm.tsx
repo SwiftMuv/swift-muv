@@ -115,33 +115,64 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     const effectiveScheduledAt = scheduledAt ?? new Date();
 
     setSubmitting(true);
-    const { error } = await supabase.from("bookings").insert({
-      customer_id: user.id,
-      pickup_address: pickup.trim(),
-      dropoff_address: dropoff.trim(),
-      move_size: moveSizeFor(totalVolume),
-      base_price: pricing.base,
-      distance_fee: pricing.distance,
-      service_fee: pricing.service,
-      total_price: pricing.total,
-      scheduled_at: effectiveScheduledAt.toISOString(),
-      items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend, instant: isInstant },
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error("Booking failed: " + error.message);
+    const { data: inserted, error } = await supabase
+      .from("bookings")
+      .insert({
+        customer_id: user.id,
+        pickup_address: pickup.trim(),
+        dropoff_address: dropoff.trim(),
+        move_size: moveSizeFor(totalVolume),
+        base_price: pricing.base,
+        distance_fee: pricing.distance,
+        service_fee: pricing.service,
+        total_price: pricing.total,
+        scheduled_at: effectiveScheduledAt.toISOString(),
+        items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend, instant: isInstant },
+      })
+      .select("id")
+      .single();
+
+    if (error || !inserted) {
+      setSubmitting(false);
+      toast.error("Booking failed: " + (error?.message ?? "unknown error"));
       return;
     }
+
     toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
       description: isInstant
-        ? `Dispatching a driver now. Total $${pricing.total.toFixed(2)}.`
-        : `Your move is scheduled for ${format(effectiveScheduledAt, "PPP 'at' p")}. Total $${pricing.total.toFixed(2)}.`,
+        ? `Dispatching a driver now. Redirecting to payment…`
+        : `Scheduled for ${format(effectiveScheduledAt, "PPP 'at' p")}. Redirecting to payment…`,
     });
-    setPickup("");
-    setDropoff("");
-    setQuantities({});
-    setDate(undefined);
+
     onBooked?.();
+
+    // Redirect to Stripe Checkout via edge function
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const endpoint = `https://${projectId}.supabase.co/functions/v1/stripe-checkout`;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ bookingId: inserted.id }),
+      });
+
+      const payload = await res.json();
+      if (!res.ok || !payload?.url) {
+        throw new Error(payload?.error ?? "Checkout failed");
+      }
+      window.location.href = payload.url;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Checkout error";
+      toast.error("Could not start checkout: " + msg);
+      setSubmitting(false);
+    }
   };
 
   return (
