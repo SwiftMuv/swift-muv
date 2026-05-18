@@ -240,7 +240,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           <div className="flex justify-between border-t border-border pt-2 font-bold text-base"><span>Total</span><span>${pricing.total.toFixed(2)}</span></div>
         </div>
 
-        <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">
+        <Button onClick={handleSubmit} disabled={submitting || !user} className="w-full">
           {submitting ? "Booking…" : "Book Move"}
         </Button>
       </CardContent>
