@@ -109,39 +109,33 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     if (pickup.trim().length < 5) return toast.error("Enter a pickup address (min 5 chars).");
     if (dropoff.trim().length < 5) return toast.error("Enter a drop-off address (min 5 chars).");
     if (selectedItems.length === 0) return toast.error("Select at least one item to move.");
-    if (!scheduledAt) return toast.error("Pick a date and time for your move.");
-    if (!futureValid) return toast.error("Scheduled time must be in the future.");
-    const parsed = bookingSchema.safeParse({
-      pickup,
-      dropoff,
-      distanceKm,
-      itemCount: selectedItems.reduce((s, i) => s + i.qty, 0),
-      scheduledAt: scheduledAt ?? undefined,
-    });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Please fix the form errors");
-      return;
-    }
+    if (scheduledAt && !futureValid) return toast.error("Scheduled time must be in the future.");
+
+    const isInstant = !scheduledAt;
+    const effectiveScheduledAt = scheduledAt ?? new Date();
+
     setSubmitting(true);
     const { error } = await supabase.from("bookings").insert({
       customer_id: user.id,
-      pickup_address: parsed.data.pickup,
-      dropoff_address: parsed.data.dropoff,
+      pickup_address: pickup.trim(),
+      dropoff_address: dropoff.trim(),
       move_size: moveSizeFor(totalVolume),
       base_price: pricing.base,
       distance_fee: pricing.distance,
       service_fee: pricing.service,
       total_price: pricing.total,
-      scheduled_at: parsed.data.scheduledAt.toISOString(),
-      items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend },
+      scheduled_at: effectiveScheduledAt.toISOString(),
+      items_summary: { items: selectedItems, total_volume: totalVolume, peak: isWeekend, instant: isInstant },
     });
     setSubmitting(false);
     if (error) {
       toast.error("Booking failed: " + error.message);
       return;
     }
-    toast.success("Booking confirmed!", {
-      description: `Your move is scheduled for ${format(parsed.data.scheduledAt, "PPP 'at' p")}. Total $${pricing.total.toFixed(2)}.`,
+    toast.success(isInstant ? "Instant booking confirmed!" : "Booking confirmed!", {
+      description: isInstant
+        ? `Dispatching a driver now. Total $${pricing.total.toFixed(2)}.`
+        : `Your move is scheduled for ${format(effectiveScheduledAt, "PPP 'at' p")}. Total $${pricing.total.toFixed(2)}.`,
     });
     setPickup("");
     setDropoff("");
@@ -200,9 +194,21 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-2">
-            <Label>Date</Label>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Schedule for later <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+            {date && (
+              <button
+                type="button"
+                onClick={() => setDate(undefined)}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">Leave empty to book instantly — we'll dispatch a driver right now.</p>
+          <div className="grid grid-cols-2 gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
@@ -221,15 +227,12 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
                 />
               </PopoverContent>
             </Popover>
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={!date} />
           </div>
-          <div className="space-y-2">
-            <Label>Time</Label>
-            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-          </div>
+          {date && !futureValid && (
+            <p className="text-xs text-destructive">Please choose a future date and time.</p>
+          )}
         </div>
-        {date && !futureValid && (
-          <p className="text-xs text-destructive">Please choose a future date and time.</p>
-        )}
 
         <div className="rounded-lg bg-secondary p-4 space-y-1 text-sm">
           <div className="flex justify-between"><span className="text-muted-foreground">Base rate</span><span>${pricing.base.toFixed(2)}</span></div>
@@ -241,7 +244,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </div>
 
         <Button onClick={handleSubmit} disabled={submitting || !user} className="w-full">
-          {submitting ? "Booking…" : "Book Move"}
+          {submitting ? "Booking…" : date ? "Schedule Move" : "Book Instantly"}
         </Button>
       </CardContent>
     </Card>
