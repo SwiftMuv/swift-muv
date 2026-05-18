@@ -143,6 +143,7 @@ const BookingPage = () => {
           hasPickup={pickup.trim().length > 0}
           hasDropoff={dropoff.trim().length > 0}
           onBook={handleBook}
+          isBooking={booking}
         />
       </div>
     </div>
