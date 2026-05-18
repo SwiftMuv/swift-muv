@@ -33,19 +33,50 @@ export const closeReservedCheckoutWindow = (checkoutWindow: Window | null) => {
   }
 };
 
+const isAllowedStripeUrl = (url: URL) => {
+  if (url.protocol !== "https:") return false;
+  const host = url.hostname.toLowerCase();
+  return (
+    host === "checkout.stripe.com" ||
+    host.endsWith(".stripe.com") ||
+    host.endsWith(".stripe.network")
+  );
+};
+
 export const openStripeCheckout = (checkoutUrl: string, reservedWindow: Window | null = null): "redirected" | "opened" => {
-  const stripeUrl = new URL(checkoutUrl);
-  if (stripeUrl.origin !== "https://checkout.stripe.com") {
+  if (typeof checkoutUrl !== "string" || !checkoutUrl.trim()) {
+    throw new Error("Checkout response did not include a redirect URL.");
+  }
+
+  let stripeUrl: URL;
+  try {
+    stripeUrl = new URL(checkoutUrl);
+  } catch {
+    throw new Error("Checkout returned a malformed redirect URL.");
+  }
+
+  if (!isAllowedStripeUrl(stripeUrl)) {
     throw new Error("Checkout returned an unexpected redirect URL.");
   }
 
+  const target = stripeUrl.toString();
+
   if (reservedWindow && !reservedWindow.closed) {
-    reservedWindow.location.href = stripeUrl.toString();
-    return "opened";
+    try {
+      reservedWindow.location.href = target;
+      return "opened";
+    } catch (_err) {
+      // Fall through to alternate strategies below.
+    }
   }
 
   if (isEmbeddedWindow()) {
-    const checkoutWindow = window.open(stripeUrl.toString(), "_blank");
+    let checkoutWindow: Window | null = null;
+    try {
+      checkoutWindow = window.open(target, "_blank", "noopener,noreferrer");
+    } catch (_err) {
+      checkoutWindow = null;
+    }
     if (checkoutWindow) {
       try {
         checkoutWindow.opener = null;
@@ -58,6 +89,10 @@ export const openStripeCheckout = (checkoutUrl: string, reservedWindow: Window |
     throw new Error("Your browser blocked the Stripe checkout window. Please allow popups and try again.");
   }
 
-  window.location.assign(stripeUrl.toString());
+  try {
+    window.location.assign(target);
+  } catch (_err) {
+    window.location.href = target;
+  }
   return "redirected";
 };
