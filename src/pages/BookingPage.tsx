@@ -9,7 +9,7 @@ import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSe
 import PriceQuote from "@/components/booking/PriceQuote";
 
 const CHECKOUT_ENDPOINT = "https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImhudHB1bmJwbW9tanZnZ2Z0Y3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODg4NzIsImV4cCI6MjA5MTY2NDg3Mn0.uIOwN02FvhkNYzr4JCJIkJNAsEf7Cu3zHYHuP8yPXCI";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhudHB1bmJwbW9tanZnZ2Z0Y3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODg4NzIsImV4cCI6MjA5MTY2NDg3Mn0.uIOwN02FvhkNYzr4JCJIkJNAsEf7Cu3zHYHuP8yPXCI";
 
 const sizeData = [
   { id: "small", basePrice: 89 },
