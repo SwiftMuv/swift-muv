@@ -27,6 +27,34 @@ const getCheckoutErrorMessage = (payload: CheckoutPayload | null | undefined, in
   return "Checkout failed.";
 };
 
+const openStripeCheckout = (checkoutUrl: string): "redirected" | "opened" => {
+  const stripeUrl = new URL(checkoutUrl);
+  if (stripeUrl.origin !== "https://checkout.stripe.com") {
+    throw new Error("Checkout returned an unexpected redirect URL.");
+  }
+
+  const isEmbedded = (() => {
+    try {
+      return window.self !== window.top;
+    } catch (_err) {
+      return true;
+    }
+  })();
+
+  if (isEmbedded) {
+    const checkoutWindow = window.open(stripeUrl.toString(), "_blank");
+    if (checkoutWindow) {
+      checkoutWindow.opener = null;
+      return "opened";
+    }
+
+    throw new Error("Your browser blocked the Stripe checkout window. Please allow popups and try again.");
+  }
+
+  window.location.assign(stripeUrl.toString());
+  return "redirected";
+};
+
 const sizeData = [
   { id: "small", basePrice: 89 },
   { id: "medium", basePrice: 199 },
@@ -125,7 +153,9 @@ const BookingPage = () => {
 
       try {
         console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
-        window.location.assign(payload.url);
+        const redirectMode = openStripeCheckout(payload.url);
+        toast.success(redirectMode === "opened" ? "Stripe checkout opened in a new tab." : "Redirecting to Stripe…");
+        if (redirectMode === "opened") setBooking(false);
       } catch (redirectError) {
         const reason = redirectError instanceof Error ? redirectError.message : String(redirectError);
         console.error("[Stripe] ❌ Redirect failed:", redirectError);
