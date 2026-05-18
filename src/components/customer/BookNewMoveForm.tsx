@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { closePreparedCheckoutWindow, prepareCheckoutRedirectWindow, redirectToCheckoutUrl } from "@/lib/checkoutRedirect";
 
 type Item = { id: string; name: string; volume: number };
 
@@ -102,6 +103,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   });
 
   const handleSubmit = async () => {
+    let checkoutWindow: Window | null = null;
+
     // Wrap the ENTIRE booking + checkout pipeline so nothing can fail silently to a white screen.
     try {
       // ---- Sanity-check the Supabase client config (must be live URL + anon key, not placeholders) ----
@@ -133,6 +136,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
       const isInstant = !scheduledAt;
       const effectiveScheduledAt = scheduledAt ?? new Date();
+      checkoutWindow = prepareCheckoutRedirectWindow();
+      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
 
       setSubmitting(true);
 
@@ -159,6 +164,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       if (insertError || !inserted) {
         console.error("[Booking] ❌ Insert failed:", insertError);
         toast.error("Booking failed: " + (insertError?.message ?? "unknown error"));
+        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
@@ -177,6 +183,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       if (sessionError) {
         console.error("[Stripe] getSession error:", sessionError);
         toast.error("Auth session error: " + sessionError.message);
+        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
@@ -199,6 +206,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
         console.error("[Stripe] ❌ Network/fetch failure:", fetchErr);
         toast.error("Network error reaching Stripe edge function: " + msg);
+        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
@@ -217,17 +225,20 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         const reason = payload?.error ?? `HTTP ${res.status} ${raw?.slice(0, 200) ?? ""}`;
         console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
         toast.error("Could not start checkout: " + reason);
+        closePreparedCheckoutWindow(checkoutWindow);
         setSubmitting(false);
         return;
       }
 
       console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
       toast.success("Redirecting to Stripe…", { description: payload.url });
-      window.location.href = payload.url;
+      const redirectMethod = redirectToCheckoutUrl(payload.url, checkoutWindow);
+      console.log("[Stripe] ✅ Redirect triggered via:", redirectMethod);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[Booking] ❌ Unexpected error in handleSubmit:", e);
       toast.error("Unexpected error: " + msg);
+      closePreparedCheckoutWindow(checkoutWindow);
       setSubmitting(false);
     }
   };
