@@ -91,38 +91,44 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
     const origin = getRequestOrigin(req);
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      customer_email: userEmail,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            unit_amount: amount,
-            product_data: {
-              name: 'SwiftMuv Move',
-              description: `${booking.pickup_address} → ${booking.dropoff_address}`,
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        customer_email: userEmail,
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              unit_amount: amount,
+              product_data: {
+                name: 'SwiftMuv Move',
+                description: `${booking.pickup_address} → ${booking.dropoff_address}`,
+              },
             },
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      success_url: `${origin}/customer?checkout=success&booking=${booking.id}`,
-      cancel_url: `${origin}/customer?checkout=cancel&booking=${booking.id}`,
-      metadata: { booking_id: booking.id, customer_id: userId },
-    });
+        ],
+        success_url: `${origin}/customer?checkout=success&booking=${booking.id}`,
+        cancel_url: `${origin}/customer?checkout=cancel&booking=${booking.id}`,
+        metadata: { booking_id: booking.id, customer_id: userId },
+      });
+    } catch (stripeErr) {
+      const message = stripeErr instanceof Error ? stripeErr.message : 'Stripe checkout request failed';
+      console.error('stripe_checkout Stripe API error', stripeErr);
+      return checkoutErrorResponse(message);
+    }
 
-    return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    if (!session.url) {
+      console.error('stripe_checkout missing checkout URL', { sessionId: session.id });
+      return checkoutErrorResponse('Stripe checkout did not return a redirect URL.');
+    }
+
+    return jsonResponse({ url: session.url, sessionId: session.id });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('stripe-checkout error', err);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('stripe_checkout unexpected error', err);
+    return checkoutErrorResponse(message);
   }
 });
