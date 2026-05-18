@@ -421,6 +421,13 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           {submitting ? "Processing checkout…" : date ? `Schedule Move · $${pricing.total.toFixed(2)}` : `Book Instantly · $${pricing.total.toFixed(2)}`}
         </Button>
       </div>
+
+      <StripeCheckoutModal
+        open={checkoutOpen}
+        clientSecret={clientSecret}
+        publishableKey={publishableKey}
+        onClose={handleCloseCheckout}
+      />
     </div>
   );
 };
