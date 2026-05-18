@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import DriverDashboard from "./pages/DriverDashboard.tsx";
 import BookingConfirmation from "./pages/BookingConfirmation.tsx";
 import CustomerDashboard from "./pages/CustomerDashboard.tsx";
+import AdminDashboard from "./pages/AdminDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="customer">
                   <BookingConfirmation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />
