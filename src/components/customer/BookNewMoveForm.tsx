@@ -73,6 +73,10 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string>("09:00");
   const [submitting, setSubmitting] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+
 
   const setQty = (id: string, delta: number) =>
     setQuantities((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) + delta) }));
