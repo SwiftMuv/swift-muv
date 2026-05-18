@@ -40,8 +40,6 @@ const BookingPage = () => {
 
     try {
       const { base, distance, service, total } = getPricing();
-      checkoutWindow = prepareCheckoutRedirectWindow();
-      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
 
       const { data: inserted, error } = await supabase
         .from("bookings")
@@ -61,16 +59,26 @@ const BookingPage = () => {
       if (error || !inserted) {
         console.error("[Booking] ❌ Insert failed:", error);
         toast.error("Booking failed: " + (error?.message ?? "unknown error"));
-        closePreparedCheckoutWindow(checkoutWindow);
         setBooking(false);
         return;
       }
 
       console.log("[Booking] ✅ Inserted booking:", inserted);
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const endpoint = `https://${projectId}.supabase.co/functions/v1/stripe-checkout`;
+
+      // Only open the payment tab AFTER booking row is confirmed
+      checkoutWindow = prepareCheckoutRedirectWindow();
+      console.log("[Stripe] Prepared checkout redirect window:", !!checkoutWindow);
+
+      const endpoint = `https://hntpunbpmomjvggftcvv.supabase.co/functions/v1/stripe-checkout`;
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
+      const customerEmail = sessionData.session?.user?.email ?? user.email ?? "";
+      const requestBody = {
+        bookingId: inserted.id,
+        amount: Math.round(total * 100),
+        customerEmail,
+      };
+      console.log("[Stripe] POST →", endpoint, requestBody);
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -79,7 +87,7 @@ const BookingPage = () => {
           Authorization: `Bearer ${accessToken}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ bookingId: inserted.id }),
+        body: JSON.stringify(requestBody),
       });
 
       const payload = await res.json();
