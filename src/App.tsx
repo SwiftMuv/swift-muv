@@ -30,8 +30,9 @@ const App = () => (
             <Route path="/login" element={<CustomerLogin />} />
             <Route path="/driver/login" element={<DriverLogin />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/driver" element={<DriverLogin />} />
             <Route
-              path="/driver"
+              path="/driver/dashboard"
               element={
                 <ProtectedRoute requiredRole="driver">
                   <DriverDashboard />

@@ -32,7 +32,7 @@ const CustomerLogin = () => {
   useEffect(() => {
     if (!user || !role) return;
     if (role === "admin") navigate("/admin", { replace: true });
-    else if (role === "driver") navigate("/driver", { replace: true });
+    else if (role === "driver") navigate("/driver/dashboard", { replace: true });
     else navigate("/dashboard", { replace: true });
   }, [user, role, navigate]);
 

@@ -72,7 +72,7 @@ const DriverLogin = () => {
 
   useEffect(() => {
     if (user && role === "driver") {
-      navigate("/driver", { replace: true });
+      navigate("/driver/dashboard", { replace: true });
     }
   }, [user, role, navigate]);
 
