@@ -7,7 +7,7 @@ interface Props {
 }
 
 const roleHome = (role: string | null) => {
-  if (role === "driver") return "/driver";
+  if (role === "driver") return "/driver/dashboard";
   if (role === "admin") return "/admin";
   return "/dashboard";
 };
@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children, requiredRole }: Props) => {
   }
 
   if (!user) {
-    return <Navigate to={requiredRole === "driver" ? "/driver/login" : "/login"} replace />;
+    return <Navigate to={requiredRole === "driver" ? "/driver" : "/login"} replace />;
   }
 
   if (requiredRole && role !== requiredRole) {
