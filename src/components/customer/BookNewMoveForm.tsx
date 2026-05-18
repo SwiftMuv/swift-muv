@@ -4,7 +4,6 @@ import { CalendarIcon, MapPin, Navigation, Package, Receipt, Sparkles, Clock, Mi
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
-import { closeReservedCheckoutWindow, openStripeCheckout, reserveStripeCheckoutWindow } from "@/lib/checkoutRedirect";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -13,13 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 
 type Item = { id: string; name: string; volume: number };
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
 
 type CheckoutPayload = {
-  url?: unknown;
+  clientSecret?: string;
+  publishableKey?: string;
   sessionId?: string;
   error?: string;
   fallback?: boolean;
@@ -31,7 +32,7 @@ const getCheckoutErrorMessage = (payload: CheckoutPayload | null | undefined, in
   if (typeof payload?.error === "string" && payload.error.trim()) return payload.error;
   if (typeof payload?.details === "string" && payload.details.trim()) return payload.details;
   if (!payload) return "Checkout returned an empty response.";
-  if (typeof payload.url !== "string" || !payload.url.trim()) return "Checkout response did not include a Stripe URL.";
+  if (typeof payload.clientSecret !== "string" || !payload.clientSecret.trim()) return "Checkout response did not include a Stripe client secret.";
   return "Checkout failed.";
 };
 
