@@ -1,18 +1,19 @@
 import { useState } from "react";
-import { ArrowLeft, CalendarDays, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { closeReservedCheckoutWindow, openStripeCheckout, reserveStripeCheckoutWindow } from "@/lib/checkoutRedirect";
 import AddressInput from "@/components/booking/AddressInput";
 import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
 import PriceQuote from "@/components/booking/PriceQuote";
+import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
 
 type CheckoutPayload = {
-  url?: unknown;
+  clientSecret?: string;
+  publishableKey?: string;
   sessionId?: string;
   error?: string;
   fallback?: boolean;
@@ -24,7 +25,7 @@ const getCheckoutErrorMessage = (payload: CheckoutPayload | null | undefined, in
   if (typeof payload?.error === "string" && payload.error.trim()) return payload.error;
   if (typeof payload?.details === "string" && payload.details.trim()) return payload.details;
   if (!payload) return "Checkout returned an empty response.";
-  if (typeof payload.url !== "string" || !payload.url.trim()) return "Checkout response did not include a Stripe URL.";
+  if (typeof payload.clientSecret !== "string" || !payload.clientSecret.trim()) return "Checkout response did not include a Stripe client secret.";
   return "Checkout failed.";
 };
 
@@ -42,6 +43,9 @@ const BookingPage = () => {
   const [dropoff, setDropoff] = useState("");
   const [moveSize, setMoveSize] = useState<MoveSize | null>(null);
   const [booking, setBooking] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
   const getPricing = () => {
     const size = moveSize ? sizeData.find((s) => s.id === moveSize) : null;
@@ -54,7 +58,6 @@ const BookingPage = () => {
 
   const handleBook = async () => {
     if (!user || !moveSize) return;
-    const reservedCheckoutWindow = reserveStripeCheckoutWindow();
     setBooking(true);
 
     try {
@@ -77,37 +80,24 @@ const BookingPage = () => {
 
       if (error || !inserted) {
         console.error("[Booking] ❌ Insert failed:", error);
-        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Booking failed: " + (error?.message ?? "unknown error"));
         setBooking(false);
         return;
       }
 
-      console.log("[Booking] ✅ Inserted booking:", inserted);
-
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       const customerEmail = sessionData.session?.user?.email ?? user.email ?? "";
-      if (!accessToken) {
-        throw new Error("Missing auth session token for checkout.");
-      }
-      if (!customerEmail) {
-        throw new Error("Missing customer email for checkout.");
-      }
-      const requestBody = {
-        bookingId: inserted.id,
-        amount: Math.round(total * 100),
-        customerEmail,
-      };
-      console.log("[Stripe] invoke →", CHECKOUT_FUNCTION, requestBody);
+      if (!accessToken) throw new Error("Missing auth session token for checkout.");
+      if (!customerEmail) throw new Error("Missing customer email for checkout.");
+
+      const requestBody = { bookingId: inserted.id, amount: Math.round(total * 100), customerEmail };
 
       let payload: CheckoutPayload | null = null;
       let checkoutError: Error | null = null;
       try {
         const result = await supabase.functions.invoke<CheckoutPayload>(CHECKOUT_FUNCTION, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
           body: requestBody,
         });
         payload = result.data ?? null;
@@ -116,36 +106,36 @@ const BookingPage = () => {
         checkoutError = invokeError instanceof Error ? invokeError : new Error(String(invokeError));
       }
 
-      console.log("[Stripe] Edge function payload:", payload);
-
-      if (checkoutError || payload?.fallback || typeof payload?.url !== "string" || !payload.url.trim()) {
+      if (
+        checkoutError ||
+        payload?.fallback ||
+        typeof payload?.clientSecret !== "string" ||
+        !payload.clientSecret.trim() ||
+        typeof payload?.publishableKey !== "string" ||
+        !payload.publishableKey.trim()
+      ) {
         const reason = getCheckoutErrorMessage(payload, checkoutError);
         console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
-        closeReservedCheckoutWindow(reservedCheckoutWindow);
         toast.error("Could not start checkout: " + reason);
         setBooking(false);
         return;
       }
 
-      try {
-        console.log("[Stripe] ✅ Got checkout URL, redirecting →", payload.url);
-        const redirectMode = openStripeCheckout(payload.url, reservedCheckoutWindow);
-        toast.success(redirectMode === "opened" ? "Stripe checkout opened in a new tab." : "Redirecting to Stripe…");
-        if (redirectMode === "opened") setBooking(false);
-      } catch (redirectError) {
-        const reason = redirectError instanceof Error ? redirectError.message : String(redirectError);
-        console.error("[Stripe] ❌ Redirect failed:", redirectError);
-        closeReservedCheckoutWindow(reservedCheckoutWindow);
-        toast.error("Could not redirect to Stripe: " + reason);
-        setBooking(false);
-      }
+      setClientSecret(payload.clientSecret);
+      setPublishableKey(payload.publishableKey);
+      setCheckoutOpen(true);
+      setBooking(false);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Checkout error";
       console.error("[Booking] ❌ Booking/checkout pipeline failed:", e);
-      closeReservedCheckoutWindow(reservedCheckoutWindow);
       toast.error("Could not start checkout: " + msg);
       setBooking(false);
     }
+  };
+
+  const handleCloseCheckout = () => {
+    setCheckoutOpen(false);
+    setClientSecret(null);
   };
 
   return (
@@ -182,6 +172,14 @@ const BookingPage = () => {
           isBooking={booking}
         />
       </div>
+
+
+      <StripeCheckoutModal
+        open={checkoutOpen}
+        clientSecret={clientSecret}
+        publishableKey={publishableKey}
+        onClose={handleCloseCheckout}
+      />
     </div>
   );
 };

@@ -96,12 +96,16 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
     const origin = getRequestOrigin(req);
-    const returnParams = { booking: booking.id };
+    const publishableKey = Deno.env.get('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
+    if (!publishableKey) {
+      return checkoutErrorResponse('Stripe publishable key not configured');
+    }
 
     let session: Stripe.Checkout.Session;
     try {
       session = await stripe.checkout.sessions.create({
         mode: 'payment',
+        ui_mode: 'embedded',
         payment_method_types: ['card'],
         customer_email: userEmail,
         line_items: [
@@ -117,8 +121,7 @@ Deno.serve(async (req) => {
             quantity: 1,
           },
         ],
-        success_url: getAppReturnUrl(origin, '/dashboard', { checkout: 'success' }),
-        cancel_url: getAppReturnUrl(origin, '/dashboard', { ...returnParams, checkout: 'cancel' }),
+        return_url: getAppReturnUrl(origin, '/dashboard', { checkout: 'success', booking: booking.id, session_id: '{CHECKOUT_SESSION_ID}' }),
         metadata: { booking_id: booking.id, customer_id: userId },
       });
     } catch (stripeErr) {
@@ -127,12 +130,16 @@ Deno.serve(async (req) => {
       return checkoutErrorResponse(message);
     }
 
-    if (!session.url) {
-      console.error('stripe_checkout missing checkout URL', { sessionId: session.id });
-      return checkoutErrorResponse('Stripe checkout did not return a redirect URL.');
+    if (!session.client_secret) {
+      console.error('stripe_checkout missing client_secret', { sessionId: session.id });
+      return checkoutErrorResponse('Stripe checkout did not return a client secret.');
     }
 
-    return jsonResponse({ url: session.url, sessionId: session.id });
+    return jsonResponse({
+      clientSecret: session.client_secret,
+      sessionId: session.id,
+      publishableKey,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('stripe_checkout unexpected error', err);
