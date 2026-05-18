@@ -172,7 +172,7 @@ const BookingPage = () => {
           isBooking={booking}
         />
       </div>
-      </div>
+
 
       <StripeCheckoutModal
         open={checkoutOpen}
