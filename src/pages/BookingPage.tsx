@@ -38,28 +38,55 @@ const BookingPage = () => {
 
     const { base, distance, service, total } = getPricing();
 
-    const { error } = await supabase.from("bookings").insert({
-      customer_id: user.id,
-      pickup_address: pickup,
-      dropoff_address: dropoff,
-      move_size: moveSize,
-      base_price: base,
-      distance_fee: distance,
-      service_fee: service,
-      total_price: total,
-    });
+    const { data: inserted, error } = await supabase
+      .from("bookings")
+      .insert({
+        customer_id: user.id,
+        pickup_address: pickup,
+        dropoff_address: dropoff,
+        move_size: moveSize,
+        base_price: base,
+        distance_fee: distance,
+        service_fee: service,
+        total_price: total,
+      })
+      .select("id")
+      .single();
 
-    if (error) {
-      toast.error("Booking failed: " + error.message);
+    if (error || !inserted) {
+      toast.error("Booking failed: " + (error?.message ?? "unknown error"));
       setBooking(false);
       return;
     }
 
-    toast.success("Move booked successfully!", {
-      description: "A driver will be assigned shortly.",
-    });
-    const label = moveSize.charAt(0).toUpperCase() + moveSize.slice(1);
-    navigate(`/tracking?total=${total.toFixed(2)}&size=${label}`);
+    // Call live Supabase Edge Function: stripe-checkout
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const endpoint = `https://${projectId}.supabase.co/functions/v1/stripe-checkout`;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ bookingId: inserted.id }),
+      });
+
+      const payload = await res.json();
+      if (!res.ok || !payload?.url) {
+        throw new Error(payload?.error ?? "Checkout failed");
+      }
+
+      window.location.href = payload.url;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Checkout error";
+      toast.error("Could not start checkout: " + msg);
+      setBooking(false);
+    }
   };
 
   return (
