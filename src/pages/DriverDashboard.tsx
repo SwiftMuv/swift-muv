@@ -67,7 +67,7 @@ const DriverDashboard = () => {
     const { data, error } = await supabase
       .from("bookings")
       .select("id, pickup_address, dropoff_address, move_size, total_price, status")
-      .eq("status", "available" as never)
+      .eq("status", "pending" as never)
       .order("created_at", { ascending: false });
     if (error) return;
     setAvailable(
