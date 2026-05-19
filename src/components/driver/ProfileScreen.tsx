@@ -419,6 +419,17 @@ const ProfileScreen = () => {
         </h3>
         {editing ? (
           <div className="px-4 pb-3 space-y-3">
+            <div>
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle category</label>
+              <Select value={vehicleCategory || undefined} onValueChange={(v) => setVehicleCategory(v as VehicleCategory)}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
+                <SelectContent>
+                  {VEHICLE_OPTIONS.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.name} — {o.description}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Make" value={vehicleMake} onChange={(e) => setVehicleMake(e.target.value)} />
               <Input placeholder="Model" value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} />
