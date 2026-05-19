@@ -1,161 +1,171 @@
-import { DollarSign, ArrowUpRight, ArrowDownLeft, TrendingUp, Clock, CreditCard } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { DollarSign, ArrowUpRight, ArrowDownLeft, TrendingUp, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
-interface PayoutEntry {
-  id: string;
-  date: string;
-  amount: number;
-  type: "payout" | "earning";
-  label: string;
-  status: "completed" | "pending";
-}
-
-const mockPayouts: PayoutEntry[] = [
-  { id: "1", date: "Today, 2:15 PM", amount: 185, type: "earning", label: "Job SG-4821 · Marie Dupont", status: "completed" },
-  { id: "2", date: "Today, 11:30 AM", amount: 75, type: "earning", label: "Job SG-4818 · Leo Martin", status: "completed" },
-  { id: "3", date: "Today, 9:00 AM", amount: 225, type: "earning", label: "Job SG-4815 · Sara Nguyen", status: "completed" },
-  { id: "4", date: "Yesterday", amount: 450, type: "payout", label: "Withdrawal to ••4829", status: "completed" },
-  { id: "5", date: "Yesterday", amount: 320, type: "earning", label: "Job SG-4810 · Aisha Khan", status: "completed" },
-  { id: "6", date: "Yesterday", amount: 150, type: "earning", label: "Job SG-4808 · Paul Tremblay", status: "completed" },
-  { id: "7", date: "Jun 8", amount: 600, type: "payout", label: "Withdrawal to ••4829", status: "completed" },
-  { id: "8", date: "Jun 8", amount: 95, type: "earning", label: "Job SG-4801 · Kim Lee", status: "completed" },
-];
+interface JobRow { id: string; driver_earnings: number; earnings_status: string; completed_at: string | null; }
+interface PayoutRow { id: string; amount: number; status: string; created_at: string; }
 
 const WalletScreen = () => {
-  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stripeConnectId, setStripeConnectId] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const [amount, setAmount] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
 
-  const walletBalance = 1035;
-  const pendingEarnings = 0;
-  const thisWeekEarnings = 2340;
-  const thisMonthEarnings = 8450;
-  const platformFees = 845;
+  const load = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    const [{ data: jobsData }, { data: payoutsData }, { data: profile }] = await Promise.all([
+      supabase.from("jobs").select("id, driver_earnings, earnings_status, completed_at").eq("driver_id", user.id),
+      supabase.from("driver_payouts").select("id, amount, status, created_at").eq("driver_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("driver_profiles").select("stripe_connect_id").eq("user_id", user.id).maybeSingle(),
+    ]);
+    setJobs((jobsData ?? []) as JobRow[]);
+    setPayouts((payoutsData ?? []) as PayoutRow[]);
+    setStripeConnectId(profile?.stripe_connect_id ?? null);
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const pendingEarnings = jobs.filter((j) => j.earnings_status === "pending").reduce((s, j) => s + Number(j.driver_earnings ?? 0), 0);
+  const releasedEarnings = jobs.filter((j) => j.earnings_status === "released").reduce((s, j) => s + Number(j.driver_earnings ?? 0), 0);
+  const paidOrPendingPayouts = payouts.filter((p) => ["pending", "processing", "paid"].includes(p.status)).reduce((s, p) => s + Number(p.amount ?? 0), 0);
+  const available = Math.max(0, Math.round((releasedEarnings - paidOrPendingPayouts) * 100) / 100);
+
+  const thisWeek = jobs.filter((j) => {
+    if (!j.completed_at) return false;
+    const dt = new Date(j.completed_at);
+    const start = new Date(); start.setDate(start.getDate() - start.getDay()); start.setHours(0, 0, 0, 0);
+    return dt >= start;
+  }).reduce((s, j) => s + Number(j.driver_earnings ?? 0), 0);
+
+  const thisMonth = jobs.filter((j) => {
+    if (!j.completed_at) return false;
+    const dt = new Date(j.completed_at);
+    return dt.getMonth() === new Date().getMonth() && dt.getFullYear() === new Date().getFullYear();
+  }).reduce((s, j) => s + Number(j.driver_earnings ?? 0), 0);
+
+  const handleConnectBank = async () => {
+    if (!user) return;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    const { data, error } = await supabase.functions.invoke<{ url?: string; error?: string }>("stripe-connect", {
+      headers: { Authorization: `Bearer ${token}` },
+      body: {},
+    });
+    if (error || !data?.url) return toast.error(data?.error ?? error?.message ?? "Could not start onboarding");
+    window.location.href = data.url;
+  };
+
+  const handleWithdraw = async () => {
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) return toast.error("Enter a valid amount");
+    if (amt > available) return toast.error(`Only $${available.toFixed(2)} available`);
+    setWithdrawing(true);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>("driver-withdraw", {
+      headers: { Authorization: `Bearer ${token}` },
+      body: { amount: amt },
+    });
+    setWithdrawing(false);
+    if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Withdraw failed");
+    toast.success(`$${amt.toFixed(2)} sent to your bank`);
+    setShowWithdraw(false);
+    setAmount("");
+    load();
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="space-y-5">
-      {/* Balance Card */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-5 text-primary-foreground relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -translate-y-8 translate-x-8" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 translate-y-6 -translate-x-6" />
         <p className="text-xs font-medium uppercase tracking-wider opacity-80">Available Balance</p>
-        <p className="text-4xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          ${walletBalance.toLocaleString()}
-          <span className="text-lg opacity-70">.00</span>
-        </p>
+        <p className="text-4xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${available.toFixed(2)}</p>
         {pendingEarnings > 0 && (
           <p className="text-xs mt-1 opacity-70 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> ${pendingEarnings} pending
+            <Clock className="w-3 h-3" /> ${pendingEarnings.toFixed(2)} pending (in-progress jobs)
           </p>
         )}
         <div className="mt-4 flex gap-2">
-          <Button
-            onClick={() => setShowWithdrawConfirm(!showWithdrawConfirm)}
-            variant="secondary"
-            className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0 backdrop-blur-sm"
-          >
-            <ArrowUpRight className="w-4 h-4 mr-1.5" />
-            Withdraw
-          </Button>
-          <Button
-            variant="secondary"
-            className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/10 hover:bg-white/20 text-primary-foreground border-0 backdrop-blur-sm"
-          >
-            <CreditCard className="w-4 h-4 mr-1.5" />
-            Debit Card
-          </Button>
+          {stripeConnectId ? (
+            <Button
+              onClick={() => { setAmount(available.toFixed(2)); setShowWithdraw(true); }}
+              variant="secondary"
+              disabled={available <= 0}
+              className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0"
+            >
+              <ArrowUpRight className="w-4 h-4 mr-1.5" /> Withdraw
+            </Button>
+          ) : (
+            <Button onClick={handleConnectBank} variant="secondary" className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0">
+              Connect bank to withdraw
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Withdraw Confirmation */}
-      {showWithdrawConfirm && (
-        <div className="rounded-xl bg-card border p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
-          <p className="text-sm font-medium">Withdraw to Debit Card ••4829</p>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-sm">Amount</span>
-            <span className="font-bold text-lg" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              ${walletBalance.toLocaleString()}.00
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">Instant transfer · Arrives in minutes</p>
+      {showWithdraw && (
+        <div className="rounded-xl bg-card border p-4 space-y-3">
+          <p className="text-sm font-medium">Withdraw to your bank</p>
+          <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
+          <p className="text-xs text-muted-foreground">Instant transfer · arrives in minutes</p>
           <div className="flex gap-2">
-            <Button
-              className="flex-1 rounded-xl h-11 font-semibold bg-primary hover:bg-primary/90"
-              onClick={() => setShowWithdrawConfirm(false)}
-            >
-              Confirm Withdrawal
+            <Button onClick={handleWithdraw} disabled={withdrawing} className="flex-1 rounded-xl h-11 font-semibold">
+              {withdrawing && <Loader2 className="h-4 w-4 animate-spin mr-1" />}Confirm
             </Button>
-            <Button
-              variant="outline"
-              className="rounded-xl h-11"
-              onClick={() => setShowWithdrawConfirm(false)}
-            >
-              Cancel
-            </Button>
+            <Button variant="outline" className="rounded-xl h-11" onClick={() => setShowWithdraw(false)}>Cancel</Button>
           </div>
         </div>
       )}
 
-      {/* Earnings Breakdown */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-card border p-3 text-center">
           <DollarSign className="w-4 h-4 mx-auto text-primary mb-1" />
-          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            ${thisWeekEarnings.toLocaleString()}
-          </p>
+          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${thisWeek.toFixed(0)}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">This Week</p>
         </div>
         <div className="rounded-xl bg-card border p-3 text-center">
           <TrendingUp className="w-4 h-4 mx-auto text-[hsl(var(--swift-success))] mb-1" />
-          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            ${thisMonthEarnings.toLocaleString()}
-          </p>
+          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${thisMonth.toFixed(0)}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">This Month</p>
-        </div>
-        <div className="rounded-xl bg-card border p-3 text-center">
-          <ArrowDownLeft className="w-4 h-4 mx-auto text-[hsl(var(--swift-warning))] mb-1" />
-          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            ${platformFees.toLocaleString()}
-          </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Fees</p>
         </div>
       </div>
 
-      {/* Transaction History */}
       <section>
-        <h2 className="text-lg font-semibold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          Recent Activity
-        </h2>
-        <div className="rounded-xl bg-card border divide-y divide-border overflow-hidden">
-          {mockPayouts.map((entry) => (
-            <div key={entry.id} className="flex items-center gap-3 p-3">
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                  entry.type === "earning"
-                    ? "bg-[hsl(var(--swift-success))]/15"
-                    : "bg-[hsl(var(--swift-info))]/15"
-                }`}
-              >
-                {entry.type === "earning" ? (
-                  <ArrowDownLeft className="w-4 h-4 text-[hsl(var(--swift-success))]" />
-                ) : (
+        <h2 className="text-lg font-semibold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Withdrawals</h2>
+        {payouts.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">No withdrawals yet</p>
+        ) : (
+          <div className="rounded-xl bg-card border divide-y divide-border overflow-hidden">
+            {payouts.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 p-3">
+                <div className="w-9 h-9 rounded-full bg-[hsl(var(--swift-info))]/15 flex items-center justify-center">
                   <ArrowUpRight className="w-4 h-4 text-[hsl(var(--swift-info))]" />
-                )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Withdrawal</p>
+                  <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString()} · {p.status}</p>
+                </div>
+                <p className="text-sm font-semibold tabular-nums" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  −${Number(p.amount).toFixed(2)}
+                </p>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{entry.label}</p>
-                <p className="text-xs text-muted-foreground">{entry.date}</p>
-              </div>
-              <p
-                className={`text-sm font-semibold tabular-nums ${
-                  entry.type === "earning" ? "text-[hsl(var(--swift-success))]" : "text-foreground"
-                }`}
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-              >
-                {entry.type === "earning" ? "+" : "−"}${entry.amount}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
