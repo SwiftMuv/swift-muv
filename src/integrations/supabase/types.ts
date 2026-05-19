@@ -14,14 +14,40 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           base_price: number
+          cancellation_fee: number
           created_at: string
+          crew_count: number
           customer_id: string
           distance_fee: number
+          distance_km: number | null
           dropoff_address: string
+          dropoff_lat: number | null
+          dropoff_lng: number | null
+          floor_level: number
+          has_elevator: boolean
           id: string
+          items: Json
           items_summary: Json | null
           move_size: Database["public"]["Enums"]["move_size"]
           pickup_address: string
@@ -30,16 +56,29 @@ export type Database = {
           scheduled_at: string | null
           service_fee: number
           status: Database["public"]["Enums"]["booking_status"]
+          stripe_payment_intent_id: string | null
+          tip_amount: number
           total_price: number
           updated_at: string
+          vehicle_category:
+            | Database["public"]["Enums"]["vehicle_category"]
+            | null
         }
         Insert: {
           base_price: number
+          cancellation_fee?: number
           created_at?: string
+          crew_count?: number
           customer_id: string
           distance_fee?: number
+          distance_km?: number | null
           dropoff_address: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          floor_level?: number
+          has_elevator?: boolean
           id?: string
+          items?: Json
           items_summary?: Json | null
           move_size: Database["public"]["Enums"]["move_size"]
           pickup_address: string
@@ -48,16 +87,29 @@ export type Database = {
           scheduled_at?: string | null
           service_fee: number
           status?: Database["public"]["Enums"]["booking_status"]
+          stripe_payment_intent_id?: string | null
+          tip_amount?: number
           total_price: number
           updated_at?: string
+          vehicle_category?:
+            | Database["public"]["Enums"]["vehicle_category"]
+            | null
         }
         Update: {
           base_price?: number
+          cancellation_fee?: number
           created_at?: string
+          crew_count?: number
           customer_id?: string
           distance_fee?: number
+          distance_km?: number | null
           dropoff_address?: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
+          floor_level?: number
+          has_elevator?: boolean
           id?: string
+          items?: Json
           items_summary?: Json | null
           move_size?: Database["public"]["Enums"]["move_size"]
           pickup_address?: string
@@ -66,8 +118,13 @@ export type Database = {
           scheduled_at?: string | null
           service_fee?: number
           status?: Database["public"]["Enums"]["booking_status"]
+          stripe_payment_intent_id?: string | null
+          tip_amount?: number
           total_price?: number
           updated_at?: string
+          vehicle_category?:
+            | Database["public"]["Enums"]["vehicle_category"]
+            | null
         }
         Relationships: []
       }
@@ -143,6 +200,39 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_payouts: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          driver_id: string
+          failure_reason: string | null
+          id: string
+          status: Database["public"]["Enums"]["payout_status"]
+          stripe_payout_id: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          driver_id: string
+          failure_reason?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["payout_status"]
+          stripe_payout_id?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          driver_id?: string
+          failure_reason?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["payout_status"]
+          stripe_payout_id?: string | null
+        }
+        Relationships: []
+      }
       driver_profiles: {
         Row: {
           address: string | null
@@ -169,6 +259,9 @@ export type Database = {
           stripe_connect_id: string | null
           updated_at: string
           user_id: string
+          vehicle_category:
+            | Database["public"]["Enums"]["vehicle_category"]
+            | null
           vehicle_color: string | null
           vehicle_make: string | null
           vehicle_model: string | null
@@ -200,6 +293,9 @@ export type Database = {
           stripe_connect_id?: string | null
           updated_at?: string
           user_id: string
+          vehicle_category?:
+            | Database["public"]["Enums"]["vehicle_category"]
+            | null
           vehicle_color?: string | null
           vehicle_make?: string | null
           vehicle_model?: string | null
@@ -231,6 +327,9 @@ export type Database = {
           stripe_connect_id?: string | null
           updated_at?: string
           user_id?: string
+          vehicle_category?:
+            | Database["public"]["Enums"]["vehicle_category"]
+            | null
           vehicle_color?: string | null
           vehicle_make?: string | null
           vehicle_model?: string | null
@@ -246,11 +345,15 @@ export type Database = {
           completion_code: string | null
           created_at: string
           customer_rating: number | null
+          driver_earnings: number
           driver_id: string
           driver_rating: number | null
+          earnings_status: Database["public"]["Enums"]["earnings_status"]
           id: string
+          platform_fee: number
           started_at: string | null
           status: Database["public"]["Enums"]["job_status"]
+          stripe_transfer_id: string | null
           tip_amount: number | null
           updated_at: string
         }
@@ -260,11 +363,15 @@ export type Database = {
           completion_code?: string | null
           created_at?: string
           customer_rating?: number | null
+          driver_earnings?: number
           driver_id: string
           driver_rating?: number | null
+          earnings_status?: Database["public"]["Enums"]["earnings_status"]
           id?: string
+          platform_fee?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          stripe_transfer_id?: string | null
           tip_amount?: number | null
           updated_at?: string
         }
@@ -274,11 +381,15 @@ export type Database = {
           completion_code?: string | null
           created_at?: string
           customer_rating?: number | null
+          driver_earnings?: number
           driver_id?: string
           driver_rating?: number | null
+          earnings_status?: Database["public"]["Enums"]["earnings_status"]
           id?: string
+          platform_fee?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          stripe_transfer_id?: string | null
           tip_amount?: number | null
           updated_at?: string
         }
@@ -291,6 +402,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          job_id: string
+          ratee_id: string
+          rater_id: string
+          stars: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          ratee_id: string
+          rater_id: string
+          stars: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          ratee_id?: string
+          rater_id?: string
+          stars?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -371,6 +512,7 @@ export type Database = {
         | "vehicle_registration"
         | "other"
       driver_verification_status: "pending" | "approved" | "rejected"
+      earnings_status: "pending" | "released" | "paid_out"
       job_status:
         | "assigned"
         | "en_route"
@@ -379,6 +521,12 @@ export type Database = {
         | "in_transit"
         | "completed"
       move_size: "small" | "medium" | "large" | "xlarge"
+      payout_status: "pending" | "processing" | "paid" | "failed"
+      vehicle_category:
+        | "pickup_truck"
+        | "cargo_van"
+        | "box_truck"
+        | "moving_truck_16"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -524,6 +672,7 @@ export const Constants = {
         "other",
       ],
       driver_verification_status: ["pending", "approved", "rejected"],
+      earnings_status: ["pending", "released", "paid_out"],
       job_status: [
         "assigned",
         "en_route",
@@ -533,6 +682,13 @@ export const Constants = {
         "completed",
       ],
       move_size: ["small", "medium", "large", "xlarge"],
+      payout_status: ["pending", "processing", "paid", "failed"],
+      vehicle_category: [
+        "pickup_truck",
+        "cargo_van",
+        "box_truck",
+        "moving_truck_16",
+      ],
     },
   },
 } as const
