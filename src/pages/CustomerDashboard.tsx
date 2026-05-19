@@ -127,10 +127,12 @@ const CustomerDashboard = () => {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pt-4">
-        {activeTab === "home" && (
-          <>
+        {activeTab === "home" && <CustomerHomeScreen />}
+
+        {activeTab === "bookings" && (
+          <div className="space-y-4 pb-4">
             {active.length > 0 && (
-              <div className="space-y-3 pb-4">
+              <div className="space-y-3">
                 {active.map((b) => {
                   const canCancel = b.status !== "in_progress";
                   const fee = b.status === "pending" ? 0 : 10;
@@ -152,7 +154,7 @@ const CustomerDashboard = () => {
                             onClick={() => handleCancel(b)}
                           >
                             <X className="w-3.5 h-3.5 mr-1.5" />
-                            {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel (free)"}
+                            {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel"}
                           </Button>
                         ) : (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
@@ -166,12 +168,6 @@ const CustomerDashboard = () => {
                 })}
               </div>
             )}
-            <CustomerHomeScreen />
-          </>
-        )}
-
-        {activeTab === "bookings" && (
-          <div className="pb-4">
             <BookNewMoveForm onBooked={loadBookings} />
           </div>
         )}
