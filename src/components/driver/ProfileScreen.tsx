@@ -92,6 +92,7 @@ const ProfileScreen = () => {
   const [licensePlate, setLicensePlate] = useState("");
   const [cargoCapacity, setCargoCapacity] = useState("");
   const [cargoSpace, setCargoSpace] = useState("");
+  const [vehicleCategory, setVehicleCategory] = useState<VehicleCategory | "">("");
 
   const loadAll = async () => {
     if (!user) return;
