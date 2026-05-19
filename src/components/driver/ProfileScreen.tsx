@@ -34,6 +34,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Tables, Database } from "@/integrations/supabase/types";
+import { VEHICLE_OPTIONS, type VehicleCategory } from "@/lib/booking";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type DriverProfile = Tables<"driver_profiles">;
 type DocRow = Tables<"driver_documents">;
@@ -90,6 +92,7 @@ const ProfileScreen = () => {
   const [licensePlate, setLicensePlate] = useState("");
   const [cargoCapacity, setCargoCapacity] = useState("");
   const [cargoSpace, setCargoSpace] = useState("");
+  const [vehicleCategory, setVehicleCategory] = useState<VehicleCategory | "">("");
 
   const loadAll = async () => {
     if (!user) return;
@@ -133,6 +136,7 @@ const ProfileScreen = () => {
       setLicensePlate(prof.license_plate ?? "");
       setCargoCapacity(prof.cargo_capacity_lbs?.toString() ?? "");
       setCargoSpace(prof.cargo_space_cuft?.toString() ?? "");
+      setVehicleCategory((prof.vehicle_category as VehicleCategory) ?? "");
     }
     setDocs(dl ?? []);
     setLoading(false);
@@ -182,6 +186,7 @@ const ProfileScreen = () => {
         license_plate: licensePlate || null,
         cargo_capacity_lbs: cargoCapacity ? parseInt(cargoCapacity) : null,
         cargo_space_cuft: cargoSpace ? parseInt(cargoSpace) : null,
+        vehicle_category: (vehicleCategory || null) as VehicleCategory | null,
       })
       .eq("user_id", user.id);
 
@@ -414,6 +419,17 @@ const ProfileScreen = () => {
         </h3>
         {editing ? (
           <div className="px-4 pb-3 space-y-3">
+            <div>
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle category</label>
+              <Select value={vehicleCategory || undefined} onValueChange={(v) => setVehicleCategory(v as VehicleCategory)}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
+                <SelectContent>
+                  {VEHICLE_OPTIONS.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.name} — {o.description}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Make" value={vehicleMake} onChange={(e) => setVehicleMake(e.target.value)} />
               <Input placeholder="Model" value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} />
@@ -439,6 +455,15 @@ const ProfileScreen = () => {
                 <p className="text-xs text-muted-foreground">{vehicleMeta}</p>
               </div>
             </div>
+            {profile?.vehicle_category ? (
+              <Badge variant="secondary" className="text-[11px]">
+                {VEHICLE_OPTIONS.find((o) => o.id === profile.vehicle_category)?.name ?? profile.vehicle_category}
+              </Badge>
+            ) : (
+              <div className="rounded-lg bg-[hsl(var(--swift-warning))]/15 text-[hsl(var(--swift-warning))] text-xs px-3 py-2">
+                Pick a vehicle category in edit mode — jobs are filtered by category.
+              </div>
+            )}
             {(profile?.cargo_capacity_lbs || profile?.cargo_space_cuft) && (
               <div className="grid grid-cols-2 gap-2">
                 {profile?.cargo_capacity_lbs && (
