@@ -136,6 +136,7 @@ const ProfileScreen = () => {
       setLicensePlate(prof.license_plate ?? "");
       setCargoCapacity(prof.cargo_capacity_lbs?.toString() ?? "");
       setCargoSpace(prof.cargo_space_cuft?.toString() ?? "");
+      setVehicleCategory((prof.vehicle_category as VehicleCategory) ?? "");
     }
     setDocs(dl ?? []);
     setLoading(false);
