@@ -134,7 +134,7 @@ export const CustomerHomeScreen = () => {
 
       {/* Videos */}
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold text-foreground">SwiftMuv vehicles in transit</h3>
+        <h3 className="text-lg font-semibold text-foreground">Vans on the move</h3>
         <div className="grid grid-cols-1 gap-3">
           {videos.map((v) => (
             <Card key={v.title} className="overflow-hidden">
