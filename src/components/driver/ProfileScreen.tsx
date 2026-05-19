@@ -34,6 +34,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Tables, Database } from "@/integrations/supabase/types";
+import { VEHICLE_OPTIONS, type VehicleCategory } from "@/lib/booking";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type DriverProfile = Tables<"driver_profiles">;
 type DocRow = Tables<"driver_documents">;
