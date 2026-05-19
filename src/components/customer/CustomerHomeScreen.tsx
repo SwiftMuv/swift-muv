@@ -44,20 +44,20 @@ const testimonials = [
 const videos = [
   {
     title: "On the highway",
-    subtitle: "SwiftMuv truck cruising in transit",
-    poster: "https://images.unsplash.com/photo-1601233749202-95d04d5b3c00?w=800&q=80&auto=format&fit=crop",
-    src: "https://videos.pexels.com/video-files/2103099/2103099-hd_1920_1080_30fps.mp4",
+    subtitle: "A van cruising in transit",
+    poster: "https://images.unsplash.com/photo-1605152276897-4f618f831968?w=800&q=80&auto=format&fit=crop",
+    src: "https://videos.pexels.com/video-files/3066466/3066466-hd_1920_1080_24fps.mp4",
   },
   {
     title: "Through the city",
-    subtitle: "Live tracking from pickup to drop-off",
-    poster: "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&q=80&auto=format&fit=crop",
-    src: "https://videos.pexels.com/video-files/3066466/3066466-hd_1920_1080_24fps.mp4",
+    subtitle: "Live moves from pickup to drop-off",
+    poster: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80&auto=format&fit=crop",
+    src: "https://videos.pexels.com/video-files/2103099/2103099-hd_1920_1080_30fps.mp4",
   },
   {
     title: "Open road",
     subtitle: "Your move, in safe hands",
-    poster: "https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=800&q=80&auto=format&fit=crop",
+    poster: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80&auto=format&fit=crop",
     src: "https://videos.pexels.com/video-files/4271760/4271760-hd_1920_1080_25fps.mp4",
   },
 ];
