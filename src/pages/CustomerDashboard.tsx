@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
-import { RotateCw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { RotateCw, X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import BookNewMoveForm from "@/components/customer/BookNewMoveForm";
 import { CustomerBottomNav } from "@/components/customer/CustomerBottomNav";
 import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
 import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
+import RatingModal from "@/components/customer/RatingModal";
 
 interface Booking {
   id: string;
@@ -19,11 +21,16 @@ interface Booking {
   created_at: string;
 }
 
+const ACTIVE_STATUSES = ["pending", "assigned", "in_progress"];
+
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("home");
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  const [rating, setRating] = useState<{ jobId: string; driverId: string } | null>(null);
+  const ratedRef = useRef<Set<string>>(new Set());
 
   const loadBookings = useCallback(async () => {
     if (!user) return;
@@ -37,10 +44,71 @@ const CustomerDashboard = () => {
     setLoading(false);
   }, [user]);
 
-  useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
+  useEffect(() => { loadBookings(); }, [loadBookings]);
 
+  // Auto-open rating modal when a booking transitions to completed
+  useEffect(() => {
+    if (!user) return;
+    const completed = bookings.filter((b) => b.status === "completed");
+    if (completed.length === 0) return;
+    const latest = completed[0];
+    if (ratedRef.current.has(latest.id)) return;
+    (async () => {
+      // Already rated?
+      const { data: job } = await supabase
+        .from("jobs")
+        .select("id, driver_id")
+        .eq("booking_id", latest.id)
+        .maybeSingle();
+      if (!job) return;
+      const { data: existing } = await supabase
+        .from("ratings")
+        .select("id")
+        .eq("job_id", job.id)
+        .eq("rater_id", user.id)
+        .maybeSingle();
+      ratedRef.current.add(latest.id);
+      if (!existing) setRating({ jobId: job.id, driverId: job.driver_id });
+    })();
+  }, [bookings, user]);
+
+  // Realtime: refresh on booking status change
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("customer-bookings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings", filter: `customer_id=eq.${user.id}` }, () => {
+        loadBookings();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, loadBookings]);
+
+  const handleCancel = async (b: Booking) => {
+    const hasDriver = b.status !== "pending";
+    const msg = hasDriver
+      ? "A driver has already accepted. Cancelling now will charge a $10 CAD fee. Continue?"
+      : "Cancel this booking? No charge will apply.";
+    if (!confirm(msg)) return;
+    setCancelling(b.id);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const { data, error } = await supabase.functions.invoke("cancel-booking", {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: { bookingId: b.id },
+      });
+      if (error) throw error;
+      toast.success((data as any)?.fee ? `Cancelled. $${(data as any).fee} CAD fee applied.` : "Booking cancelled");
+      loadBookings();
+    } catch (e: any) {
+      toast.error(e.message ?? "Cancel failed");
+    } finally {
+      setCancelling(null);
+    }
+  };
+
+  const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status));
   const completed = bookings.filter((b) => b.status === "completed");
 
   const titles: Record<string, string> = {
@@ -59,7 +127,48 @@ const CustomerDashboard = () => {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pt-4">
-        {activeTab === "home" && <CustomerHomeScreen />}
+        {activeTab === "home" && (
+          <>
+            {active.length > 0 && (
+              <div className="space-y-3 pb-4">
+                {active.map((b) => {
+                  const canCancel = b.status !== "in_progress";
+                  const fee = b.status === "pending" ? 0 : 10;
+                  return (
+                    <Card key={b.id} className="border-primary/40">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-base">Active move · ${Number(b.total_price).toFixed(2)}</CardTitle>
+                        <Badge>{b.status.replace("_", " ")}</Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <p><span className="text-muted-foreground">From:</span> {b.pickup_address}</p>
+                        <p><span className="text-muted-foreground">To:</span> {b.dropoff_address}</p>
+                        {canCancel ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full mt-2"
+                            disabled={cancelling === b.id}
+                            onClick={() => handleCancel(b)}
+                          >
+                            <X className="w-3.5 h-3.5 mr-1.5" />
+                            {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel (free)"}
+                          </Button>
+                        ) : (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            Move in progress — cancellation no longer available.
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+            <CustomerHomeScreen />
+          </>
+        )}
 
         {activeTab === "bookings" && (
           <div className="pb-4">
@@ -109,6 +218,13 @@ const CustomerDashboard = () => {
       </main>
 
       <CustomerBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <RatingModal
+        open={!!rating}
+        jobId={rating?.jobId ?? null}
+        driverId={rating?.driverId ?? null}
+        onClose={() => setRating(null)}
+      />
     </div>
   );
 };
