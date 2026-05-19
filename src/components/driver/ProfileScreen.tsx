@@ -455,6 +455,15 @@ const ProfileScreen = () => {
                 <p className="text-xs text-muted-foreground">{vehicleMeta}</p>
               </div>
             </div>
+            {profile?.vehicle_category ? (
+              <Badge variant="secondary" className="text-[11px]">
+                {VEHICLE_OPTIONS.find((o) => o.id === profile.vehicle_category)?.name ?? profile.vehicle_category}
+              </Badge>
+            ) : (
+              <div className="rounded-lg bg-[hsl(var(--swift-warning))]/15 text-[hsl(var(--swift-warning))] text-xs px-3 py-2">
+                Pick a vehicle category in edit mode — jobs are filtered by category.
+              </div>
+            )}
             {(profile?.cargo_capacity_lbs || profile?.cargo_space_cuft) && (
               <div className="grid grid-cols-2 gap-2">
                 {profile?.cargo_capacity_lbs && (
