@@ -186,6 +186,7 @@ const ProfileScreen = () => {
         license_plate: licensePlate || null,
         cargo_capacity_lbs: cargoCapacity ? parseInt(cargoCapacity) : null,
         cargo_space_cuft: cargoSpace ? parseInt(cargoSpace) : null,
+        vehicle_category: (vehicleCategory || null) as VehicleCategory | null,
       })
       .eq("user_id", user.id);
 
