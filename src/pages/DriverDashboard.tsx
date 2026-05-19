@@ -202,7 +202,20 @@ const DriverDashboard = () => {
     setActiveJob({ ...activeJob, status: nextStatus });
 
     if (nextStatus === "completed") {
-      toast.success("Job completed!");
+      // Release escrowed funds: 80% to driver, 20% platform fee
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (token) {
+          await supabase.functions.invoke("release-earnings", {
+            headers: { Authorization: `Bearer ${token}` },
+            body: { jobId: activeJob.jobId },
+          });
+        }
+      } catch (e) {
+        console.warn("release-earnings failed", e);
+      }
+      toast.success("Job completed! Earnings released.");
       setTimeout(() => {
         setActiveJob(null);
         loadAvailable();
@@ -210,6 +223,7 @@ const DriverDashboard = () => {
       }, 1800);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col dark">

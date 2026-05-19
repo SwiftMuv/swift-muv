@@ -108,10 +108,14 @@ Deno.serve(async (req) => {
         ui_mode: 'embedded',
         payment_method_types: ['card'],
         customer_email: userEmail,
+        payment_intent_data: {
+          capture_method: 'manual', // hold funds until driver arrives at drop-off
+          metadata: { booking_id: booking.id, customer_id: userId },
+        },
         line_items: [
           {
             price_data: {
-              currency: 'usd',
+              currency: 'cad',
               unit_amount: amount,
               product_data: {
                 name: 'SwiftMuv Move',
@@ -133,6 +137,16 @@ Deno.serve(async (req) => {
     if (!session.client_secret) {
       console.error('stripe_checkout missing client_secret', { sessionId: session.id });
       return checkoutErrorResponse('Stripe checkout did not return a client secret.');
+    }
+
+    // Save payment_intent on booking so release/cancel can act on it later
+    if (session.payment_intent) {
+      const piId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id;
+      const adminClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      await adminClient.from('bookings').update({ stripe_payment_intent_id: piId }).eq('id', booking.id);
     }
 
     return jsonResponse({
