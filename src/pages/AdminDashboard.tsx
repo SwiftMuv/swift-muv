@@ -87,9 +87,7 @@ const AdminDashboard = () => {
   }, []);
 
   const stats = useMemo(() => {
-    const totalRevenue = bookings
-      .filter((b) => b.status === "completed")
-      .reduce((acc, b) => acc + Number(b.total_price || 0), 0);
+    const totalRevenue = bookings.reduce((acc, b) => acc + Number(b.total_price || 0), 0);
     const completed = bookings.filter((b) => b.status === "completed").length;
     const pending = bookings.filter((b) => b.status === "pending").length;
     return { totalRevenue, completed, pending, totalBookings: bookings.length };
