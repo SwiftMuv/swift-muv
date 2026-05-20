@@ -276,8 +276,11 @@ const AdminDashboard = () => {
   );
 };
 
-const StatCard = ({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) => (
-  <Card>
+const StatCard = ({ label, value, icon, onClick, active }: { label: string; value: string; icon: React.ReactNode; onClick?: () => void; active?: boolean }) => (
+  <Card
+    onClick={onClick}
+    className={`${onClick ? "cursor-pointer transition hover:border-primary/60 hover:shadow-sm" : ""} ${active ? "border-primary ring-1 ring-primary/40" : ""}`}
+  >
     <CardContent className="flex items-center justify-between p-4">
       <div>
         <div className="text-xs text-muted-foreground">{label}</div>
