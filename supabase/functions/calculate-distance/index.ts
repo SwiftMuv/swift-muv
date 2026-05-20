@@ -40,20 +40,24 @@ Deno.serve(async (req) => {
     });
 
     const text = await res.text();
-    if (!res.ok) {
-      console.error('Routes API error', res.status, text);
-      return json({ error: 'Distance lookup failed', details: text }, 502);
+    if (!res.ok) console.error('Routes API error', res.status, text);
+
+    let km: number | null = null;
+    let durationSec: number | null = null;
+    try {
+      const rows = JSON.parse(text);
+      const first = Array.isArray(rows) ? rows[0] : rows;
+      if (first?.distanceMeters) {
+        km = Math.round((first.distanceMeters / 1000) * 100) / 100;
+        durationSec = first.duration ? parseInt(String(first.duration).replace('s', ''), 10) : null;
+      } else {
+        console.warn('Routes API returned no distance', first);
+      }
+    } catch (e) {
+      console.error('Failed to parse Routes API response', e);
     }
 
-    // Response is JSON array
-    const rows = JSON.parse(text);
-    const first = Array.isArray(rows) ? rows[0] : rows;
-    if (!first?.distanceMeters) return json({ error: 'No route found' }, 404);
-
-    const km = Math.round((first.distanceMeters / 1000) * 100) / 100;
-    const durationSec = first.duration ? parseInt(String(first.duration).replace('s', ''), 10) : null;
-
-    // Also geocode the addresses to lat/lng (used by RLS dispatch radius)
+    // Geocode addresses (also used as haversine fallback)
     const geocode = async (address: string) => {
       const r = await fetch(
         `${GATEWAY_URL}/maps/api/geocode/json?address=${encodeURIComponent(address)}`,
@@ -63,6 +67,17 @@ Deno.serve(async (req) => {
       return j.results?.[0]?.geometry?.location ?? null;
     };
     const [pickup, dropoff] = await Promise.all([geocode(String(origin)), geocode(String(destination))]);
+
+    if (km == null && pickup && dropoff) {
+      const toRad = (d: number) => (d * Math.PI) / 180;
+      const dLat = toRad(dropoff.lat - pickup.lat);
+      const dLng = toRad(dropoff.lng - pickup.lng);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(pickup.lat)) * Math.cos(toRad(dropoff.lat)) * Math.sin(dLng / 2) ** 2;
+      km = Math.round(2 * 6371 * Math.asin(Math.sqrt(a)) * 100) / 100;
+    }
+
+    if (km == null) return json({ error: 'Could not resolve addresses' }, 404);
 
     return json({ km, durationSec, pickup, dropoff });
   } catch (err) {
