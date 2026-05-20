@@ -131,8 +131,10 @@ const CustomerDashboard = () => {
 
         {activeTab === "bookings" && (
           <div className="space-y-4 pb-4">
+            <BookNewMoveForm onBooked={loadBookings} />
             {active.length > 0 && (
               <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pending & active</h3>
                 {active.map((b) => {
                   const canCancel = b.status !== "in_progress";
                   const fee = b.status === "pending" ? 0 : 10;
@@ -168,7 +170,6 @@ const CustomerDashboard = () => {
                 })}
               </div>
             )}
-            <BookNewMoveForm onBooked={loadBookings} />
           </div>
         )}
 

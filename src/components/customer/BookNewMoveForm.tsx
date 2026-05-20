@@ -259,6 +259,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Receipt className="h-4 w-4" /></div>
             <h3 className="font-semibold">Price breakdown</h3>
           </div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Base fee</span><span>${pricing.base.toFixed(2)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Items</span><span>${pricing.items.toFixed(2)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Distance fee</span><span>${pricing.distance.toFixed(2)}</span></div>
           {pricing.crew > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Crew ({crewCount})</span><span>${pricing.crew.toFixed(2)}</span></div>}
@@ -270,7 +271,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </CardContent>
       </Card>
 
-      <div className="sticky bottom-20 z-30 -mx-4 border-t border-border bg-card/90 px-4 py-3 backdrop-blur-xl">
+      <div className="pt-2">
         <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12 w-full text-base font-semibold">
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {submitting ? "Processing…" : `Book Now · $${pricing.total.toFixed(2)}`}
