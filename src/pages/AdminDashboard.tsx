@@ -49,6 +49,8 @@ const AdminDashboard = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [pendingDrivers, setPendingDrivers] = useState<PendingDriver[]>([]);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [bookingFilter, setBookingFilter] = useState<"all" | "pending" | "completed">("all");
+  const [activeTab, setActiveTab] = useState<string>("bookings");
 
   const loadAll = async () => {
     setLoading(true);
