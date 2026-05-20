@@ -149,13 +149,13 @@ const AdminDashboard = () => {
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard label="Bookings" value={String(stats.totalBookings)} icon={<Package className="h-4 w-4" />} />
-          <StatCard label="Pending" value={String(stats.pending)} icon={<Loader2 className="h-4 w-4" />} />
-          <StatCard label="Completed" value={String(stats.completed)} icon={<CheckCircle2 className="h-4 w-4" />} />
-          <StatCard label="Revenue" value={formatCurrency(stats.totalRevenue)} icon={<DollarSign className="h-4 w-4" />} />
+          <StatCard label="Bookings" value={String(stats.totalBookings)} icon={<Package className="h-4 w-4" />} onClick={() => selectTile("all")} active={activeTab === "bookings" && bookingFilter === "all"} />
+          <StatCard label="Pending" value={String(stats.pending)} icon={<Loader2 className="h-4 w-4" />} onClick={() => selectTile("pending")} active={activeTab === "bookings" && bookingFilter === "pending"} />
+          <StatCard label="Completed" value={String(stats.completed)} icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => selectTile("completed")} active={activeTab === "bookings" && bookingFilter === "completed"} />
+          <StatCard label="Revenue" value={formatCurrency(stats.totalRevenue)} icon={<DollarSign className="h-4 w-4" />} onClick={() => selectTile("completed")} active={activeTab === "bookings" && bookingFilter === "completed"} />
         </section>
 
-        <Tabs defaultValue="bookings" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="drivers">
@@ -169,16 +169,21 @@ const AdminDashboard = () => {
 
           <TabsContent value="bookings">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Recent bookings</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-base">
+                  {bookingFilter === "all" ? "All bookings" : bookingFilter === "pending" ? "Pending bookings" : "Completed bookings"}
+                </CardTitle>
+                {bookingFilter !== "all" && (
+                  <Button size="sm" variant="ghost" onClick={() => setBookingFilter("all")}>Clear filter</Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
                 {loading ? (
                   <SkeletonRows />
-                ) : bookings.length === 0 ? (
-                  <Empty label="No bookings yet" />
+                ) : filteredBookings.length === 0 ? (
+                  <Empty label="No bookings" />
                 ) : (
-                  bookings.map((b) => (
+                  filteredBookings.map((b) => (
                     <div key={b.id} className="flex flex-col gap-1 rounded-md border border-border p-3 text-sm md:flex-row md:items-center md:justify-between">
                       <div className="min-w-0">
                         <div className="font-medium truncate">{b.pickup_address} → {b.dropoff_address}</div>
