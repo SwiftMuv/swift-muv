@@ -92,14 +92,17 @@ const BookingConfirmation = () => {
           {/* Driver card */}
           <div className="flex items-center gap-4 rounded-2xl border border-border bg-secondary/30 p-4">
             <div className="relative">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
-                MR
-              </div>
+              <img
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop"
+                alt="Driver Marcus Rivera"
+                loading="lazy"
+                className="h-14 w-14 rounded-full object-cover border-2 border-primary/40"
+              />
               <div className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
                 <Shield className="h-3 w-3 text-primary-foreground" />
               </div>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground">Marcus Rivera</p>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Star className="h-3.5 w-3.5 fill-accent text-accent" />
@@ -107,15 +110,23 @@ const BookingConfirmation = () => {
                 <span>·</span>
                 <span>Ford Transit</span>
               </div>
-              <p className="text-xs text-muted-foreground">License: TX-4827K</p>
+              <p className="text-xs font-mono text-foreground/80">Car # TX-4827K</p>
             </div>
             <div className="flex gap-2">
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/20">
+              <a
+                href="tel:+15125550199"
+                aria-label="Call driver"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+              >
                 <Phone className="h-4 w-4" />
-              </button>
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/20">
+              </a>
+              <a
+                href="sms:+15125550199"
+                aria-label="Text driver"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+              >
                 <MessageCircle className="h-4 w-4" />
-              </button>
+              </a>
             </div>
           </div>
 
