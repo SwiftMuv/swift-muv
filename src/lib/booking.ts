@@ -49,7 +49,6 @@ export const FLOORS = [
 ];
 
 export interface PriceBreakdown {
-  base: number;
   items: number;
   distance: number;
   crew: number;
