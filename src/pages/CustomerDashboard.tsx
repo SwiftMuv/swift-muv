@@ -164,7 +164,7 @@ const CustomerDashboard = () => {
                             variant="outline"
                             className="w-full mt-2"
                             disabled={cancelling === b.id}
-                            onClick={() => handleCancel(b)}
+                            onClick={() => handleCancelRequest(b)}
                           >
                             <X className="w-3.5 h-3.5 mr-1.5" />
                             {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel"}
