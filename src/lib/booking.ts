@@ -32,9 +32,7 @@ export const ITEM_CATALOG = [
 ];
 
 export const PRICING = {
-  basePrice: 50,
   distancePerKm: 2.0,
-  shortDistanceFee: 100, // applied when distance <= 1km, grows with distance
   crewPerMember: 10,
   floorSurchargePerFloor: 10, // only when no elevator
   serviceFeeRate: 0.10,
@@ -51,7 +49,6 @@ export const FLOORS = [
 ];
 
 export interface PriceBreakdown {
-  base: number;
   items: number;
   distance: number;
   crew: number;
@@ -69,23 +66,18 @@ export function calculatePrice(input: {
   hasElevator: boolean;
   tip?: number;
 }): PriceBreakdown {
-  const base = PRICING.basePrice;
   const items = input.itemsTotal;
-  // Short distances (≤1km) are charged a flat $100; beyond 1km the fee grows linearly.
-  const km = Math.max(0, input.distanceKm);
-  const distance = km <= 1
-    ? PRICING.shortDistanceFee
-    : Math.round((PRICING.shortDistanceFee + (km - 1) * PRICING.distancePerKm) * 100) / 100;
+  const distance = Math.round(Math.max(0, input.distanceKm) * PRICING.distancePerKm * 100) / 100;
   const crew = input.crewCount * PRICING.crewPerMember;
   // Floor surcharge only if no elevator and above ground
   const floor = !input.hasElevator && input.floorLevel > 0
     ? input.floorLevel * PRICING.floorSurchargePerFloor
     : 0;
   const tip = input.tip ?? 0;
-  const subtotal = base + items + distance + crew + floor;
+  const subtotal = items + distance + crew + floor;
   const service = Math.round(subtotal * PRICING.serviceFeeRate * 100) / 100;
   const total = Math.round((subtotal + service + tip) * 100) / 100;
-  return { base, items, distance, crew, floor, service, tip, total };
+  return { items, distance, crew, floor, service, tip, total };
 }
 
 export const moveSizeFromVehicle = (v: VehicleCategory): "small" | "medium" | "large" | "xlarge" => {

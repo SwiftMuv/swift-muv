@@ -6,6 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import BookNewMoveForm from "@/components/customer/BookNewMoveForm";
 import { CustomerBottomNav } from "@/components/customer/CustomerBottomNav";
 import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
@@ -29,6 +37,7 @@ const CustomerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("home");
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; booking: Booking | null }>({ open: false, booking: null });
   const [rating, setRating] = useState<{ jobId: string; driverId: string } | null>(null);
   const ratedRef = useRef<Set<string>>(new Set());
 
@@ -84,12 +93,14 @@ const CustomerDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, loadBookings]);
 
-  const handleCancel = async (b: Booking) => {
-    const hasDriver = b.status !== "pending";
-    const msg = hasDriver
-      ? "A driver has already accepted. Cancelling now will charge a $10 CAD fee. Continue?"
-      : "Cancel this booking? No charge will apply.";
-    if (!confirm(msg)) return;
+  const handleCancelRequest = (b: Booking) => {
+    setCancelDialog({ open: true, booking: b });
+  };
+
+  const handleConfirmCancel = async () => {
+    const b = cancelDialog.booking;
+    if (!b) return;
+    setCancelDialog({ open: false, booking: null });
     setCancelling(b.id);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -153,7 +164,7 @@ const CustomerDashboard = () => {
                             variant="outline"
                             className="w-full mt-2"
                             disabled={cancelling === b.id}
-                            onClick={() => handleCancel(b)}
+                            onClick={() => handleCancelRequest(b)}
                           >
                             <X className="w-3.5 h-3.5 mr-1.5" />
                             {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel"}
@@ -222,6 +233,33 @@ const CustomerDashboard = () => {
         driverId={rating?.driverId ?? null}
         onClose={() => setRating(null)}
       />
+
+      {/* Cancel confirmation dialog */}
+      <Dialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog({ open, booking: open ? cancelDialog.booking : null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel booking?</DialogTitle>
+            <DialogDescription>
+              {cancelDialog.booking && cancelDialog.booking.status !== "pending" ? (
+                <>
+                  A driver has already accepted this job. Cancelling now will charge a{" "}
+                  <strong>$10 CAD</strong> fee.
+                </>
+              ) : (
+                "Are you sure you want to cancel this booking? No fee will apply."
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialog({ open: false, booking: null })}>
+              Keep booking
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmCancel} disabled={cancelling === cancelDialog.booking?.id}>
+              {cancelling === cancelDialog.booking?.id ? "Cancelling…" : "Confirm cancellation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
