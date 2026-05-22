@@ -93,12 +93,14 @@ const CustomerDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, loadBookings]);
 
-  const handleCancel = async (b: Booking) => {
-    const hasDriver = b.status !== "pending";
-    const msg = hasDriver
-      ? "A driver has already accepted. Cancelling now will charge a $10 CAD fee. Continue?"
-      : "Cancel this booking? No charge will apply.";
-    if (!confirm(msg)) return;
+  const handleCancelRequest = (b: Booking) => {
+    setCancelDialog({ open: true, booking: b });
+  };
+
+  const handleConfirmCancel = async () => {
+    const b = cancelDialog.booking;
+    if (!b) return;
+    setCancelDialog({ open: false, booking: null });
     setCancelling(b.id);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
