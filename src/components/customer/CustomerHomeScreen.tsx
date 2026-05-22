@@ -5,6 +5,10 @@ import vehicle1 from "@/assets/customer-vehicle-1.jpg";
 import vehicle2 from "@/assets/customer-vehicle-2.jpg";
 import vehicle3 from "@/assets/customer-vehicle-3.jpg";
 import vehicle4 from "@/assets/customer-vehicle-4.jpg";
+import vehicle5 from "@/assets/customer-vehicle-5.jpg";
+import vehicle6 from "@/assets/customer-vehicle-6.jpg";
+import vehicle7 from "@/assets/customer-vehicle-7.jpg";
+import vehicle8 from "@/assets/customer-vehicle-8.jpg";
 
 const testimonials = [
   {
