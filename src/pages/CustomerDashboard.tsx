@@ -233,6 +233,33 @@ const CustomerDashboard = () => {
         driverId={rating?.driverId ?? null}
         onClose={() => setRating(null)}
       />
+
+      {/* Cancel confirmation dialog */}
+      <Dialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog({ open, booking: open ? cancelDialog.booking : null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel booking?</DialogTitle>
+            <DialogDescription>
+              {cancelDialog.booking && cancelDialog.booking.status !== "pending" ? (
+                <>
+                  A driver has already accepted this job. Cancelling now will charge a{" "}
+                  <strong>$10 CAD</strong> fee.
+                </>
+              ) : (
+                "Are you sure you want to cancel this booking? No fee will apply."
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialog({ open: false, booking: null })}>
+              Keep booking
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmCancel} disabled={cancelling === cancelDialog.booking?.id}>
+              {cancelling === cancelDialog.booking?.id ? "Cancelling…" : "Confirm cancellation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
