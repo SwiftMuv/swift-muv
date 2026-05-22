@@ -43,6 +43,38 @@ const testimonials = [
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&q=80&auto=format&fit=crop",
     photo: vehicle4,
   },
+  {
+    name: "Jordan H.",
+    location: "3-bedroom move • Seattle",
+    quote: "Massive box truck showed up right on time. Crew loaded everything in under an hour — total game changer.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80&auto=format&fit=crop",
+    photo: vehicle5,
+  },
+  {
+    name: "Nadia O.",
+    location: "Long distance • Chicago → Detroit",
+    quote: "Highway haul handled flawlessly. Live tracking the whole way, and not a single scratch on my furniture.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80&auto=format&fit=crop",
+    photo: vehicle6,
+  },
+  {
+    name: "Eli W.",
+    location: "Studio move • Boston",
+    quote: "Box truck rolled up to my walk-up, driver was a pro. Easiest move I've ever done in this city.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80&auto=format&fit=crop",
+    photo: vehicle7,
+  },
+  {
+    name: "Hana M.",
+    location: "Cargo van • Denver",
+    quote: "Quick small-load move with the cargo van — perfect for my one-bedroom. Fast, friendly, and fairly priced.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&q=80&auto=format&fit=crop",
+    photo: vehicle8,
+  },
 ];
 
 const videos = [
