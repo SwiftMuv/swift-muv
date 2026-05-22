@@ -37,6 +37,7 @@ const CustomerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("home");
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; booking: Booking | null }>({ open: false, booking: null });
   const [rating, setRating] = useState<{ jobId: string; driverId: string } | null>(null);
   const ratedRef = useRef<Set<string>>(new Set());
 
