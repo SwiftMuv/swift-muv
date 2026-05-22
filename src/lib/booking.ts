@@ -32,9 +32,7 @@ export const ITEM_CATALOG = [
 ];
 
 export const PRICING = {
-  basePrice: 50,
   distancePerKm: 2.0,
-  shortDistanceFee: 100, // applied when distance <= 1km, grows with distance
   crewPerMember: 10,
   floorSurchargePerFloor: 10, // only when no elevator
   serviceFeeRate: 0.10,
