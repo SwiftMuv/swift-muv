@@ -1,88 +1,87 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users, ArrowUpDown } from "lucide-react";
+import { Loader2, MapPin, Navigation, Package, Receipt, Route, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
-import { VehicleCategoryPicker } from "@/components/booking/VehicleCategoryPicker";
-import { ItemsPicker, calcItemsTotal } from "@/components/booking/ItemsPicker";
+import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
+import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import {
-  calculatePrice,
-  FLOORS,
-  moveSizeFromVehicle,
-  type VehicleCategory,
-} from "@/lib/booking";
+  calculateMovePrice,
+  type MoveType,
+  type SelectedItem,
+} from "@/lib/movingEngine";
 
 interface Props { onBooked?: () => void; }
+
+interface DistanceResult {
+  km: number;
+  pickup?: { lat: number; lng: number; province?: string; city?: string };
+  dropoff?: { lat: number; lng: number; province?: string; city?: string };
+  moveType?: MoveType;
+}
+
+const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
+  if (name.startsWith("Cargo")) return "small";
+  if (name.startsWith("12ft")) return "medium";
+  if (name.startsWith("16ft")) return "large";
+  return "xlarge";
+};
 
 const BookNewMoveForm = ({ onBooked }: Props) => {
   const { user } = useAuth();
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
-  const [vehicle, setVehicle] = useState<VehicleCategory | null>(null);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [floorLevel, setFloorLevel] = useState(0);
-  const [hasElevator, setHasElevator] = useState(true);
-  const [crewCount, setCrewCount] = useState(0);
-  const [distanceKm, setDistanceKm] = useState<number | null>(null);
-  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [calculatingDistance, setCalculatingDistance] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [distance, setDistance] = useState<DistanceResult | null>(null);
+  const [calculating, setCalculating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
-  const itemsTotal = useMemo(() => calcItemsTotal(quantities), [quantities]);
-
-  const pricing = useMemo(
-    () => calculatePrice({ itemsTotal, distanceKm: distanceKm ?? 0, crewCount, floorLevel, hasElevator }),
-    [itemsTotal, distanceKm, crewCount, floorLevel, hasElevator],
-  );
-
-  // Auto-compute distance when both addresses entered
+  // Auto-compute distance + moveType when addresses entered
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
     const t = setTimeout(async () => {
-      setCalculatingDistance(true);
+      setCalculating(true);
       try {
-        const { data, error } = await supabase.functions.invoke("calculate-distance", {
-          body: { origin: pickup, destination: dropoff },
-        });
+        const { data, error } = await supabase.functions.invoke<DistanceResult>(
+          "calculate-distance",
+          { body: { origin: pickup, destination: dropoff } },
+        );
         if (error) throw error;
-        if (data?.km) {
-          setDistanceKm(data.km);
-          if (data.pickup) setPickupCoords(data.pickup);
-          if (data.dropoff) setDropoffCoords(data.dropoff);
-        }
+        if (data?.km) setDistance(data);
       } catch (e) {
         console.warn("Distance calc failed", e);
       } finally {
-        setCalculatingDistance(false);
+        setCalculating(false);
       }
     }, 800);
     return () => clearTimeout(t);
   }, [pickup, dropoff]);
 
-  const itemCount = Object.values(quantities).reduce((s, n) => s + n, 0);
+  const moveType: MoveType = distance?.moveType ?? "local";
+  const distanceKm = distance?.km ?? 0;
 
+  const quote = useMemo(
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm }),
+    [selectedItems, moveType, distanceKm],
+  );
+
+  const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
   const canSubmit =
-    !!user && !!vehicle && itemCount > 0 && pickup.trim().length >= 5 &&
-    dropoff.trim().length >= 5 && (distanceKm ?? 0) > 0 && !submitting;
+    !!user && itemCount > 0 && pickup.trim().length >= 5 &&
+    dropoff.trim().length >= 5 && distanceKm > 0 && !submitting;
 
   const handleSubmit = async () => {
-    if (!user || !vehicle) return;
+    if (!user) return;
     setSubmitting(true);
     try {
-      const itemsArr = Object.entries(quantities)
-        .filter(([, n]) => n > 0)
-        .map(([id, qty]) => ({ id, qty }));
+      const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
 
       const { data: inserted, error: insertError } = await supabase
         .from("bookings")
@@ -90,19 +89,15 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           customer_id: user.id,
           pickup_address: pickup.trim(),
           dropoff_address: dropoff.trim(),
-          move_size: moveSizeFromVehicle(vehicle),
-          vehicle_category: vehicle,
-          distance_km: distanceKm ?? 0,
-          floor_level: floorLevel,
-          has_elevator: hasElevator,
-          crew_count: crewCount,
+          move_size: moveSizeFromVehicleName(quote.recommendedVehicle),
+          move_type: moveType,
+          distance_km: distanceKm,
           items: itemsArr,
-          // Price fields are recomputed server-side by a database trigger
-          // to prevent client-side price manipulation.
-          pickup_lat: pickupCoords?.lat ?? null,
-          pickup_lng: pickupCoords?.lng ?? null,
-          dropoff_lat: dropoffCoords?.lat ?? null,
-          dropoff_lng: dropoffCoords?.lng ?? null,
+          // Price fields are recomputed server-side by a database trigger.
+          pickup_lat: distance?.pickup?.lat ?? null,
+          pickup_lng: distance?.pickup?.lng ?? null,
+          dropoff_lat: distance?.dropoff?.lat ?? null,
+          dropoff_lng: distance?.dropoff?.lng ?? null,
         })
         .select("id")
         .single();
@@ -141,6 +136,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     }
   };
 
+  const breakdown = quote.breakdown as Record<string, number | undefined>;
+
   return (
     <div className="space-y-4">
       {/* Hero quote */}
@@ -149,15 +146,15 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           <p className="text-xs font-medium uppercase tracking-wider text-primary">Estimated total</p>
           <div className="mt-1 flex items-end justify-between">
             <p className="text-3xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              ${pricing.total.toFixed(2)}
+              ${quote.finalPrice.toFixed(2)}
             </p>
-            {distanceKm !== null && (
+            {distanceKm > 0 && (
               <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                {distanceKm} km
+                {distanceKm} km · {moveType}
               </span>
             )}
           </div>
-          {calculatingDistance && (
+          {calculating && (
             <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> calculating distance…
             </p>
@@ -175,26 +172,35 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           <div className="space-y-3 pl-1">
             <div>
               <Label className="text-xs text-muted-foreground"><MapPin className="inline h-3 w-3 mr-1" />Pickup</Label>
-              <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Pickup address" className="mt-1" />
+              <div className="mt-1">
+                <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder="Pickup address" />
+              </div>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground"><Navigation className="inline h-3 w-3 mr-1" />Drop-off</Label>
-              <Input value={dropoff} onChange={(e) => setDropoff(e.target.value)} placeholder="Drop-off address" className="mt-1" />
+              <div className="mt-1">
+                <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder="Drop-off address" />
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Vehicle */}
-      <Card>
-        <CardContent className="space-y-3 p-5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Truck className="h-4 w-4" /></div>
-            <h3 className="font-semibold">Vehicle type</h3>
-          </div>
-          <VehicleCategoryPicker value={vehicle} onChange={setVehicle} />
-        </CardContent>
-      </Card>
+      {/* Recommended vehicle */}
+      {itemCount > 0 && (
+        <Card>
+          <CardContent className="flex items-center gap-3 p-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary"><Truck className="h-5 w-5" /></div>
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Recommended</p>
+              <p className="font-semibold">{quote.recommendedVehicle}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {quote.totalVolumeCuFt.toFixed(0)} ft³ · {quote.totalWeightLbs.toFixed(0)} lb
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Items */}
       <Card>
@@ -202,51 +208,11 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Package className="h-4 w-4" /></div>
-              <h3 className="font-semibold">Items</h3>
+              <h3 className="font-semibold">Inventory</h3>
             </div>
-            <span className="text-xs text-muted-foreground">${itemsTotal.toFixed(2)}</span>
+            <span className="text-xs text-muted-foreground">{itemCount} item{itemCount === 1 ? "" : "s"}</span>
           </div>
-          <ItemsPicker quantities={quantities} onChange={setQuantities} />
-        </CardContent>
-      </Card>
-
-      {/* Logistics: floor, elevator, crew */}
-      <Card>
-        <CardContent className="space-y-4 p-5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><ArrowUpDown className="h-4 w-4" /></div>
-            <h3 className="font-semibold">Access</h3>
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground">Which floor are the items on?</Label>
-            <Select value={String(floorLevel)} onValueChange={(v) => setFloorLevel(parseInt(v))}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {FLOORS.map((f) => (
-                  <SelectItem key={f.id} value={String(f.id)}>{f.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
-            <div>
-              <p className="text-sm font-medium">Elevator available?</p>
-              <p className="text-[11px] text-muted-foreground">If no, +$10 per floor above ground</p>
-            </div>
-            <Switch checked={hasElevator} onCheckedChange={setHasElevator} />
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> Need crew members?</Label>
-            <p className="text-[11px] text-muted-foreground mb-1">+$10 per member</p>
-            <div className="flex items-center gap-3">
-              <Button type="button" size="sm" variant="outline" onClick={() => setCrewCount(Math.max(0, crewCount - 1))} disabled={crewCount === 0}>−</Button>
-              <span className="min-w-[40px] text-center font-semibold tabular-nums">{crewCount}</span>
-              <Button type="button" size="sm" variant="outline" onClick={() => setCrewCount(crewCount + 1)}>+</Button>
-            </div>
-          </div>
+          <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
         </CardContent>
       </Card>
 
@@ -257,13 +223,26 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Receipt className="h-4 w-4" /></div>
             <h3 className="font-semibold">Price breakdown</h3>
           </div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Items</span><span>${pricing.items.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Distance fee</span><span>${pricing.distance.toFixed(2)}</span></div>
-          {pricing.crew > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Crew ({crewCount})</span><span>${pricing.crew.toFixed(2)}</span></div>}
-          {pricing.floor > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Floor surcharge</span><span>${pricing.floor.toFixed(2)}</span></div>}
-          <div className="flex justify-between"><span className="text-muted-foreground">Service fee</span><span>${pricing.service.toFixed(2)}</span></div>
+          {moveType === "local" && (
+            <>
+              <div className="flex justify-between"><span className="text-muted-foreground">Base ({quote.recommendedVehicle})</span><span>${breakdown.baseFee?.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Labor ({breakdown.estimatedHours}h × ${breakdown.hourlyRate}/h)</span><span>${breakdown.laborCost?.toFixed(2)}</span></div>
+            </>
+          )}
+          {moveType === "intercity" && (
+            <>
+              <div className="flex justify-between"><span className="text-muted-foreground">Base ({quote.recommendedVehicle})</span><span>${breakdown.baseFee?.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)</span><span>${breakdown.distanceCost?.toFixed(2)}</span></div>
+            </>
+          )}
+          {moveType === "inter-province" && (
+            <>
+              <div className="flex justify-between"><span className="text-muted-foreground">Linehaul base ({quote.recommendedVehicle})</span><span>${breakdown.baseFee?.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)</span><span>${breakdown.weightCost?.toFixed(2)}</span></div>
+            </>
+          )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
-            <span>Total</span><span className="text-primary">${pricing.total.toFixed(2)}</span>
+            <span>Total</span><span className="text-primary">${quote.finalPrice.toFixed(2)} CAD</span>
           </div>
         </CardContent>
       </Card>
@@ -271,7 +250,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       <div className="pt-2">
         <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12 w-full text-base font-semibold">
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {submitting ? "Processing…" : `Book Now · $${pricing.total.toFixed(2)}`}
+          {submitting ? "Processing…" : `Book Now · $${quote.finalPrice.toFixed(2)}`}
         </Button>
       </div>
 
