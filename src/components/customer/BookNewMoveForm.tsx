@@ -97,10 +97,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           has_elevator: hasElevator,
           crew_count: crewCount,
           items: itemsArr,
-          base_price: pricing.items,
-          distance_fee: pricing.distance,
-          service_fee: pricing.service,
-          total_price: pricing.total,
+          // Price fields are recomputed server-side by a database trigger
+          // to prevent client-side price manipulation.
           pickup_lat: pickupCoords?.lat ?? null,
           pickup_lng: pickupCoords?.lng ?? null,
           dropoff_lat: dropoffCoords?.lat ?? null,
