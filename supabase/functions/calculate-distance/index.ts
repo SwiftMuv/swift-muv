@@ -1,4 +1,6 @@
 // Google Maps Distance Matrix via Lovable connector gateway
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/google_maps';
 
 const corsHeaders = {
@@ -13,6 +15,17 @@ const json = (b: unknown, s = 200) =>
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
+    // Require authentication to prevent quota abuse
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401);
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claims } = await authClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (!claims?.claims) return json({ error: 'Unauthorized' }, 401);
+
     const { origin, destination } = await req.json();
     if (!origin || !destination) return json({ error: 'origin and destination are required' }, 400);
 
