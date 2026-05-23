@@ -459,6 +459,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      customer_has_job_with_driver: {
+        Args: { _customer_id: string; _driver_id: string }
+        Returns: boolean
+      }
       driver_within_radius: {
         Args: { _booking_id: string; _driver_id: string; _km: number }
         Returns: boolean
