@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
