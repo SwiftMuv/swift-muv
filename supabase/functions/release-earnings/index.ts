@@ -34,11 +34,12 @@ Deno.serve(async (req) => {
 
     const { data: job } = await admin
       .from('jobs')
-      .select('id, booking_id, driver_id, earnings_status, bookings:booking_id(total_price, stripe_payment_intent_id)')
+      .select('id, booking_id, driver_id, status, earnings_status, bookings:booking_id(total_price, stripe_payment_intent_id)')
       .eq('id', jobId)
       .maybeSingle();
     if (!job) return json({ error: 'Job not found' }, 404);
     if (job.driver_id !== driverId) return json({ error: 'Forbidden' }, 403);
+    if (job.status !== 'completed') return json({ error: 'Job must be completed before releasing earnings' }, 400);
     if (job.earnings_status !== 'pending') return json({ message: 'Already released', earnings_status: job.earnings_status });
 
     const booking: any = job.bookings;
