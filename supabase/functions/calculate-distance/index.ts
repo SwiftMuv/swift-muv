@@ -70,14 +70,25 @@ Deno.serve(async (req) => {
       console.error('Failed to parse Routes API response', e);
     }
 
-    // Geocode addresses (also used as haversine fallback)
+    // Geocode addresses; extract province/city
     const geocode = async (address: string) => {
       const r = await fetch(
         `${GATEWAY_URL}/maps/api/geocode/json?address=${encodeURIComponent(address)}`,
         { headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY } },
       );
       const j = await r.json();
-      return j.results?.[0]?.geometry?.location ?? null;
+      const result = j.results?.[0];
+      if (!result) return null;
+      const comps = result.address_components ?? [];
+      const find = (type: string) =>
+        comps.find((c: { types: string[] }) => c.types.includes(type))?.short_name ?? null;
+      return {
+        ...result.geometry.location,
+        formatted: result.formatted_address ?? address,
+        province: find('administrative_area_level_1'),
+        city: find('locality') ?? find('postal_town') ?? find('administrative_area_level_2'),
+        country: find('country'),
+      };
     };
     const [pickup, dropoff] = await Promise.all([geocode(String(origin)), geocode(String(destination))]);
 
@@ -92,7 +103,13 @@ Deno.serve(async (req) => {
 
     if (km == null) return json({ error: 'Could not resolve addresses' }, 404);
 
-    return json({ km, durationSec, pickup, dropoff });
+    let moveType: 'local' | 'intercity' | 'inter-province' = 'local';
+    if (pickup?.province && dropoff?.province) {
+      if (pickup.province !== dropoff.province) moveType = 'inter-province';
+      else if (pickup.city && dropoff.city && pickup.city !== dropoff.city) moveType = 'intercity';
+    }
+
+    return json({ km, durationSec, pickup, dropoff, moveType });
   } catch (err) {
     console.error('calculate-distance error', err);
     return json({ error: err instanceof Error ? err.message : 'unknown' }, 500);

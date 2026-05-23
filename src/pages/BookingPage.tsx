@@ -1,86 +1,98 @@
-import { useState } from "react";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CalendarDays, Loader2, Truck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import AddressInput from "@/components/booking/AddressInput";
-import MoveSizeSelector, { type MoveSize } from "@/components/booking/MoveSizeSelector";
-import PriceQuote from "@/components/booking/PriceQuote";
+import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
+import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
+import { Button } from "@/components/ui/button";
+import { calculateMovePrice, type MoveType, type SelectedItem } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
 
-type CheckoutPayload = {
-  clientSecret?: string;
-  publishableKey?: string;
-  sessionId?: string;
-  error?: string;
-  fallback?: boolean;
-  details?: string;
-};
+interface DistanceResult {
+  km: number;
+  pickup?: { lat: number; lng: number; province?: string; city?: string };
+  dropoff?: { lat: number; lng: number; province?: string; city?: string };
+  moveType?: MoveType;
+}
 
-const getCheckoutErrorMessage = (payload: CheckoutPayload | null | undefined, invokeError?: Error | null) => {
-  if (invokeError?.message) return invokeError.message;
-  if (typeof payload?.error === "string" && payload.error.trim()) return payload.error;
-  if (typeof payload?.details === "string" && payload.details.trim()) return payload.details;
-  if (!payload) return "Checkout returned an empty response.";
-  if (typeof payload.clientSecret !== "string" || !payload.clientSecret.trim()) return "Checkout response did not include a Stripe client secret.";
-  return "Checkout failed.";
+const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
+  if (name.startsWith("Cargo")) return "small";
+  if (name.startsWith("12ft")) return "medium";
+  if (name.startsWith("16ft")) return "large";
+  return "xlarge";
 };
-
-const sizeData = [
-  { id: "small", basePrice: 89 },
-  { id: "medium", basePrice: 199 },
-  { id: "large", basePrice: 349 },
-  { id: "xlarge", basePrice: 599 },
-] as const;
 
 const BookingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
-  const [moveSize, setMoveSize] = useState<MoveSize | null>(null);
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [distance, setDistance] = useState<DistanceResult | null>(null);
+  const [calculating, setCalculating] = useState(false);
   const [booking, setBooking] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
-  const getPricing = () => {
-    const size = moveSize ? sizeData.find((s) => s.id === moveSize) : null;
-    if (!size) return { base: 0, distance: 25, service: 0, total: 0 };
-    const base = size.basePrice;
-    const distance = 25;
-    const service = Math.round(base * 0.1);
-    return { base, distance, service, total: base + distance + service };
-  };
+  useEffect(() => {
+    if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
+    const t = setTimeout(async () => {
+      setCalculating(true);
+      try {
+        const { data, error } = await supabase.functions.invoke<DistanceResult>(
+          "calculate-distance",
+          { body: { origin: pickup, destination: dropoff } },
+        );
+        if (error) throw error;
+        if (data?.km) setDistance(data);
+      } catch (e) {
+        console.warn("Distance calc failed", e);
+      } finally {
+        setCalculating(false);
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [pickup, dropoff]);
+
+  const moveType: MoveType = distance?.moveType ?? "local";
+  const distanceKm = distance?.km ?? 0;
+  const quote = useMemo(
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm }),
+    [selectedItems, moveType, distanceKm],
+  );
+
+  const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
 
   const handleBook = async () => {
-    if (!user || !moveSize) return;
+    if (!user || itemCount === 0 || distanceKm === 0) return;
     setBooking(true);
-
     try {
-      const { base, distance, service, total } = getPricing();
-
+      const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
       const { data: inserted, error } = await supabase
         .from("bookings")
         .insert({
           customer_id: user.id,
           pickup_address: pickup,
           dropoff_address: dropoff,
-          move_size: moveSize,
-          base_price: base,
-          distance_fee: distance,
-          service_fee: service,
-          total_price: total,
+          move_size: moveSizeFromVehicleName(quote.recommendedVehicle),
+          move_type: moveType,
+          distance_km: distanceKm,
+          items: itemsArr,
+          pickup_lat: distance?.pickup?.lat ?? null,
+          pickup_lng: distance?.pickup?.lng ?? null,
+          dropoff_lat: distance?.dropoff?.lat ?? null,
+          dropoff_lng: distance?.dropoff?.lng ?? null,
         })
         .select("id")
         .single();
 
       if (error || !inserted) {
-        console.error("[Booking] ❌ Insert failed:", error);
-        toast.error("Booking failed: " + (error?.message ?? "unknown error"));
+        toast.error("Booking failed: " + (error?.message ?? "unknown"));
         setBooking(false);
         return;
       }
@@ -89,34 +101,16 @@ const BookingPage = () => {
       const accessToken = sessionData.session?.access_token;
       const customerEmail = sessionData.session?.user?.email ?? user.email ?? "";
       if (!accessToken) throw new Error("Missing auth session token for checkout.");
-      if (!customerEmail) throw new Error("Missing customer email for checkout.");
 
-      const requestBody = { bookingId: inserted.id, amount: Math.round(total * 100), customerEmail };
+      const { data: payload, error: checkoutError } = await supabase.functions.invoke<{
+        clientSecret?: string; publishableKey?: string; error?: string; fallback?: boolean;
+      }>(CHECKOUT_FUNCTION, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: { bookingId: inserted.id, amount: Math.round(quote.finalPrice * 100), customerEmail },
+      });
 
-      let payload: CheckoutPayload | null = null;
-      let checkoutError: Error | null = null;
-      try {
-        const result = await supabase.functions.invoke<CheckoutPayload>(CHECKOUT_FUNCTION, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          body: requestBody,
-        });
-        payload = result.data ?? null;
-        checkoutError = result.error ?? null;
-      } catch (invokeError) {
-        checkoutError = invokeError instanceof Error ? invokeError : new Error(String(invokeError));
-      }
-
-      if (
-        checkoutError ||
-        payload?.fallback ||
-        typeof payload?.clientSecret !== "string" ||
-        !payload.clientSecret.trim() ||
-        typeof payload?.publishableKey !== "string" ||
-        !payload.publishableKey.trim()
-      ) {
-        const reason = getCheckoutErrorMessage(payload, checkoutError);
-        console.error("[Stripe] ❌ Invalid checkout response:", reason, payload);
-        toast.error("Could not start checkout: " + reason);
+      if (checkoutError || !payload?.clientSecret || !payload.publishableKey) {
+        toast.error("Could not start checkout: " + (payload?.error ?? checkoutError?.message ?? "unknown"));
         setBooking(false);
         return;
       }
@@ -126,16 +120,9 @@ const BookingPage = () => {
       setCheckoutOpen(true);
       setBooking(false);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Checkout error";
-      console.error("[Booking] ❌ Booking/checkout pipeline failed:", e);
-      toast.error("Could not start checkout: " + msg);
+      toast.error("Could not start checkout: " + (e instanceof Error ? e.message : String(e)));
       setBooking(false);
     }
-  };
-
-  const handleCloseCheckout = () => {
-    setCheckoutOpen(false);
-    setClientSecret(null);
   };
 
   return (
@@ -153,32 +140,55 @@ const BookingPage = () => {
         <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-4 py-2.5">
           <CalendarDays className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium text-foreground">Today, ASAP</span>
-          <button className="ml-auto text-xs font-semibold text-primary">Schedule</button>
         </div>
 
-        <div className="space-y-4">
-          <AddressInput label="Pickup" placeholder="Enter pickup address" value={pickup} onChange={setPickup} icon="pickup" />
-          <div className="ml-5 border-l-2 border-dashed border-border h-4" />
-          <AddressInput label="Drop-off" placeholder="Enter drop-off address" value={dropoff} onChange={setDropoff} icon="dropoff" />
+        <div className="space-y-3">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pickup</label>
+          <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder="Enter pickup address" />
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Drop-off</label>
+          <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder="Enter drop-off address" />
         </div>
 
-        <MoveSizeSelector selected={moveSize} onSelect={setMoveSize} />
+        {distance && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Trip</p>
+            <p className="text-sm font-semibold">{distanceKm} km · {moveType}</p>
+          </div>
+        )}
 
-        <PriceQuote
-          moveSize={moveSize}
-          hasPickup={pickup.trim().length > 0}
-          hasDropoff={dropoff.trim().length > 0}
-          onBook={handleBook}
-          isBooking={booking}
-        />
+        <div>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Inventory</h2>
+          <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
+        </div>
+
+        {itemCount > 0 && (
+          <div className="rounded-xl border border-primary/20 bg-card p-4">
+            <div className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Recommended</p>
+                <p className="font-semibold">{quote.recommendedVehicle}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-2xl font-bold text-primary">${quote.finalPrice.toFixed(2)} CAD</p>
+          </div>
+        )}
+
+        <Button
+          onClick={handleBook}
+          disabled={booking || itemCount === 0 || distanceKm === 0 || calculating}
+          className="h-12 w-full text-base font-semibold"
+        >
+          {booking && <Loader2 className="h-4 w-4 animate-spin" />}
+          {booking ? "Processing…" : `Book Now · $${quote.finalPrice.toFixed(2)}`}
+        </Button>
       </div>
-
 
       <StripeCheckoutModal
         open={checkoutOpen}
         clientSecret={clientSecret}
         publishableKey={publishableKey}
-        onClose={handleCloseCheckout}
+        onClose={() => { setCheckoutOpen(false); setClientSecret(null); }}
       />
     </div>
   );
