@@ -403,6 +403,39 @@ export type Database = {
           },
         ]
       }
+      moving_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          cubic_feet: number
+          display_order: number
+          id: number
+          item_name: string
+          updated_at: string
+          weight_lbs: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          cubic_feet: number
+          display_order?: number
+          id?: number
+          item_name: string
+          updated_at?: string
+          weight_lbs: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          cubic_feet?: number
+          display_order?: number
+          id?: number
+          item_name?: string
+          updated_at?: string
+          weight_lbs?: number
+        }
+        Relationships: []
+      }
       ratings: {
         Row: {
           comment: string | null
