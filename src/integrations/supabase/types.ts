@@ -65,7 +65,7 @@ export type Database = {
             | null
         }
         Insert: {
-          base_price: number
+          base_price?: number
           cancellation_fee?: number
           created_at?: string
           crew_count?: number
@@ -85,11 +85,11 @@ export type Database = {
           pickup_lat?: number | null
           pickup_lng?: number | null
           scheduled_at?: string | null
-          service_fee: number
+          service_fee?: number
           status?: Database["public"]["Enums"]["booking_status"]
           stripe_payment_intent_id?: string | null
           tip_amount?: number
-          total_price: number
+          total_price?: number
           updated_at?: string
           vehicle_category?:
             | Database["public"]["Enums"]["vehicle_category"]
