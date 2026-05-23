@@ -50,9 +50,11 @@ export type Database = {
           items: Json
           items_summary: Json | null
           move_size: Database["public"]["Enums"]["move_size"]
+          move_type: Database["public"]["Enums"]["move_type"]
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
+          recommended_vehicle: string | null
           scheduled_at: string | null
           service_fee: number
           status: Database["public"]["Enums"]["booking_status"]
@@ -81,9 +83,11 @@ export type Database = {
           items?: Json
           items_summary?: Json | null
           move_size: Database["public"]["Enums"]["move_size"]
+          move_type?: Database["public"]["Enums"]["move_type"]
           pickup_address: string
           pickup_lat?: number | null
           pickup_lng?: number | null
+          recommended_vehicle?: string | null
           scheduled_at?: string | null
           service_fee?: number
           status?: Database["public"]["Enums"]["booking_status"]
@@ -112,9 +116,11 @@ export type Database = {
           items?: Json
           items_summary?: Json | null
           move_size?: Database["public"]["Enums"]["move_size"]
+          move_type?: Database["public"]["Enums"]["move_type"]
           pickup_address?: string
           pickup_lat?: number | null
           pickup_lng?: number | null
+          recommended_vehicle?: string | null
           scheduled_at?: string | null
           service_fee?: number
           status?: Database["public"]["Enums"]["booking_status"]
@@ -558,6 +564,7 @@ export type Database = {
         | "in_transit"
         | "completed"
       move_size: "small" | "medium" | "large" | "xlarge"
+      move_type: "local" | "intercity" | "inter-province"
       payout_status: "pending" | "processing" | "paid" | "failed"
       vehicle_category:
         | "pickup_truck"
@@ -719,6 +726,7 @@ export const Constants = {
         "completed",
       ],
       move_size: ["small", "medium", "large", "xlarge"],
+      move_type: ["local", "intercity", "inter-province"],
       payout_status: ["pending", "processing", "paid", "failed"],
       vehicle_category: [
         "pickup_truck",
