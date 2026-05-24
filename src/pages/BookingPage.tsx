@@ -8,6 +8,8 @@ import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Users } from "lucide-react";
 import { calculateMovePrice, type MoveType, type SelectedItem } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
@@ -38,6 +40,8 @@ const BookingPage = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [crewEnabled, setCrewEnabled] = useState(false);
+  const [crewCount, setCrewCount] = useState(1);
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
@@ -61,9 +65,10 @@ const BookingPage = () => {
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
+  const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
   const quote = useMemo(
-    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm }),
-    [selectedItems, moveType, distanceKm],
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew }),
+    [selectedItems, moveType, distanceKm, effectiveCrew],
   );
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
@@ -83,6 +88,7 @@ const BookingPage = () => {
           move_type: moveType,
           distance_km: distanceKm,
           items: itemsArr,
+          crew_count: effectiveCrew,
           pickup_lat: distance?.pickup?.lat ?? null,
           pickup_lng: distance?.pickup?.lng ?? null,
           dropoff_lat: distance?.dropoff?.lat ?? null,
@@ -173,6 +179,34 @@ const BookingPage = () => {
             <p className="mt-3 text-2xl font-bold text-primary">${quote.finalPrice.toFixed(2)} CAD</p>
           </div>
         )}
+
+        {/* Additional crew (optional) */}
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-semibold">Additional crew</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Optional · ${quote.crewMemberFee}/person
+                </p>
+              </div>
+            </div>
+            <Switch checked={crewEnabled} onCheckedChange={setCrewEnabled} />
+          </div>
+          {crewEnabled && (
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
+              <span className="text-sm font-medium">Crew members</span>
+              <div className="flex items-center gap-2">
+                <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full"
+                  onClick={() => setCrewCount((c) => Math.max(1, c - 1))} disabled={crewCount <= 1}>-</Button>
+                <span className="w-6 text-center text-sm font-semibold tabular-nums">{crewCount}</span>
+                <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full"
+                  onClick={() => setCrewCount((c) => Math.min(6, c + 1))} disabled={crewCount >= 6}>+</Button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <Button
           onClick={handleBook}

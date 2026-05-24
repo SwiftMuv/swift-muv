@@ -1,4 +1,6 @@
-// 1. Interfaces for Data Structures
+// Vehicle-fleet pricing engine — no base fees.
+// Local: volume × per-ft³ rate. Intercity: km × per-km rate.
+// Inter-province: lbs × per-lb rate. Optional additional crew members add a flat fee per person.
 
 export interface SelectedItem {
   id: number;
@@ -12,157 +14,101 @@ export interface Vehicle {
   name: string;
   maxVolumeCuFt: number;
   maxWeightLbs: number;
-  baseLocalFee: number;
-  hourlyRate: number;
-  baseIntercityFee: number;
+  perCuFtLocal: number;
   perKmRateIntercity: number;
-  baseInterProvinceFee: number;
   perLbRateInterProvince: number;
+  crewMemberFee: number;
 }
 
 export type MoveType = "local" | "intercity" | "inter-province";
 
-// 2. Vehicle Fleet Parameters
 export const VEHICLE_FLEET: Vehicle[] = [
-  {
-    name: "Cargo Van",
-    maxVolumeCuFt: 120,
-    maxWeightLbs: 2000,
-    baseLocalFee: 50,
-    hourlyRate: 45,
-    baseIntercityFee: 100,
-    perKmRateIntercity: 1.25,
-    baseInterProvinceFee: 250,
-    perLbRateInterProvince: 0.15,
-  },
-  {
-    name: "12ft Cube Van",
-    maxVolumeCuFt: 400,
-    maxWeightLbs: 3000,
-    baseLocalFee: 75,
-    hourlyRate: 60,
-    baseIntercityFee: 150,
-    perKmRateIntercity: 1.5,
-    baseInterProvinceFee: 400,
-    perLbRateInterProvince: 0.22,
-  },
-  {
-    name: "16ft Truck",
-    maxVolumeCuFt: 800,
-    maxWeightLbs: 4500,
-    baseLocalFee: 100,
-    hourlyRate: 75,
-    baseIntercityFee: 200,
-    perKmRateIntercity: 1.85,
-    baseInterProvinceFee: 600,
-    perLbRateInterProvince: 0.3,
-  },
-  {
-    name: "26ft Truck",
-    maxVolumeCuFt: 1400,
-    maxWeightLbs: 10000,
-    baseLocalFee: 150,
-    hourlyRate: 95,
-    baseIntercityFee: 300,
-    perKmRateIntercity: 2.2,
-    baseInterProvinceFee: 900,
-    perLbRateInterProvince: 0.42,
-  },
+  { name: "Cargo Van",     maxVolumeCuFt: 120,  maxWeightLbs: 2000,  perCuFtLocal: 0.95, perKmRateIntercity: 1.45, perLbRateInterProvince: 0.18, crewMemberFee: 35 },
+  { name: "12ft Cube Van", maxVolumeCuFt: 400,  maxWeightLbs: 3000,  perCuFtLocal: 1.10, perKmRateIntercity: 1.80, perLbRateInterProvince: 0.26, crewMemberFee: 45 },
+  { name: "16ft Truck",    maxVolumeCuFt: 800,  maxWeightLbs: 4500,  perCuFtLocal: 1.25, perKmRateIntercity: 2.15, perLbRateInterProvince: 0.35, crewMemberFee: 60 },
+  { name: "26ft Truck",    maxVolumeCuFt: 1400, maxWeightLbs: 10000, perCuFtLocal: 1.45, perKmRateIntercity: 2.60, perLbRateInterProvince: 0.48, crewMemberFee: 75 },
 ];
 
-// 3. Vehicle Recommendation
 export function recommendVehicle(items: SelectedItem[]): Vehicle {
   let totalVolume = 0;
   let totalWeight = 0;
-
-  items.forEach((item) => {
-    totalVolume += item.cubic_feet * item.quantity;
-    totalWeight += item.weight_lbs * item.quantity;
+  items.forEach((i) => {
+    totalVolume += i.cubic_feet * i.quantity;
+    totalWeight += i.weight_lbs * i.quantity;
   });
-
-  const bufferedVolume = totalVolume * 1.15;
-  const bufferedWeight = totalWeight * 1.15;
-
-  const suitableVehicle = VEHICLE_FLEET.find(
-    (vehicle) =>
-      vehicle.maxVolumeCuFt >= bufferedVolume &&
-      vehicle.maxWeightLbs >= bufferedWeight
+  const bufV = totalVolume * 1.15;
+  const bufW = totalWeight * 1.15;
+  return (
+    VEHICLE_FLEET.find((v) => v.maxVolumeCuFt >= bufV && v.maxWeightLbs >= bufW) ||
+    VEHICLE_FLEET[VEHICLE_FLEET.length - 1]
   );
-
-  return suitableVehicle || VEHICLE_FLEET[VEHICLE_FLEET.length - 1];
 }
 
-// 4. Dynamic Price Calculation
 interface PriceCalculationInput {
   items: SelectedItem[];
   moveType: MoveType;
   distanceKm: number;
+  crewCount?: number;
 }
 
 export function calculateMovePrice({
   items,
   moveType,
   distanceKm,
+  crewCount = 0,
 }: PriceCalculationInput) {
   const vehicle = recommendVehicle(items);
 
   let totalVolume = 0;
   let totalWeight = 0;
-  items.forEach((item) => {
-    totalVolume += item.cubic_feet * item.quantity;
-    totalWeight += item.weight_lbs * item.quantity;
+  items.forEach((i) => {
+    totalVolume += i.cubic_feet * i.quantity;
+    totalWeight += i.weight_lbs * i.quantity;
   });
 
-  let finalPrice = 0;
-  let breakDownDetails: Record<string, unknown> = {};
+  let servicePrice = 0;
+  let breakdown: Record<string, unknown> = {};
 
   switch (moveType) {
-    case "local": {
-      const estimatedHours = Math.max(2, Math.ceil(totalVolume / 100) + 1);
-      const laborCost = estimatedHours * vehicle.hourlyRate;
-      finalPrice = vehicle.baseLocalFee + laborCost;
-
-      breakDownDetails = {
-        baseFee: vehicle.baseLocalFee,
-        estimatedHours,
-        hourlyRate: vehicle.hourlyRate,
-        laborCost,
+    case "local":
+      servicePrice = totalVolume * vehicle.perCuFtLocal;
+      breakdown = {
+        totalVolumeCuFt: totalVolume,
+        ratePerCuFt: vehicle.perCuFtLocal,
+        serviceCost: servicePrice,
       };
       break;
-    }
-
-    case "intercity": {
-      const distanceCost = distanceKm * vehicle.perKmRateIntercity;
-      finalPrice = vehicle.baseIntercityFee + distanceCost;
-
-      breakDownDetails = {
-        baseFee: vehicle.baseIntercityFee,
+    case "intercity":
+      servicePrice = distanceKm * vehicle.perKmRateIntercity;
+      breakdown = {
         distanceKm,
         ratePerKm: vehicle.perKmRateIntercity,
-        distanceCost,
+        serviceCost: servicePrice,
       };
       break;
-    }
-
-    case "inter-province": {
-      const weightCost = totalWeight * vehicle.perLbRateInterProvince;
-      finalPrice = vehicle.baseInterProvinceFee + weightCost;
-
-      breakDownDetails = {
-        baseFee: vehicle.baseInterProvinceFee,
-        estimatedWeightLbs: totalWeight,
+    case "inter-province":
+      servicePrice = totalWeight * vehicle.perLbRateInterProvince;
+      breakdown = {
+        totalWeightLbs: totalWeight,
         ratePerLb: vehicle.perLbRateInterProvince,
-        weightCost,
+        serviceCost: servicePrice,
       };
       break;
-    }
   }
+
+  const safeCrew = Math.max(0, Math.floor(crewCount));
+  const crewCost = safeCrew * vehicle.crewMemberFee;
+  const finalPrice = servicePrice + crewCost;
 
   return {
     recommendedVehicle: vehicle.name,
     totalVolumeCuFt: totalVolume,
     totalWeightLbs: totalWeight,
+    crewCount: safeCrew,
+    crewMemberFee: vehicle.crewMemberFee,
+    crewCost,
+    servicePrice: Math.round(servicePrice * 100) / 100,
     finalPrice: Math.round(finalPrice * 100) / 100,
-    breakdown: breakDownDetails,
+    breakdown,
   };
 }

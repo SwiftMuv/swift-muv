@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Minus, Plus, Search } from "lucide-react";
+import { ChevronDown, Loader2, Minus, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { SelectedItem } from "@/lib/movingEngine";
 
 interface MovingItemRow {
@@ -18,10 +23,21 @@ interface Props {
   onChange: (next: SelectedItem[]) => void;
 }
 
+const CATEGORY_ORDER = [
+  "Studio & 1-Bedroom Essentials",
+  "Bedroom",
+  "Living Room",
+  "Kitchen & Dining",
+  "Boxes & Sundries",
+];
+
 export const InventoryPicker = ({ selected, onChange }: Props) => {
   const [items, setItems] = useState<MovingItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [openCats, setOpenCats] = useState<Record<string, boolean>>({
+    "Studio & 1-Bedroom Essentials": true,
+  });
 
   useEffect(() => {
     (async () => {
@@ -36,9 +52,7 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
 
   const qtyMap = useMemo(() => {
     const m: Record<number, number> = {};
-    selected.forEach((s) => {
-      m[s.id] = s.quantity;
-    });
+    selected.forEach((s) => (m[s.id] = s.quantity));
     return m;
   }, [selected]);
 
@@ -46,10 +60,7 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
     const current = qtyMap[row.id] ?? 0;
     const next = Math.max(0, current + delta);
     const without = selected.filter((s) => s.id !== row.id);
-    if (next === 0) {
-      onChange(without);
-      return;
-    }
+    if (next === 0) return onChange(without);
     onChange([
       ...without,
       {
@@ -72,7 +83,14 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
       const cat = i.category ?? "Other";
       (map[cat] ||= []).push(i);
     });
-    return map;
+    const ordered: [string, MovingItemRow[]][] = [];
+    CATEGORY_ORDER.forEach((c) => {
+      if (map[c]) ordered.push([c, map[c]]);
+    });
+    Object.keys(map)
+      .filter((c) => !CATEGORY_ORDER.includes(c))
+      .forEach((c) => ordered.push([c, map[c]]));
+    return ordered;
   }, [items, query]);
 
   if (loading) {
@@ -94,57 +112,78 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
           className="pl-9"
         />
       </div>
-      <div className="space-y-4">
-        {Object.entries(grouped).map(([cat, rows]) => (
-          <div key={cat}>
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {cat}
-            </p>
-            <div className="divide-y divide-border rounded-lg border border-border">
-              {rows.map((row) => {
-                const qty = qtyMap[row.id] ?? 0;
-                return (
-                  <div
-                    key={row.id}
-                    className={`flex items-center justify-between gap-2 px-3 py-2.5 ${qty > 0 ? "bg-primary/5" : ""}`}
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{row.item_name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {Number(row.cubic_feet)} ft³ · {Number(row.weight_lbs)} lb
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => setQty(row, -1)}
-                        disabled={qty === 0}
+      <div className="space-y-2">
+        {grouped.map(([cat, rows]) => {
+          const catQty = rows.reduce((s, r) => s + (qtyMap[r.id] ?? 0), 0);
+          const isOpen = query.trim() ? true : !!openCats[cat];
+          return (
+            <Collapsible
+              key={cat}
+              open={isOpen}
+              onOpenChange={(o) => setOpenCats((p) => ({ ...p, [cat]: o }))}
+              className="overflow-hidden rounded-xl border border-border bg-card"
+            >
+              <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition hover:bg-muted/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">{cat}</span>
+                  {catQty > 0 && (
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      {catQty}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="divide-y divide-border border-t border-border">
+                  {rows.map((row) => {
+                    const qty = qtyMap[row.id] ?? 0;
+                    return (
+                      <div
+                        key={row.id}
+                        className={`flex items-center justify-between gap-2 px-4 py-2.5 ${qty > 0 ? "bg-primary/5" : ""}`}
                       >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-5 text-center text-sm font-semibold tabular-nums">
-                        {qty}
-                      </span>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => setQty(row, +1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        {Object.keys(grouped).length === 0 && (
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{row.item_name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {Number(row.cubic_feet)} ft³ · {Number(row.weight_lbs)} lb
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setQty(row, -1)}
+                            disabled={qty === 0}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-5 text-center text-sm font-semibold tabular-nums">
+                            {qty}
+                          </span>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setQty(row, +1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
+        {grouped.length === 0 && (
           <p className="py-4 text-center text-sm text-muted-foreground">No items match.</p>
         )}
       </div>

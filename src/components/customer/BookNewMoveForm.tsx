@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MapPin, Navigation, Package, Receipt, Route, Truck } from "lucide-react";
+import { Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
@@ -42,8 +43,9 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [crewEnabled, setCrewEnabled] = useState(false);
+  const [crewCount, setCrewCount] = useState(1);
 
-  // Auto-compute distance + moveType when addresses entered
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
     const t = setTimeout(async () => {
@@ -66,10 +68,11 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
+  const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
 
   const quote = useMemo(
-    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm }),
-    [selectedItems, moveType, distanceKm],
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew }),
+    [selectedItems, moveType, distanceKm, effectiveCrew],
   );
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
@@ -93,7 +96,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           move_type: moveType,
           distance_km: distanceKm,
           items: itemsArr,
-          // Price fields are recomputed server-side by a database trigger.
+          crew_count: effectiveCrew,
           pickup_lat: distance?.pickup?.lat ?? null,
           pickup_lng: distance?.pickup?.lng ?? null,
           dropoff_lat: distance?.dropoff?.lat ?? null,
@@ -216,6 +219,40 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </CardContent>
       </Card>
 
+      {/* Additional crew (optional) */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Users className="h-4 w-4" /></div>
+              <div>
+                <h3 className="font-semibold">Additional crew</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Optional · ${quote.crewMemberFee}/person
+                </p>
+              </div>
+            </div>
+            <Switch checked={crewEnabled} onCheckedChange={setCrewEnabled} />
+          </div>
+          {crewEnabled && (
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
+              <span className="text-sm font-medium">Crew members</span>
+              <div className="flex items-center gap-2">
+                <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full"
+                  onClick={() => setCrewCount((c) => Math.max(1, c - 1))} disabled={crewCount <= 1}>
+                  -
+                </Button>
+                <span className="w-6 text-center text-sm font-semibold tabular-nums">{crewCount}</span>
+                <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full"
+                  onClick={() => setCrewCount((c) => Math.min(6, c + 1))} disabled={crewCount >= 6}>
+                  +
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Breakdown */}
       <Card>
         <CardContent className="space-y-2 p-5 text-sm">
@@ -224,22 +261,36 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <h3 className="font-semibold">Price breakdown</h3>
           </div>
           {moveType === "local" && (
-            <>
-              <div className="flex justify-between"><span className="text-muted-foreground">Base ({quote.recommendedVehicle})</span><span>${breakdown.baseFee?.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Labor ({breakdown.estimatedHours}h × ${breakdown.hourlyRate}/h)</span><span>${breakdown.laborCost?.toFixed(2)}</span></div>
-            </>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Volume ({quote.totalVolumeCuFt.toFixed(0)} ft³ × ${breakdown.ratePerCuFt}/ft³)
+              </span>
+              <span>${quote.servicePrice.toFixed(2)}</span>
+            </div>
           )}
           {moveType === "intercity" && (
-            <>
-              <div className="flex justify-between"><span className="text-muted-foreground">Base ({quote.recommendedVehicle})</span><span>${breakdown.baseFee?.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)</span><span>${breakdown.distanceCost?.toFixed(2)}</span></div>
-            </>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
+              </span>
+              <span>${quote.servicePrice.toFixed(2)}</span>
+            </div>
           )}
           {moveType === "inter-province" && (
-            <>
-              <div className="flex justify-between"><span className="text-muted-foreground">Linehaul base ({quote.recommendedVehicle})</span><span>${breakdown.baseFee?.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)</span><span>${breakdown.weightCost?.toFixed(2)}</span></div>
-            </>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)
+              </span>
+              <span>${quote.servicePrice.toFixed(2)}</span>
+            </div>
+          )}
+          {effectiveCrew > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Additional crew ({effectiveCrew} × ${quote.crewMemberFee})
+              </span>
+              <span>${quote.crewCost.toFixed(2)}</span>
+            </div>
           )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
             <span>Total</span><span className="text-primary">${quote.finalPrice.toFixed(2)} CAD</span>
