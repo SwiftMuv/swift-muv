@@ -8,6 +8,8 @@ import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Users } from "lucide-react";
 import { calculateMovePrice, type MoveType, type SelectedItem } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
@@ -38,6 +40,8 @@ const BookingPage = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [crewEnabled, setCrewEnabled] = useState(false);
+  const [crewCount, setCrewCount] = useState(1);
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
@@ -61,9 +65,10 @@ const BookingPage = () => {
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
+  const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
   const quote = useMemo(
-    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm }),
-    [selectedItems, moveType, distanceKm],
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew }),
+    [selectedItems, moveType, distanceKm, effectiveCrew],
   );
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
