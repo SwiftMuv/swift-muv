@@ -228,7 +228,7 @@ const BookingPage = () => {
 
         <Button
           onClick={handleBook}
-          disabled={booking || itemCount === 0 || distanceKm === 0 || calculating}
+          disabled={booking || (itemCount === 0 && !suvSelected) || distanceKm === 0 || calculating}
           className="h-12 w-full text-base font-semibold"
         >
           {booking && <Loader2 className="h-4 w-4 animate-spin" />}
