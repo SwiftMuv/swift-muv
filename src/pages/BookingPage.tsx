@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Loader2, Truck } from "lucide-react";
+import { ArrowLeft, CalendarDays, CarFront, Loader2, Truck, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,7 @@ import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Users } from "lucide-react";
-import { calculateMovePrice, type MoveType, type SelectedItem } from "@/lib/movingEngine";
+import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
 
@@ -42,6 +41,7 @@ const BookingPage = () => {
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewCount, setCrewCount] = useState(1);
+  const [suvSelected, setSuvSelected] = useState(false);
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
@@ -66,15 +66,16 @@ const BookingPage = () => {
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
   const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
+  const vehicleSelection: VehicleSelection = suvSelected ? "suv" : "auto";
   const quote = useMemo(
-    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew }),
-    [selectedItems, moveType, distanceKm, effectiveCrew],
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew, vehicleSelection }),
+    [selectedItems, moveType, distanceKm, effectiveCrew, vehicleSelection],
   );
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
 
   const handleBook = async () => {
-    if (!user || itemCount === 0 || distanceKm === 0) return;
+    if (!user || (itemCount === 0 && !suvSelected) || distanceKm === 0) return;
     setBooking(true);
     try {
       const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
@@ -89,6 +90,7 @@ const BookingPage = () => {
           distance_km: distanceKm,
           items: itemsArr,
           crew_count: effectiveCrew,
+          vehicle_category: suvSelected ? "suv" : null,
           pickup_lat: distance?.pickup?.lat ?? null,
           pickup_lng: distance?.pickup?.lng ?? null,
           dropoff_lat: distance?.dropoff?.lat ?? null,
@@ -162,6 +164,22 @@ const BookingPage = () => {
           </div>
         )}
 
+        {/* Extra Large Car / SUV toggle */}
+        <div className={`rounded-xl border p-4 ${suvSelected ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <CarFront className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-semibold">Extra Large Car / SUV</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Bags & luggage only · flat $50 local{moveType !== "local" ? " + $1.20/km" : ""}
+                </p>
+              </div>
+            </div>
+            <Switch checked={suvSelected} onCheckedChange={setSuvSelected} />
+          </div>
+        </div>
+
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Inventory</h2>
           <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
@@ -210,7 +228,7 @@ const BookingPage = () => {
 
         <Button
           onClick={handleBook}
-          disabled={booking || itemCount === 0 || distanceKm === 0 || calculating}
+          disabled={booking || (itemCount === 0 && !suvSelected) || distanceKm === 0 || calculating}
           className="h-12 w-full text-base font-semibold"
         >
           {booking && <Loader2 className="h-4 w-4 animate-spin" />}

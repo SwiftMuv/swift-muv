@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
+import { CarFront, Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ import {
   calculateMovePrice,
   type MoveType,
   type SelectedItem,
+  type VehicleSelection,
 } from "@/lib/movingEngine";
 
 interface Props { onBooked?: () => void; }
@@ -45,6 +46,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewCount, setCrewCount] = useState(1);
+  const [suvSelected, setSuvSelected] = useState(false);
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
@@ -69,15 +71,16 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
   const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
+  const vehicleSelection: VehicleSelection = suvSelected ? "suv" : "auto";
 
   const quote = useMemo(
-    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew }),
-    [selectedItems, moveType, distanceKm, effectiveCrew],
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew, vehicleSelection }),
+    [selectedItems, moveType, distanceKm, effectiveCrew, vehicleSelection],
   );
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
   const canSubmit =
-    !!user && itemCount > 0 && pickup.trim().length >= 5 &&
+    !!user && (itemCount > 0 || suvSelected) && pickup.trim().length >= 5 &&
     dropoff.trim().length >= 5 && distanceKm > 0 && !submitting;
 
   const handleSubmit = async () => {
@@ -97,6 +100,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           distance_km: distanceKm,
           items: itemsArr,
           crew_count: effectiveCrew,
+          vehicle_category: suvSelected ? "suv" : null,
           pickup_lat: distance?.pickup?.lat ?? null,
           pickup_lng: distance?.pickup?.lng ?? null,
           dropoff_lat: distance?.dropoff?.lat ?? null,
@@ -189,13 +193,35 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </CardContent>
       </Card>
 
+      {/* Extra Large Car / SUV — bags & luggage only */}
+      <Card className={suvSelected ? "border-primary/40 bg-primary/5" : ""}>
+        <CardContent className="flex items-center justify-between gap-3 p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <CarFront className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold">Extra Large Car / SUV</p>
+              <p className="text-[11px] text-muted-foreground">
+                Bags & luggage only · flat $50 local{moveType !== "local" ? " + $1.20/km" : ""}
+              </p>
+            </div>
+          </div>
+          <Switch checked={suvSelected} onCheckedChange={setSuvSelected} />
+        </CardContent>
+      </Card>
+
       {/* Recommended vehicle */}
       {itemCount > 0 && (
         <Card>
           <CardContent className="flex items-center gap-3 p-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary"><Truck className="h-5 w-5" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              {suvSelected ? <CarFront className="h-5 w-5" /> : <Truck className="h-5 w-5" />}
+            </div>
             <div className="flex-1">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Recommended</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                {suvSelected ? "Selected" : "Recommended"}
+              </p>
               <p className="font-semibold">{quote.recommendedVehicle}</p>
               <p className="text-[11px] text-muted-foreground">
                 {quote.totalVolumeCuFt.toFixed(0)} ft³ · {quote.totalWeightLbs.toFixed(0)} lb
@@ -260,29 +286,48 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Receipt className="h-4 w-4" /></div>
             <h3 className="font-semibold">Price breakdown</h3>
           </div>
-          {moveType === "local" && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                Volume ({quote.totalVolumeCuFt.toFixed(0)} ft³ × ${breakdown.ratePerCuFt}/ft³)
-              </span>
-              <span>${quote.servicePrice.toFixed(2)}</span>
-            </div>
-          )}
-          {moveType === "intercity" && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
-              </span>
-              <span>${quote.servicePrice.toFixed(2)}</span>
-            </div>
-          )}
-          {moveType === "inter-province" && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)
-              </span>
-              <span>${quote.servicePrice.toFixed(2)}</span>
-            </div>
+          {quote.isFlatRate ? (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">SUV flat rate (local)</span>
+                <span>${Number(breakdown.flatRate ?? 0).toFixed(2)}</span>
+              </div>
+              {moveType !== "local" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
+                  </span>
+                  <span>${(Number(breakdown.serviceCost ?? 0) - Number(breakdown.flatRate ?? 0)).toFixed(2)}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {moveType === "local" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Volume ({quote.totalVolumeCuFt.toFixed(0)} ft³ × ${breakdown.ratePerCuFt}/ft³)
+                  </span>
+                  <span>${quote.servicePrice.toFixed(2)}</span>
+                </div>
+              )}
+              {moveType === "intercity" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
+                  </span>
+                  <span>${quote.servicePrice.toFixed(2)}</span>
+                </div>
+              )}
+              {moveType === "inter-province" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)
+                  </span>
+                  <span>${quote.servicePrice.toFixed(2)}</span>
+                </div>
+              )}
+            </>
           )}
           {effectiveCrew > 0 && (
             <div className="flex justify-between">
