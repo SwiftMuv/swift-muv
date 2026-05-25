@@ -90,6 +90,7 @@ const BookingPage = () => {
           distance_km: distanceKm,
           items: itemsArr,
           crew_count: effectiveCrew,
+          vehicle_category: suvSelected ? "suv" : null,
           pickup_lat: distance?.pickup?.lat ?? null,
           pickup_lng: distance?.pickup?.lng ?? null,
           dropoff_lat: distance?.dropoff?.lat ?? null,
