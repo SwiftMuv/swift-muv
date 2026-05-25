@@ -164,6 +164,22 @@ const BookingPage = () => {
           </div>
         )}
 
+        {/* Extra Large Car / SUV toggle */}
+        <div className={`rounded-xl border p-4 ${suvSelected ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <CarFront className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-semibold">Extra Large Car / SUV</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Bags & luggage only · flat $50 local{moveType !== "local" ? " + $1.20/km" : ""}
+                </p>
+              </div>
+            </div>
+            <Switch checked={suvSelected} onCheckedChange={setSuvSelected} />
+          </div>
+        </div>
+
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Inventory</h2>
           <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
