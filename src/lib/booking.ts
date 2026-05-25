@@ -1,7 +1,12 @@
-import { Truck, Package2, Container, Box } from "lucide-react";
+import { Truck, Caravan, Container, CarFront } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export type VehicleCategory = "pickup_truck" | "cargo_van" | "box_truck" | "moving_truck_16";
+export type VehicleCategory =
+  | "suv"
+  | "pickup_truck"
+  | "cargo_van"
+  | "box_truck"
+  | "moving_truck_16";
 
 export interface VehicleOption {
   id: VehicleCategory;
@@ -11,10 +16,11 @@ export interface VehicleOption {
 }
 
 export const VEHICLE_OPTIONS: VehicleOption[] = [
+  { id: "suv", name: "Extra Large Car / SUV", description: "Bags & luggage only · flat $50 local", icon: CarFront },
   { id: "pickup_truck", name: "Pickup Truck", description: "Small loads, a few boxes", icon: Truck },
-  { id: "cargo_van", name: "Cargo Van", description: "1-bedroom or studio", icon: Package2 },
+  { id: "cargo_van", name: "Cargo Van", description: "1-bedroom or studio", icon: Caravan },
   { id: "box_truck", name: "Box Truck", description: "2-bedroom apartment", icon: Container },
-  { id: "moving_truck_16", name: "16ft Moving Truck", description: "3+ bedroom home", icon: Box },
+  { id: "moving_truck_16", name: "16ft Moving Truck", description: "3+ bedroom home", icon: Truck },
 ];
 
 // Pricing constants
