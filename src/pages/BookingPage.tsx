@@ -75,7 +75,7 @@ const BookingPage = () => {
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
 
   const handleBook = async () => {
-    if (!user || itemCount === 0 || distanceKm === 0) return;
+    if (!user || (itemCount === 0 && !suvSelected) || distanceKm === 0) return;
     setBooking(true);
     try {
       const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
