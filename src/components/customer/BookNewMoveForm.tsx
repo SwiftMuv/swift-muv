@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
+import { CarFront, Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ import {
   calculateMovePrice,
   type MoveType,
   type SelectedItem,
+  type VehicleSelection,
 } from "@/lib/movingEngine";
 
 interface Props { onBooked?: () => void; }
