@@ -80,7 +80,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
   const canSubmit =
-    !!user && itemCount > 0 && pickup.trim().length >= 5 &&
+    !!user && (itemCount > 0 || suvSelected) && pickup.trim().length >= 5 &&
     dropoff.trim().length >= 5 && distanceKm > 0 && !submitting;
 
   const handleSubmit = async () => {
