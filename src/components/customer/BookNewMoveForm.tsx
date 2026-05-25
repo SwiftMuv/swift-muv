@@ -286,29 +286,48 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Receipt className="h-4 w-4" /></div>
             <h3 className="font-semibold">Price breakdown</h3>
           </div>
-          {moveType === "local" && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                Volume ({quote.totalVolumeCuFt.toFixed(0)} ft³ × ${breakdown.ratePerCuFt}/ft³)
-              </span>
-              <span>${quote.servicePrice.toFixed(2)}</span>
-            </div>
-          )}
-          {moveType === "intercity" && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
-              </span>
-              <span>${quote.servicePrice.toFixed(2)}</span>
-            </div>
-          )}
-          {moveType === "inter-province" && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)
-              </span>
-              <span>${quote.servicePrice.toFixed(2)}</span>
-            </div>
+          {quote.isFlatRate ? (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">SUV flat rate (local)</span>
+                <span>${Number(breakdown.flatRate ?? 0).toFixed(2)}</span>
+              </div>
+              {moveType !== "local" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
+                  </span>
+                  <span>${(Number(breakdown.serviceCost ?? 0) - Number(breakdown.flatRate ?? 0)).toFixed(2)}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {moveType === "local" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Volume ({quote.totalVolumeCuFt.toFixed(0)} ft³ × ${breakdown.ratePerCuFt}/ft³)
+                  </span>
+                  <span>${quote.servicePrice.toFixed(2)}</span>
+                </div>
+              )}
+              {moveType === "intercity" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
+                  </span>
+                  <span>${quote.servicePrice.toFixed(2)}</span>
+                </div>
+              )}
+              {moveType === "inter-province" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)
+                  </span>
+                  <span>${quote.servicePrice.toFixed(2)}</span>
+                </div>
+              )}
+            </>
           )}
           {effectiveCrew > 0 && (
             <div className="flex justify-between">
