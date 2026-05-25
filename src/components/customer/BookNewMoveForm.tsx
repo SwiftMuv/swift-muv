@@ -46,6 +46,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewCount, setCrewCount] = useState(1);
+  const [suvSelected, setSuvSelected] = useState(false);
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
@@ -70,10 +71,11 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
   const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
+  const vehicleSelection: VehicleSelection = suvSelected ? "suv" : "auto";
 
   const quote = useMemo(
-    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew }),
-    [selectedItems, moveType, distanceKm, effectiveCrew],
+    () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew, vehicleSelection }),
+    [selectedItems, moveType, distanceKm, effectiveCrew, vehicleSelection],
   );
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);
