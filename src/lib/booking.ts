@@ -88,6 +88,7 @@ export function calculatePrice(input: {
 
 export const moveSizeFromVehicle = (v: VehicleCategory): "small" | "medium" | "large" | "xlarge" => {
   switch (v) {
+    case "suv": return "small";
     case "pickup_truck": return "small";
     case "cargo_van": return "medium";
     case "box_truck": return "large";
