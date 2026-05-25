@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Loader2, Truck } from "lucide-react";
+import { ArrowLeft, CalendarDays, CarFront, Loader2, Truck, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,7 @@ import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Users } from "lucide-react";
-import { calculateMovePrice, type MoveType, type SelectedItem } from "@/lib/movingEngine";
+import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
 
