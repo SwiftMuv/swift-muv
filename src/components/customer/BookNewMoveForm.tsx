@@ -193,13 +193,35 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </CardContent>
       </Card>
 
+      {/* Extra Large Car / SUV — bags & luggage only */}
+      <Card className={suvSelected ? "border-primary/40 bg-primary/5" : ""}>
+        <CardContent className="flex items-center justify-between gap-3 p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <CarFront className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold">Extra Large Car / SUV</p>
+              <p className="text-[11px] text-muted-foreground">
+                Bags & luggage only · flat $50 local{moveType !== "local" ? " + $1.20/km" : ""}
+              </p>
+            </div>
+          </div>
+          <Switch checked={suvSelected} onCheckedChange={setSuvSelected} />
+        </CardContent>
+      </Card>
+
       {/* Recommended vehicle */}
       {itemCount > 0 && (
         <Card>
           <CardContent className="flex items-center gap-3 p-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary"><Truck className="h-5 w-5" /></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              {suvSelected ? <CarFront className="h-5 w-5" /> : <Truck className="h-5 w-5" />}
+            </div>
             <div className="flex-1">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Recommended</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                {suvSelected ? "Selected" : "Recommended"}
+              </p>
               <p className="font-semibold">{quote.recommendedVehicle}</p>
               <p className="text-[11px] text-muted-foreground">
                 {quote.totalVolumeCuFt.toFixed(0)} ft³ · {quote.totalWeightLbs.toFixed(0)} lb
