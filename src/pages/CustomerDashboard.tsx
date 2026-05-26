@@ -19,6 +19,7 @@ import { CustomerBottomNav } from "@/components/customer/CustomerBottomNav";
 import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
 import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
 import RatingModal from "@/components/customer/RatingModal";
+import NotificationBell from "@/components/NotificationBell";
 
 interface Booking {
   id: string;
@@ -132,8 +133,9 @@ const CustomerDashboard = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b">
-        <div className="mx-auto max-w-3xl px-4 py-3">
+        <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
           <h1 className="text-lg font-bold text-foreground">{titles[activeTab]}</h1>
+          <NotificationBell />
         </div>
       </header>
 
