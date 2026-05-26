@@ -1,4 +1,5 @@
-import { Bell, Globe, DollarSign, MoreVertical, LogOut } from "lucide-react";
+import { Globe, DollarSign, MoreVertical, LogOut } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,13 +176,7 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
         </div>
 
         {/* Far-right: Notifications */}
-        <button
-          className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4 h-4 text-foreground" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[hsl(var(--swift-danger))]" />
-        </button>
+        <NotificationBell />
       </div>
     </header>
   );

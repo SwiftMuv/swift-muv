@@ -1,5 +1,4 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import Stripe from 'npm:stripe@17';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,8 +8,9 @@ const corsHeaders = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-// Driver withdrawal: triggers an instant Stripe Connect payout on the driver's connected account.
-// Funds previously transferred via release-earnings are payed out to the linked bank/debit card.
+// Driver withdrawal: verifies the driver has linked bank details and creates a
+// pending payout transaction request. Actual disbursement is handled offline by admins
+// (or a downstream processor) by updating the driver_payouts row to 'processing'/'paid'.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -32,14 +32,15 @@ Deno.serve(async (req) => {
     const amt = Number(amount);
     if (!amt || amt <= 0) return json({ error: 'Invalid amount' }, 400);
 
-    const { data: profile } = await admin
-      .from('driver_profiles')
-      .select('stripe_connect_id')
-      .eq('user_id', driverId)
+    // 1. Must have linked bank account in driver_bank_details
+    const { data: bank } = await admin
+      .from('driver_bank_details')
+      .select('id, account_last4, bank_name')
+      .eq('driver_id', driverId)
       .maybeSingle();
-    if (!profile?.stripe_connect_id) return json({ error: 'Connect your bank account first' }, 400);
+    if (!bank) return json({ error: 'Link a bank account before requesting a withdrawal' }, 400);
 
-    // Compute available balance from released jobs minus prior successful payouts
+    // 2. Compute available balance: released earnings minus prior pending/processing/paid payouts
     const { data: jobs } = await admin
       .from('jobs')
       .select('driver_earnings')
@@ -52,38 +53,29 @@ Deno.serve(async (req) => {
       .select('amount, status')
       .eq('driver_id', driverId)
       .in('status', ['pending', 'processing', 'paid']);
-    const paidOrPending = (payouts ?? []).reduce((s, p: any) => s + Number(p.amount ?? 0), 0);
+    const reserved = (payouts ?? []).reduce((s, p: any) => s + Number(p.amount ?? 0), 0);
 
-    const available = Math.round((released - paidOrPending) * 100) / 100;
+    const available = Math.round((released - reserved) * 100) / 100;
     if (amt > available) return json({ error: `Only $${available.toFixed(2)} available` }, 400);
 
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) return json({ error: 'Stripe not configured' }, 500);
-    const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
-
-    const { data: payoutRow } = await admin
+    // 3. Create pending payout transaction request
+    const { data: payoutRow, error: insErr } = await admin
       .from('driver_payouts')
-      .insert({ driver_id: driverId, amount: amt, status: 'processing' })
+      .insert({ driver_id: driverId, amount: amt, status: 'pending' })
       .select()
       .single();
+    if (insErr) return json({ error: insErr.message }, 500);
 
-    try {
-      const payout = await stripe.payouts.create(
-        { amount: Math.round(amt * 100), currency: 'cad', method: 'instant' },
-        { stripeAccount: profile.stripe_connect_id },
-      );
-      await admin.from('driver_payouts').update({
-        status: 'paid',
-        stripe_payout_id: payout.id,
-        completed_at: new Date().toISOString(),
-      }).eq('id', payoutRow!.id);
-      return json({ ok: true, payoutId: payout.id, amount: amt });
-    } catch (e: any) {
-      const msg = e?.message ?? 'Payout failed';
-      console.error('Stripe payout failed', e);
-      await admin.from('driver_payouts').update({ status: 'failed', failure_reason: msg }).eq('id', payoutRow!.id);
-      return json({ error: msg }, 502);
-    }
+    // 4. In-app notification for the driver
+    await admin.from('notifications').insert({
+      user_id: driverId,
+      type: 'payout_requested',
+      title: 'Withdrawal requested',
+      body: `Your $${amt.toFixed(2)} withdrawal to ${bank.bank_name} ••${bank.account_last4} is pending.`,
+      data: { payout_id: payoutRow.id, amount: amt },
+    });
+
+    return json({ ok: true, payoutId: payoutRow.id, amount: amt, status: 'pending' });
   } catch (err) {
     console.error('driver-withdraw error', err);
     return json({ error: err instanceof Error ? err.message : 'unknown' }, 500);

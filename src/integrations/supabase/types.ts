@@ -167,6 +167,45 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_bank_details: {
+        Row: {
+          account_holder_name: string
+          account_last4: string
+          bank_name: string
+          created_at: string
+          driver_id: string
+          id: string
+          institution_number: string
+          is_verified: boolean
+          transit_number: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name: string
+          account_last4: string
+          bank_name: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          institution_number: string
+          is_verified?: boolean
+          transit_number: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string
+          account_last4?: string
+          bank_name?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          institution_number?: string
+          is_verified?: boolean
+          transit_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_documents: {
         Row: {
           created_at: string
@@ -442,6 +481,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json
+          id: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ratings: {
         Row: {
           comment: string | null
@@ -490,6 +562,39 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicle_categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          display_order: number
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description: string
+          display_order?: number
+          icon: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          display_order?: number
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
         }
         Relationships: []
       }

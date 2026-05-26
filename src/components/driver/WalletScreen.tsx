@@ -1,35 +1,38 @@
 import { useCallback, useEffect, useState } from "react";
-import { DollarSign, ArrowUpRight, ArrowDownLeft, TrendingUp, Clock, Loader2 } from "lucide-react";
+import { DollarSign, ArrowUpRight, TrendingUp, Clock, Loader2, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import BankDetailsForm from "@/components/driver/BankDetailsForm";
 
 interface JobRow { id: string; driver_earnings: number; earnings_status: string; completed_at: string | null; }
 interface PayoutRow { id: string; amount: number; status: string; created_at: string; }
+interface BankRow { id: string; bank_name: string; account_last4: string; account_holder_name: string; }
 
 const WalletScreen = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [stripeConnectId, setStripeConnectId] = useState<string | null>(null);
+  const [bank, setBank] = useState<BankRow | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [amount, setAmount] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showBankForm, setShowBankForm] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: jobsData }, { data: payoutsData }, { data: profile }] = await Promise.all([
+    const [{ data: jobsData }, { data: payoutsData }, { data: bankData }] = await Promise.all([
       supabase.from("jobs").select("id, driver_earnings, earnings_status, completed_at").eq("driver_id", user.id),
       supabase.from("driver_payouts").select("id, amount, status, created_at").eq("driver_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("driver_profiles").select("stripe_connect_id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("driver_bank_details").select("id, bank_name, account_last4, account_holder_name").eq("driver_id", user.id).maybeSingle(),
     ]);
     setJobs((jobsData ?? []) as JobRow[]);
     setPayouts((payoutsData ?? []) as PayoutRow[]);
-    setStripeConnectId(profile?.stripe_connect_id ?? null);
+    setBank((bankData ?? null) as BankRow | null);
     setLoading(false);
   }, [user]);
 
@@ -37,8 +40,8 @@ const WalletScreen = () => {
 
   const pendingEarnings = jobs.filter((j) => j.earnings_status === "pending").reduce((s, j) => s + Number(j.driver_earnings ?? 0), 0);
   const releasedEarnings = jobs.filter((j) => j.earnings_status === "released").reduce((s, j) => s + Number(j.driver_earnings ?? 0), 0);
-  const paidOrPendingPayouts = payouts.filter((p) => ["pending", "processing", "paid"].includes(p.status)).reduce((s, p) => s + Number(p.amount ?? 0), 0);
-  const available = Math.max(0, Math.round((releasedEarnings - paidOrPendingPayouts) * 100) / 100);
+  const reservedPayouts = payouts.filter((p) => ["pending", "processing", "paid"].includes(p.status)).reduce((s, p) => s + Number(p.amount ?? 0), 0);
+  const available = Math.max(0, Math.round((releasedEarnings - reservedPayouts) * 100) / 100);
 
   const thisWeek = jobs.filter((j) => {
     if (!j.completed_at) return false;
@@ -53,20 +56,12 @@ const WalletScreen = () => {
     return dt.getMonth() === new Date().getMonth() && dt.getFullYear() === new Date().getFullYear();
   }).reduce((s, j) => s + Number(j.driver_earnings ?? 0), 0);
 
-  const handleConnectBank = async () => {
-    if (!user) return;
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) return;
-    const { data, error } = await supabase.functions.invoke<{ url?: string; error?: string }>("stripe-connect", {
-      headers: { Authorization: `Bearer ${token}` },
-      body: {},
-    });
-    if (error || !data?.url) return toast.error(data?.error ?? error?.message ?? "Could not start onboarding");
-    window.location.href = data.url;
-  };
-
   const handleWithdraw = async () => {
+    if (!bank) {
+      toast.error("Link a bank account first");
+      setShowBankForm(true);
+      return;
+    }
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return toast.error("Enter a valid amount");
     if (amt > available) return toast.error(`Only $${available.toFixed(2)} available`);
@@ -79,7 +74,7 @@ const WalletScreen = () => {
     });
     setWithdrawing(false);
     if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Withdraw failed");
-    toast.success(`$${amt.toFixed(2)} sent to your bank`);
+    toast.success(`Withdrawal of $${amt.toFixed(2)} requested`);
     setShowWithdraw(false);
     setAmount("");
     load();
@@ -100,7 +95,7 @@ const WalletScreen = () => {
           </p>
         )}
         <div className="mt-4 flex gap-2">
-          {stripeConnectId ? (
+          {bank ? (
             <Button
               onClick={() => { setAmount(available.toFixed(2)); setShowWithdraw(true); }}
               variant="secondary"
@@ -110,21 +105,28 @@ const WalletScreen = () => {
               <ArrowUpRight className="w-4 h-4 mr-1.5" /> Withdraw
             </Button>
           ) : (
-            <Button onClick={handleConnectBank} variant="secondary" className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0">
-              Connect bank to withdraw
+            <Button onClick={() => setShowBankForm(true)} variant="secondary" className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0">
+              <Landmark className="w-4 h-4 mr-1.5" /> Link bank account
             </Button>
           )}
         </div>
+        {bank && (
+          <p className="text-[11px] mt-2 opacity-80">{bank.bank_name} ••{bank.account_last4}</p>
+        )}
       </div>
+
+      {showBankForm && (
+        <BankDetailsForm onSaved={() => { setShowBankForm(false); load(); }} onCancel={() => setShowBankForm(false)} />
+      )}
 
       {showWithdraw && (
         <div className="rounded-xl bg-card border p-4 space-y-3">
-          <p className="text-sm font-medium">Withdraw to your bank</p>
+          <p className="text-sm font-medium">Request withdrawal to {bank?.bank_name} ••{bank?.account_last4}</p>
           <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-          <p className="text-xs text-muted-foreground">Instant transfer · arrives in minutes</p>
+          <p className="text-xs text-muted-foreground">Pending — processed within 1-3 business days</p>
           <div className="flex gap-2">
             <Button onClick={handleWithdraw} disabled={withdrawing} className="flex-1 rounded-xl h-11 font-semibold">
-              {withdrawing && <Loader2 className="h-4 w-4 animate-spin mr-1" />}Confirm
+              {withdrawing && <Loader2 className="h-4 w-4 animate-spin mr-1" />}Request payout
             </Button>
             <Button variant="outline" className="rounded-xl h-11" onClick={() => setShowWithdraw(false)}>Cancel</Button>
           </div>
