@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { VEHICLE_OPTIONS, type VehicleCategory } from "@/lib/booking";
+import { type VehicleCategory } from "@/lib/booking";
+import { useVehicleCategories } from "@/hooks/useVehicleCategories";
 
 interface Props {
   value: VehicleCategory | null;
@@ -7,9 +8,19 @@ interface Props {
 }
 
 export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
+  const { options, loading } = useVehicleCategories();
+
+  if (loading) {
+    return <div className="grid grid-cols-2 gap-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-[88px] rounded-xl border border-border bg-card animate-pulse" />
+      ))}
+    </div>;
+  }
+
   return (
     <div className="grid grid-cols-2 gap-2">
-      {VEHICLE_OPTIONS.map((v) => {
+      {options.map((v) => {
         const Icon = v.icon;
         const selected = value === v.id;
         return (

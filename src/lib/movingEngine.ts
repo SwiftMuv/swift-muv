@@ -33,6 +33,9 @@ export interface Vehicle {
 export type MoveType = "local" | "intercity" | "inter-province";
 export type VehicleSelection = "auto" | "suv";
 
+// Flat crew rate across all vehicles: $15 CAD per additional crew member.
+export const CREW_MEMBER_RATE_CAD = 15;
+
 export const SUV_VEHICLE: Vehicle = {
   name: "Extra Large Car / SUV",
   maxVolumeCuFt: 60,
@@ -40,17 +43,17 @@ export const SUV_VEHICLE: Vehicle = {
   perCuFtLocal: 0,
   perKmRateIntercity: 1.20,
   perLbRateInterProvince: 0,
-  crewMemberFee: 25,
+  crewMemberFee: CREW_MEMBER_RATE_CAD,
   flatRate: { local: 50, perKm: 1.20 },
   manualOnly: true,
 };
 
 export const VEHICLE_FLEET: Vehicle[] = [
   SUV_VEHICLE,
-  { name: "Cargo Van",     maxVolumeCuFt: 120,  maxWeightLbs: 2000,  perCuFtLocal: 0.95, perKmRateIntercity: 1.45, perLbRateInterProvince: 0.18, crewMemberFee: 35 },
-  { name: "12ft Cube Van", maxVolumeCuFt: 400,  maxWeightLbs: 3000,  perCuFtLocal: 1.10, perKmRateIntercity: 1.80, perLbRateInterProvince: 0.26, crewMemberFee: 45 },
-  { name: "16ft Truck",    maxVolumeCuFt: 800,  maxWeightLbs: 4500,  perCuFtLocal: 1.25, perKmRateIntercity: 2.15, perLbRateInterProvince: 0.35, crewMemberFee: 60 },
-  { name: "26ft Truck",    maxVolumeCuFt: 1400, maxWeightLbs: 10000, perCuFtLocal: 1.45, perKmRateIntercity: 2.60, perLbRateInterProvince: 0.48, crewMemberFee: 75 },
+  { name: "Cargo Van",     maxVolumeCuFt: 120,  maxWeightLbs: 2000,  perCuFtLocal: 0.95, perKmRateIntercity: 1.45, perLbRateInterProvince: 0.18, crewMemberFee: CREW_MEMBER_RATE_CAD },
+  { name: "12ft Cube Van", maxVolumeCuFt: 400,  maxWeightLbs: 3000,  perCuFtLocal: 1.10, perKmRateIntercity: 1.80, perLbRateInterProvince: 0.26, crewMemberFee: CREW_MEMBER_RATE_CAD },
+  { name: "16ft Truck",    maxVolumeCuFt: 800,  maxWeightLbs: 4500,  perCuFtLocal: 1.25, perKmRateIntercity: 2.15, perLbRateInterProvince: 0.35, crewMemberFee: CREW_MEMBER_RATE_CAD },
+  { name: "26ft Truck",    maxVolumeCuFt: 1400, maxWeightLbs: 10000, perCuFtLocal: 1.45, perKmRateIntercity: 2.60, perLbRateInterProvince: 0.48, crewMemberFee: CREW_MEMBER_RATE_CAD },
 ];
 
 export function recommendVehicle(items: SelectedItem[]): Vehicle {
