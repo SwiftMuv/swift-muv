@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import type { Tables, Database } from "@/integrations/supabase/types";
 import { VEHICLE_OPTIONS, type VehicleCategory } from "@/lib/booking";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DriverReviews from "@/components/DriverReviews";
 
 type DriverProfile = Tables<"driver_profiles">;
 type DocRow = Tables<"driver_documents">;
@@ -574,6 +575,12 @@ const ProfileScreen = () => {
           })}
         </div>
       </section>
+      {/* Customer reviews */}
+      {user && (
+        <section className="space-y-3">
+          <DriverReviews driverId={user.id} title="What customers are saying" />
+        </section>
+      )}
 
       {/* Sign Out */}
       <Button
