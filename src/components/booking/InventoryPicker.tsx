@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Loader2, Minus, Plus, Search } from "lucide-react";
+import { Loader2, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import type { SelectedItem } from "@/lib/movingEngine";
+import VanSvg from "@/assets/vehicles/van.svg";
+import SuvSvg from "@/assets/vehicles/suv.svg";
+import PickupSvg from "@/assets/vehicles/pickup.svg";
+import BoxTruckSvg from "@/assets/vehicles/box-truck.svg";
+import OtherSvg from "@/assets/vehicles/other.svg";
 
 interface MovingItemRow {
   id: number;
@@ -18,26 +17,29 @@ interface MovingItemRow {
   weight_lbs: number;
 }
 
+interface CategoryDef {
+  key: string;
+  label: string;
+  imageSrc: string;
+}
+
+const CATEGORIES: CategoryDef[] = [
+  { key: "Van", label: "Van", imageSrc: VanSvg },
+  { key: "SUV", label: "SUV", imageSrc: SuvSvg },
+  { key: "Pickup", label: "Pickup", imageSrc: PickupSvg },
+  { key: "Box Truck", label: "Box Truck", imageSrc: BoxTruckSvg },
+  { key: "Other Inventory", label: "Other Inventory", imageSrc: OtherSvg },
+];
+
 interface Props {
   selected: SelectedItem[];
   onChange: (next: SelectedItem[]) => void;
 }
 
-const CATEGORY_ORDER = [
-  "Studio & 1-Bedroom Essentials",
-  "Bedroom",
-  "Living Room",
-  "Kitchen & Dining",
-  "Boxes & Sundries",
-];
-
 export const InventoryPicker = ({ selected, onChange }: Props) => {
   const [items, setItems] = useState<MovingItemRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
-  const [openCats, setOpenCats] = useState<Record<string, boolean>>({
-    "Studio & 1-Bedroom Essentials": true,
-  });
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -56,7 +58,16 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
     return m;
   }, [selected]);
 
-  const setQty = (row: MovingItemRow, delta: number) => {
+  const itemsByCat = useMemo(() => {
+    const m: Record<string, MovingItemRow[]> = {};
+    items.forEach((i) => {
+      const c = i.category ?? "Other Inventory";
+      (m[c] ||= []).push(i);
+    });
+    return m;
+  }, [items]);
+
+  const updateQty = (row: MovingItemRow, delta: number) => {
     const current = qtyMap[row.id] ?? 0;
     const next = Math.max(0, current + delta);
     const without = selected.filter((s) => s.id !== row.id);
@@ -73,25 +84,8 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
     ]);
   };
 
-  const grouped = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = q
-      ? items.filter((i) => i.item_name.toLowerCase().includes(q))
-      : items;
-    const map: Record<string, MovingItemRow[]> = {};
-    filtered.forEach((i) => {
-      const cat = i.category ?? "Other";
-      (map[cat] ||= []).push(i);
-    });
-    const ordered: [string, MovingItemRow[]][] = [];
-    CATEGORY_ORDER.forEach((c) => {
-      if (map[c]) ordered.push([c, map[c]]);
-    });
-    Object.keys(map)
-      .filter((c) => !CATEGORY_ORDER.includes(c))
-      .forEach((c) => ordered.push([c, map[c]]));
-    return ordered;
-  }, [items, query]);
+  const categoryCount = (key: string) =>
+    (itemsByCat[key] ?? []).reduce((t, r) => t + (qtyMap[r.id] ?? 0), 0);
 
   if (loading) {
     return (
@@ -101,92 +95,112 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
     );
   }
 
+  const current = activeCategory
+    ? CATEGORIES.find((c) => c.key === activeCategory)
+    : null;
+  const currentRows = current ? itemsByCat[current.key] ?? [] : [];
+
   return (
-    <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search items…"
-          className="pl-9"
-        />
-      </div>
-      <div className="space-y-2">
-        {grouped.map(([cat, rows]) => {
-          const catQty = rows.reduce((s, r) => s + (qtyMap[r.id] ?? 0), 0);
-          const isOpen = query.trim() ? true : !!openCats[cat];
+    <div className="space-y-4">
+      {/* Vehicle category tiles */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+        {CATEGORIES.map((cat) => {
+          const isSelected = activeCategory === cat.key;
+          const count = categoryCount(cat.key);
           return (
-            <Collapsible
-              key={cat}
-              open={isOpen}
-              onOpenChange={(o) => setOpenCats((p) => ({ ...p, [cat]: o }))}
-              className="overflow-hidden rounded-xl border border-border bg-card"
+            <button
+              key={cat.key}
+              type="button"
+              onClick={() => setActiveCategory(isSelected ? null : cat.key)}
+              className={`relative flex h-28 flex-col items-center justify-between rounded-xl border-2 p-2.5 text-center transition-all ${
+                isSelected
+                  ? "border-primary bg-primary/10 shadow-sm"
+                  : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
+              }`}
             >
-              <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition hover:bg-muted/40">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">{cat}</span>
-                  {catQty > 0 && (
-                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                      {catQty}
-                    </span>
-                  )}
-                </div>
-                <ChevronDown
-                  className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+              {count > 0 && (
+                <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                  {count}
+                </span>
+              )}
+              <div className="flex h-12 w-full items-center justify-center text-primary">
+                <img
+                  src={cat.imageSrc}
+                  alt={cat.label}
+                  className="max-h-full max-w-full object-contain"
                 />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="divide-y divide-border border-t border-border">
-                  {rows.map((row) => {
-                    const qty = qtyMap[row.id] ?? 0;
-                    return (
-                      <div
-                        key={row.id}
-                        className={`flex items-center justify-between gap-2 px-4 py-2.5 ${qty > 0 ? "bg-primary/5" : ""}`}
-                      >
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{row.item_name}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {Number(row.cubic_feet)} ft³ · {Number(row.weight_lbs)} lb
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => setQty(row, -1)}
-                            disabled={qty === 0}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-5 text-center text-sm font-semibold tabular-nums">
-                            {qty}
-                          </span>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => setQty(row, +1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
+              <span className="mt-1 text-[11px] font-semibold leading-tight">
+                {cat.label}
+              </span>
+            </button>
           );
         })}
-        {grouped.length === 0 && (
-          <p className="py-4 text-center text-sm text-muted-foreground">No items match.</p>
-        )}
       </div>
+
+      {/* Drawer */}
+      {current && (
+        <div className="rounded-xl border border-border bg-muted/30 p-3">
+          <div className="mb-2 flex items-center justify-between border-b border-border pb-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              {current.label} items
+            </h4>
+            <span className="text-[10px] text-muted-foreground">
+              Specify quantities
+            </span>
+          </div>
+          {currentRows.length === 0 ? (
+            <p className="py-3 text-center text-xs text-muted-foreground">
+              No items in this category.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {currentRows.map((row) => {
+                const qty = qtyMap[row.id] ?? 0;
+                return (
+                  <div
+                    key={row.id}
+                    className={`flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 ${
+                      qty > 0 ? "ring-1 ring-primary/30" : ""
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{row.item_name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {Number(row.cubic_feet)} ft³ · {Number(row.weight_lbs)} lb
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8 rounded-full"
+                        onClick={() => updateQty(row, -1)}
+                        disabled={qty === 0}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span className="w-5 text-center text-sm font-semibold tabular-nums">
+                        {qty}
+                      </span>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8 rounded-full"
+                        onClick={() => updateQty(row, +1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
