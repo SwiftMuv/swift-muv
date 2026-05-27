@@ -575,6 +575,12 @@ const ProfileScreen = () => {
           })}
         </div>
       </section>
+      {/* Customer reviews */}
+      {user && (
+        <section className="space-y-3">
+          <DriverReviews driverId={user.id} title="What customers are saying" />
+        </section>
+      )}
 
       {/* Sign Out */}
       <Button
