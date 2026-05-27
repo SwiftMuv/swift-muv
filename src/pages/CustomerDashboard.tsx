@@ -19,6 +19,7 @@ import { CustomerBottomNav } from "@/components/customer/CustomerBottomNav";
 import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
 import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
 import RatingModal from "@/components/customer/RatingModal";
+import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
 import NotificationBell from "@/components/NotificationBell";
 
 interface Booking {
