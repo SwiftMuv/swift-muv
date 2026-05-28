@@ -145,6 +145,30 @@ const AdminDashboard = () => {
   }, [bookings]);
   const sparklineMax = Math.max(1, ...last7.map((d) => d.revenue));
 
+  // Booking distribution by vehicle category
+  const PIE_COLORS = [
+    "hsl(14 100% 57%)",   // vibrant orange (primary)
+    "hsl(222 47% 11%)",   // deep slate
+    "hsl(45 100% 51%)",   // amber accent
+    "hsl(210 100% 52%)",  // info blue
+    "hsl(152 76% 40%)",   // success green
+    "hsl(280 65% 60%)",   // purple
+  ];
+  const categoryLabel = (code: string) => {
+    const row = vehicleCats.find((c) => c.code === code);
+    return row?.name || code.replace(/_/g, " ");
+  };
+  const categoryBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const b of bookings) {
+      const k = b.vehicle_category || "unspecified";
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([code, value]) => ({ code, name: categoryLabel(code), value }))
+      .sort((a, b) => b.value - a.value);
+  }, [bookings, vehicleCats]);
+
   const filteredBookings = useMemo(() => {
     if (bookingFilter === "all") return bookings;
     return bookings.filter((b) => b.status === bookingFilter);
