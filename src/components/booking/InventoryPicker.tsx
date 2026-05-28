@@ -3,11 +3,11 @@ import { Loader2, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { SelectedItem } from "@/lib/movingEngine";
-import VanSvg from "@/assets/vehicles/van.svg";
-import SuvSvg from "@/assets/vehicles/suv.svg";
-import PickupSvg from "@/assets/vehicles/pickup.svg";
-import BoxTruckSvg from "@/assets/vehicles/box-truck.svg";
-import OtherSvg from "@/assets/vehicles/other.svg";
+import CargoVanImg from "@/assets/vehicles/cargo-van.png";
+import SuvImg from "@/assets/vehicles/suv.png";
+import PickupImg from "@/assets/vehicles/pickup.png";
+import BoxTruckImg from "@/assets/vehicles/box-truck.png";
+import MovingTruckImg from "@/assets/vehicles/moving-truck.png";
 
 interface MovingItemRow {
   id: number;
@@ -24,11 +24,11 @@ interface CategoryDef {
 }
 
 const CATEGORIES: CategoryDef[] = [
-  { key: "Van", label: "Van", imageSrc: VanSvg },
-  { key: "SUV", label: "SUV", imageSrc: SuvSvg },
-  { key: "Pickup", label: "Pickup", imageSrc: PickupSvg },
-  { key: "Box Truck", label: "Box Truck", imageSrc: BoxTruckSvg },
-  { key: "Other Inventory", label: "Other Inventory", imageSrc: OtherSvg },
+  { key: "Van", label: "Cargo Van", imageSrc: CargoVanImg },
+  { key: "SUV", label: "SUV", imageSrc: SuvImg },
+  { key: "Pickup", label: "Pickup", imageSrc: PickupImg },
+  { key: "Box Truck", label: "Box Truck", imageSrc: BoxTruckImg },
+  { key: "Other Inventory", label: "Moving Truck", imageSrc: MovingTruckImg },
 ];
 
 interface Props {
@@ -112,35 +112,37 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
               key={cat.key}
               type="button"
               onClick={() => setActiveCategory(isSelected ? null : cat.key)}
-              className={`relative flex h-28 flex-col items-center justify-between rounded-xl border-2 p-2.5 text-center transition-all ${
+              className={`relative flex h-32 flex-col items-center justify-between rounded-xl border-2 bg-white p-2.5 text-center shadow-sm transition-all ${
                 isSelected
-                  ? "border-primary bg-primary/10 shadow-sm"
-                  : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
+                  ? "border-primary ring-2 ring-primary/30"
+                  : "border-border hover:border-primary/40 hover:shadow-md"
               }`}
             >
               {count > 0 && (
-                <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground shadow">
                   {count}
                 </span>
               )}
-              <div className="flex h-12 w-full items-center justify-center text-primary">
+              <div className="flex h-16 w-full items-center justify-center">
                 <img
                   src={cat.imageSrc}
                   alt={cat.label}
                   className="max-h-full max-w-full object-contain"
+                  loading="lazy"
                 />
               </div>
-              <span className="mt-1 text-[11px] font-semibold leading-tight">
+              <span className="mt-1 text-[11px] font-semibold leading-tight text-slate-800">
                 {cat.label}
               </span>
             </button>
+
           );
         })}
       </div>
 
       {/* Drawer */}
       {current && (
-        <div className="rounded-xl border border-border bg-muted/30 p-3">
+        <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between border-b border-border pb-2">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
               {current.label} items

@@ -145,15 +145,23 @@ const AdminDashboard = () => {
   }, [bookings]);
   const sparklineMax = Math.max(1, ...last7.map((d) => d.revenue));
 
-  // Booking distribution by vehicle category
-  const PIE_COLORS = [
-    "hsl(14 100% 57%)",   // vibrant orange (primary)
-    "hsl(222 47% 11%)",   // deep slate
-    "hsl(45 100% 51%)",   // amber accent
-    "hsl(210 100% 52%)",  // info blue
-    "hsl(152 76% 40%)",   // success green
-    "hsl(280 65% 60%)",   // purple
+  // Booking distribution by vehicle category — stable color per category code
+  const CATEGORY_COLORS: Record<string, string> = {
+    suv: "hsl(14 100% 57%)",            // vibrant orange
+    pickup_truck: "hsl(45 100% 51%)",   // amber
+    cargo_van: "hsl(210 100% 52%)",     // blue
+    box_truck: "hsl(152 76% 40%)",      // green
+    moving_truck_16: "hsl(280 65% 60%)",// purple
+    moving_truck_26: "hsl(340 82% 56%)",// pink
+    unspecified: "hsl(222 15% 55%)",    // slate
+  };
+  const FALLBACK_COLORS = [
+    "hsl(14 100% 57%)", "hsl(45 100% 51%)", "hsl(210 100% 52%)",
+    "hsl(152 76% 40%)", "hsl(280 65% 60%)", "hsl(340 82% 56%)",
+    "hsl(190 85% 45%)", "hsl(28 90% 50%)",
   ];
+  const colorForCategory = (code: string, idx: number) =>
+    CATEGORY_COLORS[code] ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
   const categoryLabel = (code: string) => {
     const row = vehicleCats.find((c) => c.code === code);
     return row?.name || code.replace(/_/g, " ");
@@ -168,6 +176,7 @@ const AdminDashboard = () => {
       .map(([code, value]) => ({ code, name: categoryLabel(code), value }))
       .sort((a, b) => b.value - a.value);
   }, [bookings, vehicleCats]);
+
 
   const filteredBookings = useMemo(() => {
     if (bookingFilter === "all") return bookings;
@@ -332,9 +341,10 @@ const AdminDashboard = () => {
                           stroke="hsl(var(--background))"
                           strokeWidth={2}
                         >
-                          {categoryBreakdown.map((_, i) => (
-                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                          {categoryBreakdown.map((entry, i) => (
+                            <Cell key={i} fill={colorForCategory(entry.code, i)} />
                           ))}
+
                         </Pie>
                         <Tooltip
                           contentStyle={{
