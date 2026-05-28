@@ -16,7 +16,7 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
     return (
       <div className="grid grid-cols-2 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[220px] rounded-2xl border border-slate-200 bg-white animate-pulse" />
+          <div key={i} className="h-[220px] rounded-2xl border border-slate-700 bg-slate-900 animate-pulse" />
         ))}
       </div>
     );
@@ -35,10 +35,10 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
             type="button"
             onClick={() => onChange(v.id)}
             className={cn(
-              "group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white p-3 text-left shadow-sm transition-all",
+              "group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-slate-900 p-3 text-left shadow-sm transition-all",
               selected
                 ? "border-primary shadow-[var(--shadow-primary)] ring-2 ring-primary/30"
-                : "border-slate-200 hover:border-primary/50 hover:shadow-md",
+                : "border-slate-700 hover:border-primary/50 hover:shadow-md",
             )}
           >
             {isPremium && (
@@ -51,7 +51,7 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
                 <Check className="h-4 w-4" />
               </span>
             )}
-            <div className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-xl bg-slate-50">
+            <div className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-xl bg-slate-800">
               {img ? (
                 <img
                   src={img}
@@ -64,8 +64,8 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
               )}
             </div>
             <div className="mt-2">
-              <p className="text-sm font-bold leading-tight text-slate-900">{v.name}</p>
-              <p className="mt-0.5 text-[11px] leading-tight text-slate-500 line-clamp-2">{v.description}</p>
+              <p className="text-sm font-bold leading-tight text-white">{v.name}</p>
+              <p className="mt-0.5 text-[11px] leading-tight text-slate-400 line-clamp-2">{v.description}</p>
             </div>
           </button>
         );
