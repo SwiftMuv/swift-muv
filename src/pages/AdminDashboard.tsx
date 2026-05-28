@@ -341,9 +341,10 @@ const AdminDashboard = () => {
                           stroke="hsl(var(--background))"
                           strokeWidth={2}
                         >
-                          {categoryBreakdown.map((_, i) => (
-                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                          {categoryBreakdown.map((entry, i) => (
+                            <Cell key={i} fill={colorForCategory(entry.code, i)} />
                           ))}
+
                         </Pie>
                         <Tooltip
                           contentStyle={{
