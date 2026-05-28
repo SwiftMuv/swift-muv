@@ -73,7 +73,7 @@ const AdminDashboard = () => {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [bRes, pRes, dRes, adRes, vRes] = await Promise.all([
+      const [bRes, pRes, dRes, adRes, vRes, dvRes] = await Promise.all([
         supabase
           .from("bookings")
           .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, vehicle_category, created_at")
@@ -94,6 +94,9 @@ const AdminDashboard = () => {
           .from("vehicle_categories")
           .select("id, code, name, description, is_active, display_order")
           .order("display_order", { ascending: true }),
+        supabase
+          .from("driver_profiles")
+          .select("vehicle_category"),
       ]);
       if (bRes.error) throw bRes.error;
       if (pRes.error) throw pRes.error;
@@ -103,6 +106,7 @@ const AdminDashboard = () => {
       setPendingDrivers((dRes.data as PendingDriver[]) ?? []);
       setActiveDrivers(adRes.count ?? 0);
       setVehicleCats((vRes.data as VehicleCategoryRow[]) ?? []);
+      setDriverVehicles(((dvRes.data as { vehicle_category: string | null }[]) ?? []).map((r) => r.vehicle_category));
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "Failed to load admin data");
