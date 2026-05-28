@@ -112,10 +112,10 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
               key={cat.key}
               type="button"
               onClick={() => setActiveCategory(isSelected ? null : cat.key)}
-              className={`relative flex h-40 flex-col items-center justify-between rounded-xl border-2 bg-slate-900 p-2.5 text-center shadow-sm transition-all ${
+              className={`relative flex h-40 flex-col items-center justify-between rounded-xl border-2 bg-white p-2.5 text-center shadow-sm transition-all ${
                 isSelected
                   ? "border-primary ring-2 ring-primary/30"
-                  : "border-slate-700 hover:border-primary/40 hover:shadow-md"
+                  : "border-slate-200 hover:border-primary/40 hover:shadow-md"
               }`}
             >
               {count > 0 && (
@@ -131,7 +131,7 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
                   loading="lazy"
                 />
               </div>
-              <span className="mt-1 text-[11px] font-semibold leading-tight text-white">
+              <span className="mt-1 text-[11px] font-semibold leading-tight text-slate-900">
                 {cat.label}
               </span>
             </button>
@@ -142,12 +142,12 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
 
       {/* Drawer */}
       {current && (
-        <div className="rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-sm">
-          <div className="mb-2 flex items-center justify-between border-b border-slate-700 pb-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-white">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between border-b border-slate-200 pb-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-900">
               {current.label} items
             </h4>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-slate-500">
               Specify quantities
             </span>
           </div>
@@ -162,13 +162,13 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
                 return (
                   <div
                     key={row.id}
-                    className={`flex items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 ${
+                    className={`flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 ${
                       qty > 0 ? "ring-1 ring-primary/30" : ""
                     }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-white">{row.item_name}</p>
-                      <p className="text-[10px] text-slate-400">
+                      <p className="text-sm font-medium text-slate-900">{row.item_name}</p>
+                      <p className="text-[10px] text-slate-500">
                         {Number(row.cubic_feet)} ft³ · {Number(row.weight_lbs)} lb
                       </p>
                     </div>
