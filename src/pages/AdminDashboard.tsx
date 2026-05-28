@@ -328,18 +328,18 @@ const AdminDashboard = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Truck className="h-4 w-4 text-primary" /> Bookings by vehicle category
+                  <Truck className="h-4 w-4 text-primary" /> Registered vehicles by category
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {categoryBreakdown.length === 0 ? (
-                  <Empty label="No booking data yet" />
+                {categoryBreakdown.reduce((s, x) => s + x.value, 0) === 0 ? (
+                  <Empty label="No drivers registered yet" />
                 ) : (
                   <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={categoryBreakdown}
+                          data={categoryBreakdown.filter((c) => c.value > 0)}
                           dataKey="value"
                           nameKey="name"
                           cx="50%"
@@ -350,9 +350,11 @@ const AdminDashboard = () => {
                           stroke="hsl(var(--background))"
                           strokeWidth={2}
                         >
-                          {categoryBreakdown.map((entry, i) => (
-                            <Cell key={i} fill={colorForCategory(entry.code, i)} />
-                          ))}
+                          {categoryBreakdown
+                            .filter((c) => c.value > 0)
+                            .map((entry, i) => (
+                              <Cell key={entry.code} fill={colorForCategory(entry.code, i)} />
+                            ))}
 
                         </Pie>
                         <Tooltip
@@ -365,13 +367,19 @@ const AdminDashboard = () => {
                           formatter={(value: number, name: string) => {
                             const total = categoryBreakdown.reduce((s, x) => s + x.value, 0);
                             const pct = total ? ((value / total) * 100).toFixed(1) : "0";
-                            return [`${value} (${pct}%)`, name];
+                            return [`${value} vehicle${value === 1 ? "" : "s"} (${pct}%)`, name];
                           }}
                         />
                         <Legend
                           verticalAlign="bottom"
                           iconType="circle"
                           wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                          payload={categoryBreakdown.map((entry, i) => ({
+                            id: entry.code,
+                            value: `${entry.name}: ${entry.value}`,
+                            type: "circle",
+                            color: colorForCategory(entry.code, i),
+                          }))}
                         />
                       </PieChart>
                     </ResponsiveContainer>
