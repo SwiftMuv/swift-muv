@@ -142,7 +142,7 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
 
       {/* Drawer */}
       {current && (
-        <div className="rounded-xl border border-border bg-muted/30 p-3">
+        <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between border-b border-border pb-2">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
               {current.label} items
