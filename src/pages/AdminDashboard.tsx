@@ -65,6 +65,7 @@ const AdminDashboard = () => {
   const [pendingDrivers, setPendingDrivers] = useState<PendingDriver[]>([]);
   const [activeDrivers, setActiveDrivers] = useState(0);
   const [vehicleCats, setVehicleCats] = useState<VehicleCategoryRow[]>([]);
+  const [driverVehicles, setDriverVehicles] = useState<(string | null)[]>([]);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [bookingFilter, setBookingFilter] = useState<"all" | "pending" | "completed" | "cancelled">("all");
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -72,7 +73,7 @@ const AdminDashboard = () => {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [bRes, pRes, dRes, adRes, vRes] = await Promise.all([
+      const [bRes, pRes, dRes, adRes, vRes, dvRes] = await Promise.all([
         supabase
           .from("bookings")
           .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, vehicle_category, created_at")
@@ -93,6 +94,9 @@ const AdminDashboard = () => {
           .from("vehicle_categories")
           .select("id, code, name, description, is_active, display_order")
           .order("display_order", { ascending: true }),
+        supabase
+          .from("driver_profiles")
+          .select("vehicle_category"),
       ]);
       if (bRes.error) throw bRes.error;
       if (pRes.error) throw pRes.error;
@@ -102,6 +106,7 @@ const AdminDashboard = () => {
       setPendingDrivers((dRes.data as PendingDriver[]) ?? []);
       setActiveDrivers(adRes.count ?? 0);
       setVehicleCats((vRes.data as VehicleCategoryRow[]) ?? []);
+      setDriverVehicles(((dvRes.data as { vehicle_category: string | null }[]) ?? []).map((r) => r.vehicle_category));
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "Failed to load admin data");
@@ -168,14 +173,18 @@ const AdminDashboard = () => {
   };
   const categoryBreakdown = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const b of bookings) {
-      const k = b.vehicle_category || "unspecified";
+    // Seed every active category with 0 so they all appear on the chart
+    for (const c of vehicleCats) {
+      if (c.is_active) counts.set(c.code, 0);
+    }
+    for (const code of driverVehicles) {
+      const k = code || "unspecified";
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
     return Array.from(counts.entries())
       .map(([code, value]) => ({ code, name: categoryLabel(code), value }))
       .sort((a, b) => b.value - a.value);
-  }, [bookings, vehicleCats]);
+  }, [driverVehicles, vehicleCats]);
 
 
   const filteredBookings = useMemo(() => {
@@ -319,18 +328,18 @@ const AdminDashboard = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Truck className="h-4 w-4 text-primary" /> Bookings by vehicle category
+                  <Truck className="h-4 w-4 text-primary" /> Registered vehicles by category
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {categoryBreakdown.length === 0 ? (
-                  <Empty label="No booking data yet" />
+                {categoryBreakdown.reduce((s, x) => s + x.value, 0) === 0 ? (
+                  <Empty label="No drivers registered yet" />
                 ) : (
                   <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={categoryBreakdown}
+                          data={categoryBreakdown.filter((c) => c.value > 0)}
                           dataKey="value"
                           nameKey="name"
                           cx="50%"
@@ -341,9 +350,11 @@ const AdminDashboard = () => {
                           stroke="hsl(var(--background))"
                           strokeWidth={2}
                         >
-                          {categoryBreakdown.map((entry, i) => (
-                            <Cell key={i} fill={colorForCategory(entry.code, i)} />
-                          ))}
+                          {categoryBreakdown
+                            .filter((c) => c.value > 0)
+                            .map((entry, i) => (
+                              <Cell key={entry.code} fill={colorForCategory(entry.code, i)} />
+                            ))}
 
                         </Pie>
                         <Tooltip
@@ -356,13 +367,19 @@ const AdminDashboard = () => {
                           formatter={(value: number, name: string) => {
                             const total = categoryBreakdown.reduce((s, x) => s + x.value, 0);
                             const pct = total ? ((value / total) * 100).toFixed(1) : "0";
-                            return [`${value} (${pct}%)`, name];
+                            return [`${value} vehicle${value === 1 ? "" : "s"} (${pct}%)`, name];
                           }}
                         />
                         <Legend
                           verticalAlign="bottom"
                           iconType="circle"
                           wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                          payload={categoryBreakdown.map((entry, i) => ({
+                            id: entry.code,
+                            value: `${entry.name}: ${entry.value}`,
+                            type: "circle",
+                            color: colorForCategory(entry.code, i),
+                          }))}
                         />
                       </PieChart>
                     </ResponsiveContainer>
