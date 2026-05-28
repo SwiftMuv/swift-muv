@@ -12,6 +12,8 @@ import {
   TrendingUp, UserCheck, Truck, RefreshCw,
 } from "lucide-react";
 
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
 type Booking = {
   id: string;
   customer_id: string;
@@ -20,6 +22,7 @@ type Booking = {
   pickup_address: string;
   dropoff_address: string;
   move_size: string;
+  vehicle_category: string | null;
   created_at: string;
 };
 
@@ -72,7 +75,7 @@ const AdminDashboard = () => {
       const [bRes, pRes, dRes, adRes, vRes] = await Promise.all([
         supabase
           .from("bookings")
-          .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, created_at")
+          .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, vehicle_category, created_at")
           .order("created_at", { ascending: false })
           .limit(100),
         supabase.rpc("get_profiles"),
