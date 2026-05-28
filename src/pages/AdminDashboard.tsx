@@ -65,6 +65,7 @@ const AdminDashboard = () => {
   const [pendingDrivers, setPendingDrivers] = useState<PendingDriver[]>([]);
   const [activeDrivers, setActiveDrivers] = useState(0);
   const [vehicleCats, setVehicleCats] = useState<VehicleCategoryRow[]>([]);
+  const [driverVehicles, setDriverVehicles] = useState<(string | null)[]>([]);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [bookingFilter, setBookingFilter] = useState<"all" | "pending" | "completed" | "cancelled">("all");
   const [activeTab, setActiveTab] = useState<string>("overview");
