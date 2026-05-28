@@ -173,14 +173,18 @@ const AdminDashboard = () => {
   };
   const categoryBreakdown = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const b of bookings) {
-      const k = b.vehicle_category || "unspecified";
+    // Seed every active category with 0 so they all appear on the chart
+    for (const c of vehicleCats) {
+      if (c.is_active) counts.set(c.code, 0);
+    }
+    for (const code of driverVehicles) {
+      const k = code || "unspecified";
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
     return Array.from(counts.entries())
       .map(([code, value]) => ({ code, name: categoryLabel(code), value }))
       .sort((a, b) => b.value - a.value);
-  }, [bookings, vehicleCats]);
+  }, [driverVehicles, vehicleCats]);
 
 
   const filteredBookings = useMemo(() => {
