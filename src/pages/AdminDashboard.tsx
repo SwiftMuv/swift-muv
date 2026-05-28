@@ -309,6 +309,61 @@ const AdminDashboard = () => {
 
             <Card>
               <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Truck className="h-4 w-4 text-primary" /> Bookings by vehicle category
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {categoryBreakdown.length === 0 ? (
+                  <Empty label="No booking data yet" />
+                ) : (
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryBreakdown}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={95}
+                          paddingAngle={3}
+                          stroke="hsl(var(--background))"
+                          strokeWidth={2}
+                        >
+                          {categoryBreakdown.map((_, i) => (
+                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            background: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: 12,
+                            fontSize: 12,
+                          }}
+                          formatter={(value: number, name: string) => {
+                            const total = categoryBreakdown.reduce((s, x) => s + x.value, 0);
+                            const pct = total ? ((value / total) * 100).toFixed(1) : "0";
+                            return [`${value} (${pct}%)`, name];
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="bottom"
+                          iconType="circle"
+                          wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-base">Recent orders</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
