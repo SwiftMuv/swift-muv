@@ -12,6 +12,8 @@ import {
   TrendingUp, UserCheck, Truck, RefreshCw,
 } from "lucide-react";
 
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
 type Booking = {
   id: string;
   customer_id: string;
@@ -20,6 +22,7 @@ type Booking = {
   pickup_address: string;
   dropoff_address: string;
   move_size: string;
+  vehicle_category: string | null;
   created_at: string;
 };
 
@@ -72,7 +75,7 @@ const AdminDashboard = () => {
       const [bRes, pRes, dRes, adRes, vRes] = await Promise.all([
         supabase
           .from("bookings")
-          .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, created_at")
+          .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, vehicle_category, created_at")
           .order("created_at", { ascending: false })
           .limit(100),
         supabase.rpc("get_profiles"),
@@ -141,6 +144,30 @@ const AdminDashboard = () => {
     return days;
   }, [bookings]);
   const sparklineMax = Math.max(1, ...last7.map((d) => d.revenue));
+
+  // Booking distribution by vehicle category
+  const PIE_COLORS = [
+    "hsl(14 100% 57%)",   // vibrant orange (primary)
+    "hsl(222 47% 11%)",   // deep slate
+    "hsl(45 100% 51%)",   // amber accent
+    "hsl(210 100% 52%)",  // info blue
+    "hsl(152 76% 40%)",   // success green
+    "hsl(280 65% 60%)",   // purple
+  ];
+  const categoryLabel = (code: string) => {
+    const row = vehicleCats.find((c) => c.code === code);
+    return row?.name || code.replace(/_/g, " ");
+  };
+  const categoryBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const b of bookings) {
+      const k = b.vehicle_category || "unspecified";
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([code, value]) => ({ code, name: categoryLabel(code), value }))
+      .sort((a, b) => b.value - a.value);
+  }, [bookings, vehicleCats]);
 
   const filteredBookings = useMemo(() => {
     if (bookingFilter === "all") return bookings;
@@ -279,6 +306,61 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Truck className="h-4 w-4 text-primary" /> Bookings by vehicle category
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {categoryBreakdown.length === 0 ? (
+                  <Empty label="No booking data yet" />
+                ) : (
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryBreakdown}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={95}
+                          paddingAngle={3}
+                          stroke="hsl(var(--background))"
+                          strokeWidth={2}
+                        >
+                          {categoryBreakdown.map((_, i) => (
+                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            background: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: 12,
+                            fontSize: 12,
+                          }}
+                          formatter={(value: number, name: string) => {
+                            const total = categoryBreakdown.reduce((s, x) => s + x.value, 0);
+                            const pct = total ? ((value / total) * 100).toFixed(1) : "0";
+                            return [`${value} (${pct}%)`, name];
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="bottom"
+                          iconType="circle"
+                          wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
 
             <Card>
               <CardHeader>
