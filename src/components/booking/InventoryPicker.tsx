@@ -3,11 +3,11 @@ import { Loader2, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { SelectedItem } from "@/lib/movingEngine";
-import VanSvg from "@/assets/vehicles/van.svg";
-import SuvSvg from "@/assets/vehicles/suv.svg";
-import PickupSvg from "@/assets/vehicles/pickup.svg";
-import BoxTruckSvg from "@/assets/vehicles/box-truck.svg";
-import OtherSvg from "@/assets/vehicles/other.svg";
+import CargoVanImg from "@/assets/vehicles/cargo-van.png";
+import SuvImg from "@/assets/vehicles/suv.png";
+import PickupImg from "@/assets/vehicles/pickup.png";
+import BoxTruckImg from "@/assets/vehicles/box-truck.png";
+import MovingTruckImg from "@/assets/vehicles/moving-truck.png";
 
 interface MovingItemRow {
   id: number;
@@ -24,11 +24,11 @@ interface CategoryDef {
 }
 
 const CATEGORIES: CategoryDef[] = [
-  { key: "Van", label: "Van", imageSrc: VanSvg },
-  { key: "SUV", label: "SUV", imageSrc: SuvSvg },
-  { key: "Pickup", label: "Pickup", imageSrc: PickupSvg },
-  { key: "Box Truck", label: "Box Truck", imageSrc: BoxTruckSvg },
-  { key: "Other Inventory", label: "Other Inventory", imageSrc: OtherSvg },
+  { key: "Van", label: "Cargo Van", imageSrc: CargoVanImg },
+  { key: "SUV", label: "SUV", imageSrc: SuvImg },
+  { key: "Pickup", label: "Pickup", imageSrc: PickupImg },
+  { key: "Box Truck", label: "Box Truck", imageSrc: BoxTruckImg },
+  { key: "Other Inventory", label: "Moving Truck", imageSrc: MovingTruckImg },
 ];
 
 interface Props {
