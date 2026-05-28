@@ -51,7 +51,7 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
                 <Check className="h-4 w-4" />
               </span>
             )}
-            <div className="relative flex h-20 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-[hsl(var(--section))] to-background">
+            <div className="relative flex h-20 w-full items-center justify-center overflow-hidden rounded-xl bg-white">
               {img ? (
                 <img
                   src={img}
