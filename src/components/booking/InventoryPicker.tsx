@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Minus, Plus } from "lucide-react";
+import { CarFront, Loader2, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { SelectedItem } from "@/lib/movingEngine";
@@ -23,9 +23,11 @@ interface CategoryDef {
   imageSrc: string;
 }
 
+const SUV_KEY = "__suv__";
+
 const CATEGORIES: CategoryDef[] = [
+  { key: SUV_KEY, label: "Extra Large Car / SUV", imageSrc: SuvImg },
   { key: "Van", label: "Cargo Van", imageSrc: CargoVanImg },
-  { key: "SUV", label: "SUV", imageSrc: SuvImg },
   { key: "Pickup", label: "Pickup", imageSrc: PickupImg },
   { key: "Box Truck", label: "Box Truck", imageSrc: BoxTruckImg },
   { key: "Other Inventory", label: "Moving Truck", imageSrc: MovingTruckImg },
@@ -34,9 +36,11 @@ const CATEGORIES: CategoryDef[] = [
 interface Props {
   selected: SelectedItem[];
   onChange: (next: SelectedItem[]) => void;
+  suvSelected?: boolean;
+  onSuvChange?: (next: boolean) => void;
 }
 
-export const InventoryPicker = ({ selected, onChange }: Props) => {
+export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuvChange }: Props) => {
   const [items, setItems] = useState<MovingItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -95,32 +99,44 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
     );
   }
 
-  const current = activeCategory
+  const current = activeCategory && activeCategory !== SUV_KEY
     ? CATEGORIES.find((c) => c.key === activeCategory)
     : null;
   const currentRows = current ? itemsByCat[current.key] ?? [] : [];
 
   return (
     <div className="space-y-4">
-      {/* Vehicle category tiles */}
+      {/* Vehicle category tiles (SUV is a toggle) */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
         {CATEGORIES.map((cat) => {
-          const isSelected = activeCategory === cat.key;
-          const count = categoryCount(cat.key);
+          const isSuv = cat.key === SUV_KEY;
+          const isSelected = isSuv ? suvSelected : activeCategory === cat.key;
+          const count = isSuv ? (suvSelected ? 1 : 0) : categoryCount(cat.key);
           return (
             <button
               key={cat.key}
               type="button"
-              onClick={() => setActiveCategory(isSelected ? null : cat.key)}
+              onClick={() => {
+                if (isSuv) {
+                  onSuvChange?.(!suvSelected);
+                  return;
+                }
+                setActiveCategory(activeCategory === cat.key ? null : cat.key);
+              }}
               className={`relative flex h-40 flex-col items-center justify-between rounded-xl border-2 bg-slate-900 p-2.5 text-center shadow-sm transition-all ${
                 isSelected
                   ? "border-primary ring-2 ring-primary/30"
                   : "border-slate-700 hover:border-primary/40 hover:shadow-md"
               }`}
             >
+              {isSuv && (
+                <span className="absolute left-1.5 top-1.5 z-10 rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-accent-foreground shadow">
+                  Bags
+                </span>
+              )}
               {count > 0 && (
                 <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground shadow">
-                  {count}
+                  {isSuv ? <CarFront className="h-3 w-3" /> : count}
                 </span>
               )}
               <div className="flex h-24 w-full items-center justify-center">
@@ -135,10 +151,18 @@ export const InventoryPicker = ({ selected, onChange }: Props) => {
                 {cat.label}
               </span>
             </button>
-
           );
         })}
       </div>
+
+      {suvSelected && (
+        <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 text-xs text-foreground">
+          <p className="font-semibold">Extra Large Car / SUV selected</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Bags & luggage only · flat $50 local (+$1.20/km for intercity). Inventory items are ignored when SUV is on.
+          </p>
+        </div>
+      )}
 
       {/* Drawer */}
       {current && (

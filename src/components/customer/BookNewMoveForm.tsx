@@ -89,32 +89,20 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     try {
       const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
 
-      const { data: inserted, error: insertError } = await supabase
-        .from("bookings")
-        .insert({
-          customer_id: user.id,
-          pickup_address: pickup.trim(),
-          dropoff_address: dropoff.trim(),
-          move_size: moveSizeFromVehicleName(quote.recommendedVehicle),
-          move_type: moveType,
-          distance_km: distanceKm,
-          items: itemsArr,
-          crew_count: effectiveCrew,
-          vehicle_category: suvSelected ? "suv" : null,
-          pickup_lat: distance?.pickup?.lat ?? null,
-          pickup_lng: distance?.pickup?.lng ?? null,
-          dropoff_lat: distance?.dropoff?.lat ?? null,
-          dropoff_lng: distance?.dropoff?.lng ?? null,
-        })
-        .select("id")
-        .single();
-
-      if (insertError || !inserted) {
-        toast.error("Booking failed: " + (insertError?.message ?? "unknown"));
-        setSubmitting(false);
-        return;
-      }
-      onBooked?.();
+      const bookingPayload = {
+        pickup_address: pickup.trim(),
+        dropoff_address: dropoff.trim(),
+        move_size: moveSizeFromVehicleName(quote.recommendedVehicle),
+        move_type: moveType,
+        distance_km: distanceKm,
+        items: itemsArr,
+        crew_count: effectiveCrew,
+        vehicle_category: suvSelected ? "suv" : null,
+        pickup_lat: distance?.pickup?.lat ?? null,
+        pickup_lng: distance?.pickup?.lng ?? null,
+        dropoff_lat: distance?.dropoff?.lat ?? null,
+        dropoff_lng: distance?.dropoff?.lng ?? null,
+      };
 
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
@@ -124,7 +112,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         clientSecret?: string; publishableKey?: string; error?: string; fallback?: boolean;
       }>("stripe_checkout", {
         headers: { Authorization: `Bearer ${accessToken}` },
-        body: { bookingId: inserted.id },
+        body: { bookingPayload, amountCad: quote.finalPrice },
       });
 
       if (checkoutError || !payload?.clientSecret || !payload.publishableKey) {
@@ -141,6 +129,15 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       toast.error("Unexpected error: " + (e instanceof Error ? e.message : String(e)));
       setSubmitting(false);
     }
+  };
+
+  const handleCheckoutClose = () => {
+    setCheckoutOpen(false);
+    setClientSecret(null);
+    // No booking row exists until Stripe webhook fires after successful payment.
+    // Closing the modal == cancel; user stays on form. Refresh in case the
+    // webhook already created the row from a successful checkout.
+    onBooked?.();
   };
 
   const breakdown = quote.breakdown as Record<string, number | undefined>;
@@ -193,26 +190,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </CardContent>
       </Card>
 
-      {/* Extra Large Car / SUV — bags & luggage only */}
-      <Card className={suvSelected ? "border-primary/40 bg-primary/5" : ""}>
-        <CardContent className="flex items-center justify-between gap-3 p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <CarFront className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold">Extra Large Car / SUV</p>
-              <p className="text-[11px] text-muted-foreground">
-                Bags & luggage only · flat $50 local{moveType !== "local" ? " + $1.20/km" : ""}
-              </p>
-            </div>
-          </div>
-          <Switch checked={suvSelected} onCheckedChange={setSuvSelected} />
-        </CardContent>
-      </Card>
-
       {/* Recommended vehicle */}
-      {itemCount > 0 && (
+      {(itemCount > 0 || suvSelected) && (
         <Card>
           <CardContent className="flex items-center gap-3 p-5">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -241,7 +220,12 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             </div>
             <span className="text-xs text-muted-foreground">{itemCount} item{itemCount === 1 ? "" : "s"}</span>
           </div>
-          <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
+          <InventoryPicker
+            selected={selectedItems}
+            onChange={setSelectedItems}
+            suvSelected={suvSelected}
+            onSuvChange={setSuvSelected}
+          />
         </CardContent>
       </Card>
 
@@ -346,15 +330,18 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       <div className="pt-2">
         <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12 w-full text-base font-semibold">
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {submitting ? "Processing…" : `Book Now · $${quote.finalPrice.toFixed(2)}`}
+          {submitting ? "Preparing checkout…" : `Book Now · $${quote.finalPrice.toFixed(2)}`}
         </Button>
+        <p className="mt-2 text-center text-[11px] text-muted-foreground">
+          No booking is created until your payment is confirmed. Cancel anytime before paying.
+        </p>
       </div>
 
       <StripeCheckoutModal
         open={checkoutOpen}
         clientSecret={clientSecret}
         publishableKey={publishableKey}
-        onClose={() => { setCheckoutOpen(false); setClientSecret(null); }}
+        onClose={handleCheckoutClose}
       />
     </div>
   );

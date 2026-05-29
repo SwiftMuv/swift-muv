@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { RotateCw, X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +36,7 @@ const ACTIVE_STATUSES = ["pending", "assigned", "in_progress"];
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("home");
@@ -56,6 +58,28 @@ const CustomerDashboard = () => {
   }, [user]);
 
   useEffect(() => { loadBookings(); }, [loadBookings]);
+
+  // Handle Stripe checkout success redirect — the booking row is created
+  // asynchronously by the stripe-webhook edge function.
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+    toast.success("Payment confirmed — your move is being booked.");
+    setActiveTab("activities");
+    // Poll briefly while the webhook inserts the row.
+    let attempts = 0;
+    const id = setInterval(async () => {
+      attempts += 1;
+      await loadBookings();
+      if (attempts >= 6) clearInterval(id);
+    }, 1500);
+    const next = new URLSearchParams(searchParams);
+    next.delete("checkout");
+    next.delete("session_id");
+    next.delete("booking");
+    setSearchParams(next, { replace: true });
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-open rating modal when a booking transitions to completed
   useEffect(() => {
@@ -191,38 +215,46 @@ const CustomerDashboard = () => {
         {activeTab === "activities" && (
           <div className="space-y-3 pb-4">
             {loading && <p className="text-muted-foreground text-sm">Loading…</p>}
-            {!loading && completed.length === 0 && (
+            {!loading && bookings.length === 0 && (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground text-sm">
-                  No completed trips yet.
+                  No bookings yet.
                 </CardContent>
               </Card>
             )}
-            {completed.map((b) => (
-              <Card key={b.id}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-base">${Number(b.total_price).toFixed(2)}</CardTitle>
-                  <Badge variant="secondary">{b.status}</Badge>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <p><span className="text-muted-foreground">From:</span> {b.pickup_address}</p>
-                  <p><span className="text-muted-foreground">To:</span> {b.dropoff_address}</p>
-                  <div className="flex items-center justify-between pt-1">
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(b.created_at).toLocaleString()}
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={() => setActiveTab("bookings")}
-                      className="bg-primary/15 text-primary hover:bg-primary/25"
-                    >
-                      <RotateCw className="w-3.5 h-3.5 mr-1.5" />
-                      Rebook
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {bookings.map((b) => {
+              const isActive = ACTIVE_STATUSES.includes(b.status);
+              const isCompleted = b.status === "completed";
+              return (
+                <Card key={b.id} className={isActive ? "border-primary/40" : ""}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-base">${Number(b.total_price).toFixed(2)}</CardTitle>
+                    <Badge variant={isActive ? "default" : "secondary"}>
+                      {b.status.replace("_", " ")}
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <p><span className="text-muted-foreground">From:</span> {b.pickup_address}</p>
+                    <p><span className="text-muted-foreground">To:</span> {b.dropoff_address}</p>
+                    <div className="flex items-center justify-between pt-1">
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(b.created_at).toLocaleString()}
+                      </p>
+                      {isCompleted && (
+                        <Button
+                          size="sm"
+                          onClick={() => setActiveTab("bookings")}
+                          className="bg-primary/15 text-primary hover:bg-primary/25"
+                        >
+                          <RotateCw className="w-3.5 h-3.5 mr-1.5" />
+                          Rebook
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 
