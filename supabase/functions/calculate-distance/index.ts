@@ -33,44 +33,7 @@ Deno.serve(async (req) => {
     const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
     if (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY) return json({ error: 'Google Maps not configured' }, 500);
 
-    // Use Routes API v2 (Distance Matrix replacement)
-    const body = {
-      origins: [{ waypoint: { address: String(origin) } }],
-      destinations: [{ waypoint: { address: String(destination) } }],
-      travelMode: 'DRIVE',
-      routingPreference: 'TRAFFIC_AWARE',
-    };
-
-    const res = await fetch(`${GATEWAY_URL}/routes/distanceMatrix/v2:computeRouteMatrix`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY,
-        'Content-Type': 'application/json',
-        'X-Goog-FieldMask': 'originIndex,destinationIndex,duration,distanceMeters,status,condition',
-      },
-      body: JSON.stringify(body),
-    });
-
-    const text = await res.text();
-    if (!res.ok) console.error('Routes API error', res.status, text);
-
-    let km: number | null = null;
-    let durationSec: number | null = null;
-    try {
-      const rows = JSON.parse(text);
-      const first = Array.isArray(rows) ? rows[0] : rows;
-      if (first?.distanceMeters) {
-        km = Math.round((first.distanceMeters / 1000) * 100) / 100;
-        durationSec = first.duration ? parseInt(String(first.duration).replace('s', ''), 10) : null;
-      } else {
-        console.warn('Routes API returned no distance', first);
-      }
-    } catch (e) {
-      console.error('Failed to parse Routes API response', e);
-    }
-
-    // Geocode addresses; extract province/city
+    // Geocode addresses first; extract coords + province/city
     const geocode = async (address: string) => {
       const r = await fetch(
         `${GATEWAY_URL}/maps/api/geocode/json?address=${encodeURIComponent(address)}`,
@@ -92,7 +55,47 @@ Deno.serve(async (req) => {
     };
     const [pickup, dropoff] = await Promise.all([geocode(String(origin)), geocode(String(destination))]);
 
-    if (km == null && pickup && dropoff) {
+    if (!pickup || !dropoff) {
+      return json({ error: 'Could not resolve addresses', pickup, dropoff }, 404);
+    }
+
+    let km: number | null = null;
+    let durationSec: number | null = null;
+
+    // Use Routes API v2 with coordinates (most reliable)
+    try {
+      const body = {
+        origins: [{ waypoint: { location: { latLng: { latitude: pickup.lat, longitude: pickup.lng } } } }],
+        destinations: [{ waypoint: { location: { latLng: { latitude: dropoff.lat, longitude: dropoff.lng } } } }],
+        travelMode: 'DRIVE',
+        routingPreference: 'TRAFFIC_AWARE',
+      };
+      const res = await fetch(`${GATEWAY_URL}/routes/distanceMatrix/v2:computeRouteMatrix`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY,
+          'Content-Type': 'application/json',
+          'X-Goog-FieldMask': 'originIndex,destinationIndex,duration,distanceMeters,status,condition',
+        },
+        body: JSON.stringify(body),
+      });
+      const text = await res.text();
+      if (!res.ok) console.error('Routes API error', res.status, text);
+      const rows = JSON.parse(text);
+      const first = Array.isArray(rows) ? rows[0] : rows;
+      if (first?.distanceMeters) {
+        km = Math.round((first.distanceMeters / 1000) * 100) / 100;
+        durationSec = first.duration ? parseInt(String(first.duration).replace('s', ''), 10) : null;
+      } else {
+        console.warn('Routes API returned no distance', first);
+      }
+    } catch (e) {
+      console.error('Routes API call failed', e);
+    }
+
+    // Haversine fallback if Routes API didn't return a value
+    if (km == null) {
       const toRad = (d: number) => (d * Math.PI) / 180;
       const dLat = toRad(dropoff.lat - pickup.lat);
       const dLng = toRad(dropoff.lng - pickup.lng);
@@ -100,8 +103,6 @@ Deno.serve(async (req) => {
         Math.cos(toRad(pickup.lat)) * Math.cos(toRad(dropoff.lat)) * Math.sin(dLng / 2) ** 2;
       km = Math.round(2 * 6371 * Math.asin(Math.sqrt(a)) * 100) / 100;
     }
-
-    if (km == null) return json({ error: 'Could not resolve addresses' }, 404);
 
     let moveType: 'local' | 'intercity' | 'inter-province' = 'local';
     if (pickup?.province && dropoff?.province) {
