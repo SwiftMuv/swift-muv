@@ -7,47 +7,32 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const jsonResponse = (body: Record<string, unknown>, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+const json = (b: Record<string, unknown>, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-const checkoutErrorResponse = (error: string, details?: string) =>
-  jsonResponse({ error, details, fallback: true }, 200);
+const err = (e: string, details?: string) => json({ error: e, details, fallback: true }, 200);
 
-const getAppReturnUrl = (origin: string, path: string, params: Record<string, string>) => {
-  const url = new URL(path, origin);
-  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-  return url.toString();
-};
-
-const getRequestOrigin = (req: Request) => {
-  const origin = req.headers.get('origin');
-  if (origin) return origin;
-
-  const referer = req.headers.get('referer');
-  if (referer) {
-    try {
-      return new URL(referer).origin;
-    } catch (_err) {
-      console.error('Invalid referer URL for checkout redirect:', referer);
-    }
-  }
-
+const getOrigin = (req: Request) => {
+  const o = req.headers.get('origin');
+  if (o) return o;
+  const r = req.headers.get('referer');
+  if (r) try { return new URL(r).origin; } catch { /* ignore */ }
   return 'https://example.com';
 };
 
+// Split a string into chunks of up to `size` chars (Stripe metadata = 500 chars/value).
+const chunk = (s: string, size = 450): string[] => {
+  const out: string[] = [];
+  for (let i = 0; i < s.length; i += size) out.push(s.slice(i, i + size));
+  return out;
+};
+
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return checkoutErrorResponse('Unauthorized');
-    }
+    if (!authHeader?.startsWith('Bearer ')) return err('Unauthorized');
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -55,51 +40,39 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return checkoutErrorResponse('Unauthorized', claimsError?.message);
-    }
+    const { data: claims, error: claimsErr } = await supabase.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (claimsErr || !claims?.claims) return err('Unauthorized', claimsErr?.message);
 
-    const userId = claimsData.claims.sub as string;
-    const userEmail = claimsData.claims.email as string | undefined;
+    const userId = claims.claims.sub as string;
+    const userEmail = claims.claims.email as string | undefined;
 
     const body = await req.json().catch(() => ({}));
-    const bookingId: string | undefined = body.bookingId;
-    if (!bookingId) {
-      return checkoutErrorResponse('bookingId is required');
-    }
+    const payload = body.bookingPayload;
+    const amountCad = Number(body.amountCad);
 
-    // Load booking & validate ownership
-    const { data: booking, error: bErr } = await supabase
-      .from('bookings')
-      .select('id, customer_id, total_price, pickup_address, dropoff_address, status')
-      .eq('id', bookingId)
-      .maybeSingle();
+    if (!payload || typeof payload !== 'object') return err('bookingPayload is required');
+    if (!amountCad || amountCad <= 0) return err('Invalid amount');
 
-    if (bErr || !booking) {
-      return checkoutErrorResponse('Booking not found', bErr?.message);
-    }
-    if (booking.customer_id !== userId) {
-      return checkoutErrorResponse('Forbidden');
-    }
-
-    const amount = Math.round(Number(booking.total_price) * 100);
-    if (!amount || amount <= 0) {
-      return checkoutErrorResponse('Invalid booking amount');
-    }
+    const amountCents = Math.round(amountCad * 100);
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) {
-      return checkoutErrorResponse('Stripe is not configured');
-    }
+    if (!stripeKey) return err('Stripe is not configured');
+    const publishableKey = Deno.env.get('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
+    if (!publishableKey) return err('Stripe publishable key not configured');
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
-    const origin = getRequestOrigin(req);
-    const publishableKey = Deno.env.get('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
-    if (!publishableKey) {
-      return checkoutErrorResponse('Stripe publishable key not configured');
-    }
+    const origin = getOrigin(req);
+
+    // Serialize payload into chunked metadata keys (Stripe = 500 chars per value, 50 keys max).
+    const serialized = JSON.stringify({ ...payload, customer_id: userId });
+    const parts = chunk(serialized);
+    if (parts.length > 45) return err('Booking payload too large');
+    const payloadMeta: Record<string, string> = { payload_count: String(parts.length) };
+    parts.forEach((p, i) => { payloadMeta[`p${i}`] = p; });
+
+    const returnUrl = new URL('/dashboard', origin);
+    returnUrl.searchParams.set('checkout', 'success');
+    returnUrl.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
 
     let session: Stripe.Checkout.Session;
     try {
@@ -109,54 +82,40 @@ Deno.serve(async (req) => {
         payment_method_types: ['card'],
         customer_email: userEmail,
         payment_intent_data: {
-          capture_method: 'manual', // hold funds until driver arrives at drop-off
-          metadata: { booking_id: booking.id, customer_id: userId },
+          capture_method: 'manual',
+          metadata: { customer_id: userId, kind: 'swiftmuv_booking' },
         },
         line_items: [
           {
             price_data: {
               currency: 'cad',
-              unit_amount: amount,
+              unit_amount: amountCents,
               product_data: {
                 name: 'SwiftMuv Move',
-                description: `${booking.pickup_address} → ${booking.dropoff_address}`,
+                description: `${payload.pickup_address ?? ''} → ${payload.dropoff_address ?? ''}`.slice(0, 250),
               },
             },
             quantity: 1,
           },
         ],
-        return_url: getAppReturnUrl(origin, '/dashboard', { checkout: 'success', booking: booking.id, session_id: '{CHECKOUT_SESSION_ID}' }),
-        metadata: { booking_id: booking.id, customer_id: userId },
+        return_url: returnUrl.toString(),
+        metadata: { customer_id: userId, kind: 'swiftmuv_booking', ...payloadMeta },
       });
-    } catch (stripeErr) {
-      const message = stripeErr instanceof Error ? stripeErr.message : 'Stripe checkout request failed';
-      console.error('stripe_checkout Stripe API error', stripeErr);
-      return checkoutErrorResponse(message);
+    } catch (e) {
+      const m = e instanceof Error ? e.message : 'Stripe checkout request failed';
+      console.error('stripe_checkout error', e);
+      return err(m);
     }
 
-    if (!session.client_secret) {
-      console.error('stripe_checkout missing client_secret', { sessionId: session.id });
-      return checkoutErrorResponse('Stripe checkout did not return a client secret.');
-    }
+    if (!session.client_secret) return err('Stripe did not return a client secret');
 
-    // Save payment_intent on booking so release/cancel can act on it later
-    if (session.payment_intent) {
-      const piId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id;
-      const adminClient = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      );
-      await adminClient.from('bookings').update({ stripe_payment_intent_id: piId }).eq('id', booking.id);
-    }
-
-    return jsonResponse({
+    return json({
       clientSecret: session.client_secret,
       sessionId: session.id,
       publishableKey,
     });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('stripe_checkout unexpected error', err);
-    return checkoutErrorResponse(message);
+  } catch (e) {
+    console.error('stripe_checkout unexpected', e);
+    return err(e instanceof Error ? e.message : 'Unknown error');
   }
 });

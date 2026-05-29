@@ -7,3 +7,5 @@ project_id = "hntpunbpmomjvggftcvv"
     verify_jwt = true
   [functions.stripe_checkout]
     verify_jwt = false
+  [functions.stripe-webhook]
+    verify_jwt = false
