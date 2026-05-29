@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { RotateCw, X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +36,7 @@ const ACTIVE_STATUSES = ["pending", "assigned", "in_progress"];
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("home");
@@ -56,6 +58,28 @@ const CustomerDashboard = () => {
   }, [user]);
 
   useEffect(() => { loadBookings(); }, [loadBookings]);
+
+  // Handle Stripe checkout success redirect — the booking row is created
+  // asynchronously by the stripe-webhook edge function.
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+    toast.success("Payment confirmed — your move is being booked.");
+    setActiveTab("activities");
+    // Poll briefly while the webhook inserts the row.
+    let attempts = 0;
+    const id = setInterval(async () => {
+      attempts += 1;
+      await loadBookings();
+      if (attempts >= 6) clearInterval(id);
+    }, 1500);
+    const next = new URLSearchParams(searchParams);
+    next.delete("checkout");
+    next.delete("session_id");
+    next.delete("booking");
+    setSearchParams(next, { replace: true });
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-open rating modal when a booking transitions to completed
   useEffect(() => {
