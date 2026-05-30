@@ -81,6 +81,11 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
                 </p>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/about")} className="text-sm">
+                <Info className="w-4 h-4 mr-2" />
+                About Us
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}
                 className="text-sm text-[hsl(var(--swift-danger))] focus:text-[hsl(var(--swift-danger))]"
