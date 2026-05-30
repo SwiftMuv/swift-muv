@@ -79,7 +79,7 @@ const DriverReviews = ({ driverId, limit = 5, title = "Recent reviews" }: Props)
                       <Star
                         key={n}
                         className={`h-3.5 w-3.5 ${
-                          n <= r.stars ? "fill-primary text-primary" : "text-muted-foreground/40"
+                          n <= r.stars ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"
                         }`}
                       />
                     ))}
