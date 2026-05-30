@@ -1,4 +1,5 @@
-import { LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
+import { Info, LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +48,13 @@ export const CustomerAccountScreen = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Button asChild variant="outline" className="w-full">
+        <Link to="/about">
+          <Info className="w-4 h-4 mr-2" />
+          About Us
+        </Link>
+      </Button>
 
       <Button variant="outline" onClick={handleSignOut} className="w-full">
         <LogOut className="w-4 h-4 mr-2" />

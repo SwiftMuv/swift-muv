@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { Info, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,6 +80,11 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
                   {isOnline ? "Online" : "Offline"}
                 </p>
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/about")} className="text-sm">
+                <Info className="w-4 h-4 mr-2" />
+                About Us
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}
