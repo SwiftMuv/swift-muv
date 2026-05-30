@@ -6,6 +6,7 @@ import { DriverHeader } from "@/components/driver/DriverHeader";
 import { DriverStats } from "@/components/driver/DriverStats";
 import { DriverJobsTabs } from "@/components/driver/DriverJobsTabs";
 import { BottomNav } from "@/components/driver/BottomNav";
+import NotificationBell from "@/components/NotificationBell";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
@@ -264,6 +265,14 @@ const DriverDashboard = () => {
       </main>
 
       <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
+
+      {/* Floating notification button */}
+      <div className="fixed right-4 bottom-24 z-40">
+        <div className="rounded-full shadow-lg shadow-black/30">
+          <NotificationBell />
+        </div>
+      </div>
+
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );

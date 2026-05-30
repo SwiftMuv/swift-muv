@@ -1,5 +1,4 @@
 import { Globe, DollarSign, LogOut } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,21 +79,24 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-3 sm:px-4 py-2 h-14 flex items-center">
+    <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-3 sm:px-4 py-2 h-16 flex items-center">
       <div className="flex items-center justify-between gap-2 w-full">
-        {/* Left: Logo */}
-        <div className="flex items-center min-w-0 shrink-0">
-          <img
-            src={logo}
-            alt="SwiftMuv"
-            className="h-8 sm:h-9 w-auto object-contain"
-          />
+        {/* Left: Circular logo */}
+        <div className="flex items-center gap-2.5 min-w-0 shrink-0">
+          <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-primary/30 bg-card shrink-0">
+            <img
+              src={logo}
+              alt="SwiftMuv"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <p className="text-base sm:text-lg font-semibold truncate text-foreground">
+            {displayName}
+          </p>
         </div>
 
-        {/* Right: Notifications + Profile dropdown */}
+        {/* Right: Profile dropdown */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <NotificationBell />
-
           <DropdownMenu>
             <DropdownMenuTrigger
               className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40"
