@@ -6,41 +6,47 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* SwiftMuv brand palette
+       Primary (Deep Navy)   #0B3B80 → 216 84% 27%
+       Accent  (Electric Teal) #1BC2B3 → 174 75% 43%
+       Background (Off-white) #F5F6F5 → 120 3% 96%
+       Muted text (Slate)    #636466 → 220 1% 39%
+    */
+    --background: 120 3% 96%;
+    --foreground: 216 84% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 216 84% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 216 84% 18%;
 
-    --primary: 14 100% 57%;
+    --primary: 216 84% 27%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 18 100% 65%;
+    --primary-glow: 174 75% 43%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 210 30% 94%;
+    --secondary-foreground: 216 84% 27%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 20% 92%;
+    --muted-foreground: 220 1% 39%;
 
-    --accent: 45 100% 51%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 174 75% 43%;
+    --accent-foreground: 0 0% 100%;
 
-    --section: 210 40% 98%;
+    --section: 120 3% 96%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 14 100% 57%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 216 84% 27%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(14 100% 57%), hsl(22 100% 60%));
-    --shadow-primary: 0 8px 24px -8px hsl(14 100% 57% / 0.45);
+    --gradient-primary: linear-gradient(135deg, hsl(216 84% 27%), hsl(174 75% 43%));
+    --shadow-primary: 0 8px 24px -8px hsl(216 84% 27% / 0.45);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
