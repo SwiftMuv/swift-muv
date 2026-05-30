@@ -1,5 +1,4 @@
 import { Globe, DollarSign, LogOut } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
