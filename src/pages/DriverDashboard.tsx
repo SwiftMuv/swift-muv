@@ -6,6 +6,7 @@ import { DriverHeader } from "@/components/driver/DriverHeader";
 import { DriverStats } from "@/components/driver/DriverStats";
 import { DriverJobsTabs } from "@/components/driver/DriverJobsTabs";
 import { BottomNav } from "@/components/driver/BottomNav";
+import NotificationBell from "@/components/NotificationBell";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
