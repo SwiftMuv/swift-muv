@@ -1,4 +1,5 @@
-import { LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
+import { Info, LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
