@@ -1,10 +1,9 @@
-import { Globe, DollarSign, MoreVertical, LogOut } from "lucide-react";
+import { Globe, DollarSign, LogOut } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -17,6 +16,7 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/swiftmuv-logo.png";
 
 interface DriverHeaderProps {
   isOnline: boolean;
@@ -80,18 +80,45 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-4 py-3">
+    <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-4 py-2.5">
       <div className="flex items-center justify-between gap-3">
-        {/* Far-left: kebab menu + profile pic */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Left: Logo */}
+        <div className="flex items-center min-w-0">
+          <img
+            src={logo}
+            alt="SwiftMuv"
+            className="h-9 w-auto object-contain"
+          />
+        </div>
+
+        {/* Right: Notifications + Profile dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
+          <NotificationBell />
+
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="h-8 w-6 flex items-center justify-center rounded hover:bg-secondary/60 transition-colors"
+              className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40"
               aria-label="Profile menu"
             >
-              <MoreVertical className="w-4 h-4 text-muted-foreground" strokeWidth={2.5} />
+              <div className="w-9 h-9 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-2 ring-primary/30">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-bold text-foreground">{initials || "DR"}</span>
+                )}
+              </div>
+              {isOnline && (
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card bg-[hsl(var(--swift-success))] animate-pulse" />
+              )}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuContent align="end" className="w-52">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-semibold truncate">{displayName}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {isOnline ? "Online" : "Offline"}
+                </p>
+              </div>
+              <DropdownMenuSeparator />
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="text-sm">
                   <Globe className="w-4 h-4 mr-2" /> Language
@@ -134,49 +161,7 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-2 ring-primary/30">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-xs font-bold text-foreground">{initials || "DR"}</span>
-              )}
-            </div>
-            {isOnline && (
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card bg-[hsl(var(--swift-success))] animate-pulse" />
-            )}
-          </div>
         </div>
-
-        {/* Center: Driver name + online status */}
-        <div className="min-w-0 flex-1 text-center">
-          <h1
-            className="text-lg font-bold tracking-tight truncate text-white"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-          >
-            {displayName}
-          </h1>
-          <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1.5">
-            {isOnline ? (
-              <>
-                <span className="relative inline-flex w-2 h-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--swift-success))] opacity-75 animate-ping" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--swift-success))]" />
-                </span>
-                <span className="text-[hsl(var(--swift-success))] font-semibold">Online</span>
-              </>
-            ) : (
-              <>
-                <span className="w-2 h-2 rounded-full bg-muted-foreground" />
-                <span>Offline</span>
-              </>
-            )}
-          </p>
-        </div>
-
-        {/* Far-right: Notifications */}
-        <NotificationBell />
       </div>
     </header>
   );
