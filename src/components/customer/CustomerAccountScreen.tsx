@@ -49,6 +49,13 @@ export const CustomerAccountScreen = () => {
         </CardContent>
       </Card>
 
+      <Button asChild variant="outline" className="w-full">
+        <Link to="/about">
+          <Info className="w-4 h-4 mr-2" />
+          About Us
+        </Link>
+      </Button>
+
       <Button variant="outline" onClick={handleSignOut} className="w-full">
         <LogOut className="w-4 h-4 mr-2" />
         Sign out
