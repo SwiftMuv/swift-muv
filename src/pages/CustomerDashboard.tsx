@@ -22,6 +22,7 @@ import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
 import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
 import NotificationBell from "@/components/NotificationBell";
+import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
 
 interface Booking {
   id: string;
