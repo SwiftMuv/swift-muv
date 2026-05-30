@@ -141,6 +141,9 @@ const About = () => {
             <Link to="/about" className="text-muted-foreground hover:text-foreground">
               About Us
             </Link>
+            <Link to="/terms" className="text-muted-foreground hover:text-foreground">
+              Terms
+            </Link>
             <Link to="/login" className="text-muted-foreground hover:text-foreground">
               Sign in
             </Link>

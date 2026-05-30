@@ -15,6 +15,7 @@ import CustomerDashboard from "./pages/CustomerDashboard.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import About from "./pages/About.tsx";
+import Terms from "./pages/Terms.tsx";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/index" element={<Index />} />
             <Route path="/login" element={<CustomerLogin />} />
             <Route path="/driver/login" element={<DriverLogin />} />
