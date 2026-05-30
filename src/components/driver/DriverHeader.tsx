@@ -1,21 +1,15 @@
-import { Globe, DollarSign, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/swiftmuv-logo.png";
+import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
 
 interface DriverHeaderProps {
   isOnline: boolean;
@@ -25,42 +19,7 @@ interface DriverHeaderProps {
   avatarUrl?: string | null;
 }
 
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "fr", label: "Français" },
-  { code: "es", label: "Español" },
-  { code: "ar", label: "العربية" },
-  { code: "pt", label: "Português" },
-  { code: "de", label: "Deutsch" },
-  { code: "it", label: "Italiano" },
-  { code: "zh", label: "中文" },
-  { code: "ja", label: "日本語" },
-  { code: "hi", label: "हिन्दी" },
-  { code: "ru", label: "Русский" },
-  { code: "tr", label: "Türkçe" },
-];
-
-const CURRENCIES = [
-  { code: "CAD", label: "CAD $" },
-  { code: "USD", label: "USD $" },
-  { code: "EUR", label: "EUR €" },
-  { code: "GBP", label: "GBP £" },
-  { code: "AUD", label: "AUD $" },
-  { code: "NZD", label: "NZD $" },
-  { code: "CHF", label: "CHF" },
-  { code: "JPY", label: "JPY ¥" },
-  { code: "CNY", label: "CNY ¥" },
-  { code: "INR", label: "INR ₹" },
-  { code: "BRL", label: "BRL R$" },
-  { code: "MXN", label: "MXN $" },
-  { code: "ZAR", label: "ZAR R" },
-  { code: "AED", label: "AED د.إ" },
-  { code: "NGN", label: "NGN ₦" },
-];
-
 export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderProps) => {
-  const [lang, setLang] = useState("en");
-  const [currency, setCurrency] = useState("CAD");
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -79,23 +38,22 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-3 sm:px-4 py-2 h-16 flex items-center">
+    <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-3 sm:px-4 py-2 flex items-center">
       <div className="relative flex items-center justify-between gap-2 w-full">
         {/* Left: Circular logo */}
         <div className="flex items-center min-w-0 shrink-0">
           <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-primary/30 bg-card shrink-0">
-            <img
-              src={logo}
-              alt="SwiftMuv"
-              className="w-full h-full object-cover"
-            />
+            <img src={logo} alt="SwiftMuv" className="w-full h-full object-cover" />
           </div>
         </div>
 
-        {/* Center: Driver name */}
-        <p className="absolute left-1/2 -translate-x-1/2 max-w-[55%] truncate text-center text-lg sm:text-xl font-bold text-foreground pointer-events-none">
-          {displayName}
-        </p>
+        {/* Center: Lang/Currency above name */}
+        <div className="absolute left-1/2 -translate-x-1/2 max-w-[60%] flex flex-col items-center gap-1">
+          <LangCurrencyMenu />
+          <p className="truncate text-center text-lg sm:text-xl font-bold text-foreground max-w-full">
+            {displayName}
+          </p>
+        </div>
 
         {/* Right: Profile dropdown */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -122,39 +80,6 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
                   {isOnline ? "Online" : "Offline"}
                 </p>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="text-sm">
-                  <Globe className="w-4 h-4 mr-2" /> Language
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="max-h-[60vh] overflow-y-auto">
-                    <DropdownMenuRadioGroup value={lang} onValueChange={setLang}>
-                      {LANGUAGES.map((l) => (
-                        <DropdownMenuRadioItem key={l.code} value={l.code} className="text-sm">
-                          {l.label}
-                        </DropdownMenuRadioItem>
-                      ))}
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="text-sm">
-                  <DollarSign className="w-4 h-4 mr-2" /> Currency
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="max-h-[60vh] overflow-y-auto">
-                    <DropdownMenuRadioGroup value={currency} onValueChange={setCurrency}>
-                      {CURRENCIES.map((c) => (
-                        <DropdownMenuRadioItem key={c.code} value={c.code} className="text-sm">
-                          {c.label}
-                        </DropdownMenuRadioItem>
-                      ))}
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}
