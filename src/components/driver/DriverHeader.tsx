@@ -80,9 +80,9 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
 
   return (
     <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b px-3 sm:px-4 py-2 h-16 flex items-center">
-      <div className="flex items-center justify-between gap-2 w-full">
+      <div className="relative flex items-center justify-between gap-2 w-full">
         {/* Left: Circular logo */}
-        <div className="flex items-center gap-2.5 min-w-0 shrink-0">
+        <div className="flex items-center min-w-0 shrink-0">
           <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-primary/30 bg-card shrink-0">
             <img
               src={logo}
@@ -90,10 +90,12 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
               className="w-full h-full object-cover"
             />
           </div>
-          <p className="text-base sm:text-lg font-semibold truncate text-foreground">
-            {displayName}
-          </p>
         </div>
+
+        {/* Center: Driver name */}
+        <p className="absolute left-1/2 -translate-x-1/2 max-w-[55%] truncate text-center text-lg sm:text-xl font-bold text-foreground pointer-events-none">
+          {displayName}
+        </p>
 
         {/* Right: Profile dropdown */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
