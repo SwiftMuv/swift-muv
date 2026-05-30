@@ -53,7 +53,7 @@ const DriverReviews = ({ driverId, limit = 5, title = "Recent reviews" }: Props)
         </h3>
         {avg && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
             <span className="font-medium text-foreground">{avg}</span>
             <span>· {reviews.length}</span>
           </div>
