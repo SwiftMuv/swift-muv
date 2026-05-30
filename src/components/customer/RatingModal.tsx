@@ -41,7 +41,7 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
         <div className="flex justify-center gap-2 py-4">
           {[1, 2, 3, 4, 5].map((n) => (
             <button key={n} type="button" onClick={() => setStars(n)}>
-              <Star className={`h-8 w-8 ${n <= stars ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+              <Star className={`h-8 w-8 ${n <= stars ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
             </button>
           ))}
         </div>
