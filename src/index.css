@@ -48,14 +48,14 @@
     --gradient-primary: linear-gradient(135deg, hsl(216 84% 27%), hsl(174 75% 43%));
     --shadow-primary: 0 8px 24px -8px hsl(216 84% 27% / 0.45);
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 14 100% 57%;
+    --sidebar-background: 216 84% 27%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 174 75% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 14 100% 57%;
+    --sidebar-accent: 216 70% 22%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 216 50% 22%;
+    --sidebar-ring: 174 75% 43%;
 
     --swift-success: 152 76% 40%;
     --swift-warning: 45 100% 51%;
