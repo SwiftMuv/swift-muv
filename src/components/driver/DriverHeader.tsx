@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { Info, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
