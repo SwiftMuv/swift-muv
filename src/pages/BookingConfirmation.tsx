@@ -105,7 +105,7 @@ const BookingConfirmation = () => {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground">Marcus Rivera</p>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                 <span>4.9</span>
                 <span>·</span>
                 <span>Ford Transit</span>
