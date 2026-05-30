@@ -23,6 +23,7 @@ import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
+import logo from "@/assets/swiftmuv-logo.png";
 
 interface Booking {
   id: string;
