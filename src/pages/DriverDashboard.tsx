@@ -264,6 +264,14 @@ const DriverDashboard = () => {
       </main>
 
       <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
+
+      {/* Floating notification button */}
+      <div className="fixed right-4 bottom-24 z-40">
+        <div className="rounded-full shadow-lg shadow-black/30">
+          <NotificationBell />
+        </div>
+      </div>
+
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
