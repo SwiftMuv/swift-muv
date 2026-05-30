@@ -170,45 +170,6 @@ const CustomerDashboard = () => {
         {activeTab === "bookings" && (
           <div className="space-y-4 pb-4">
             <BookNewMoveForm onBooked={loadBookings} />
-            {active.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pending & active</h3>
-                {active.map((b) => {
-                  const canCancel = b.status !== "in_progress";
-                  const fee = b.status === "pending" ? 0 : 10;
-                  return (
-                    <Card key={b.id} className="border-primary/40">
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base">Active move · ${Number(b.total_price).toFixed(2)}</CardTitle>
-                        <Badge>{b.status.replace("_", " ")}</Badge>
-                      </CardHeader>
-                      <CardContent className="space-y-2 text-sm">
-                        <p><span className="text-muted-foreground">From:</span> {b.pickup_address}</p>
-                        <p><span className="text-muted-foreground">To:</span> {b.dropoff_address}</p>
-                        {canCancel ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full mt-2"
-                            disabled={cancelling === b.id}
-                            onClick={() => handleCancelRequest(b)}
-                          >
-                            <X className="w-3.5 h-3.5 mr-1.5" />
-                            {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel"}
-                          </Button>
-                        ) : (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            Move in progress — cancellation no longer available.
-                          </div>
-                        )}
-                        {b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
           </div>
         )}
 
@@ -225,6 +186,8 @@ const CustomerDashboard = () => {
             {bookings.map((b) => {
               const isActive = ACTIVE_STATUSES.includes(b.status);
               const isCompleted = b.status === "completed";
+              const canCancel = isActive && b.status !== "in_progress";
+              const fee = b.status === "pending" ? 0 : 10;
               return (
                 <Card key={b.id} className={isActive ? "border-primary/40" : ""}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -236,6 +199,25 @@ const CustomerDashboard = () => {
                   <CardContent className="space-y-2 text-sm">
                     <p><span className="text-muted-foreground">From:</span> {b.pickup_address}</p>
                     <p><span className="text-muted-foreground">To:</span> {b.dropoff_address}</p>
+                    {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
+                    {canCancel && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        disabled={cancelling === b.id}
+                        onClick={() => handleCancelRequest(b)}
+                      >
+                        <X className="w-3.5 h-3.5 mr-1.5" />
+                        {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel"}
+                      </Button>
+                    )}
+                    {isActive && b.status === "in_progress" && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        Move in progress — cancellation no longer available.
+                      </div>
+                    )}
                     <div className="flex items-center justify-between pt-1">
                       <p className="text-xs text-muted-foreground">
                         {new Date(b.created_at).toLocaleString()}

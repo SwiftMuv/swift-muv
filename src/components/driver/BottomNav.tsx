@@ -1,4 +1,4 @@
-import { Home, Search, Wallet, Clock, User } from "lucide-react";
+import { Home, Wallet, Clock, User } from "lucide-react";
 
 interface BottomNavProps {
   activeTab: string;
@@ -7,7 +7,6 @@ interface BottomNavProps {
 
 const tabs = [
   { id: "home", label: "Home", icon: Home },
-  { id: "search", label: "Find Jobs", icon: Search },
   { id: "wallet", label: "Wallet", icon: Wallet },
   { id: "history", label: "Activity", icon: Clock },
   { id: "profile", label: "Account", icon: User },
