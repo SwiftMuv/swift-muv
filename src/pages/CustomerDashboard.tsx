@@ -23,6 +23,7 @@ import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
+import logo from "@/assets/swiftmuv-logo.png";
 
 interface Booking {
   id: string;
@@ -160,7 +161,9 @@ const CustomerDashboard = () => {
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b">
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
-          <div className="w-9 shrink-0" />
+          <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-primary/30 bg-card shrink-0">
+            <img src={logo} alt="SwiftMuv" className="w-full h-full object-cover" />
+          </div>
           <div className="flex flex-col items-center gap-1 min-w-0">
             <LangCurrencyMenu />
             <h1 className="text-lg font-bold text-foreground truncate">{titles[activeTab]}</h1>

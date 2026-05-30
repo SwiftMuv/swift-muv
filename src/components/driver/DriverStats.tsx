@@ -26,7 +26,7 @@ export const DriverStats = ({ todayEarnings, weekEarnings, completedJobs, rating
       <div className="grid grid-cols-3 gap-2">
         <StatCard icon={<DollarSign className="w-4 h-4 text-primary" />} label="This Week" value={`$${weekEarnings}`} />
         <StatCard icon={<CheckCircle2 className="w-4 h-4 text-[hsl(var(--swift-success))]" />} label="Completed" value={`${completedJobs}`} />
-        <StatCard icon={<Star className="w-4 h-4 text-[hsl(var(--swift-warning))]" />} label="Rating" value={`${rating}`} />
+        <StatCard icon={<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />} label="Rating" value={`${rating}`} />
       </div>
     </div>
   );

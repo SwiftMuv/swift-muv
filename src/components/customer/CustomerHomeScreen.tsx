@@ -152,7 +152,7 @@ export const CustomerHomeScreen = () => {
                   </div>
                   <div className="ml-auto flex">
                     {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-primary text-primary" />
+                      <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
                 </div>
