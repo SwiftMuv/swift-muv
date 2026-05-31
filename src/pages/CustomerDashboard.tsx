@@ -23,6 +23,7 @@ import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
+import { useI18n } from "@/contexts/I18nContext";
 import logo from "@/assets/swiftmuv-logo.png";
 
 interface Booking {
@@ -38,6 +39,7 @@ const ACTIVE_STATUSES = ["pending", "assigned", "in_progress"];
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
+  const { t, formatCurrency, formatDate } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +67,7 @@ const CustomerDashboard = () => {
   // asynchronously by the stripe-webhook edge function.
   useEffect(() => {
     if (searchParams.get("checkout") !== "success") return;
-    toast.success("Payment confirmed — your move is being booked.");
+    toast.success(t("customer.paymentConfirmed"));
     setActiveTab("activities");
     // Poll briefly while the webhook inserts the row.
     let attempts = 0;
@@ -138,7 +140,7 @@ const CustomerDashboard = () => {
         body: { bookingId: b.id },
       });
       if (error) throw error;
-      toast.success((data as any)?.fee ? `Cancelled. $${(data as any).fee} CAD fee applied.` : "Booking cancelled");
+      toast.success((data as any)?.fee ? t("customer.cancelledFee", { fee: formatCurrency(Number((data as any).fee)) }) : t("customer.bookingCancelled"));
       loadBookings();
     } catch (e: any) {
       toast.error(e.message ?? "Cancel failed");
@@ -151,10 +153,10 @@ const CustomerDashboard = () => {
   const completed = bookings.filter((b) => b.status === "completed");
 
   const titles: Record<string, string> = {
-    home: "SwiftMuv",
-    bookings: "Book a Move",
-    activities: "Activities",
-    account: "Account",
+    home: t("dashboard.customer.title.home"),
+    bookings: t("dashboard.customer.title.bookings"),
+    activities: t("dashboard.customer.title.activities"),
+    account: t("dashboard.customer.title.account"),
   };
 
   return (
@@ -185,11 +187,11 @@ const CustomerDashboard = () => {
 
         {activeTab === "activities" && (
           <div className="space-y-3 pb-4">
-            {loading && <p className="text-muted-foreground text-sm">Loading…</p>}
+            {loading && <p className="text-muted-foreground text-sm">{t("common.loading")}</p>}
             {!loading && bookings.length === 0 && (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground text-sm">
-                  No bookings yet.
+                  {t("common.noBookings")}
                 </CardContent>
               </Card>
             )}
@@ -201,14 +203,14 @@ const CustomerDashboard = () => {
               return (
                 <Card key={b.id} className={isActive ? "border-primary/40" : ""}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-base">${Number(b.total_price).toFixed(2)}</CardTitle>
+                    <CardTitle className="text-base">{formatCurrency(Number(b.total_price))}</CardTitle>
                     <Badge variant={isActive ? "default" : "secondary"}>
-                      {b.status.replace("_", " ")}
+                      {t(`status.${b.status}`)}
                     </Badge>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <p><span className="text-muted-foreground">From:</span> {b.pickup_address}</p>
-                    <p><span className="text-muted-foreground">To:</span> {b.dropoff_address}</p>
+                    <p><span className="text-muted-foreground">{t("common.from")}</span> {b.pickup_address}</p>
+                    <p><span className="text-muted-foreground">{t("common.to")}</span> {b.dropoff_address}</p>
                     {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
                     {canCancel && (
                       <Button
@@ -219,18 +221,18 @@ const CustomerDashboard = () => {
                         onClick={() => handleCancelRequest(b)}
                       >
                         <X className="w-3.5 h-3.5 mr-1.5" />
-                        {cancelling === b.id ? "Cancelling…" : fee > 0 ? `Cancel ($${fee} CAD fee)` : "Cancel"}
+                        {cancelling === b.id ? t("common.cancelling") : fee > 0 ? `${t("common.cancel")} (${formatCurrency(fee)} fee)` : t("common.cancel")}
                       </Button>
                     )}
                     {isActive && b.status === "in_progress" && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <AlertTriangle className="w-3.5 h-3.5" />
-                        Move in progress — cancellation no longer available.
+                        {t("customer.cancelProgress")}
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-1">
                       <p className="text-xs text-muted-foreground">
-                        {new Date(b.created_at).toLocaleString()}
+                        {formatDate(b.created_at)}
                       </p>
                       {isCompleted && (
                         <Button
@@ -239,7 +241,7 @@ const CustomerDashboard = () => {
                           className="bg-primary/15 text-primary hover:bg-primary/25"
                         >
                           <RotateCw className="w-3.5 h-3.5 mr-1.5" />
-                          Rebook
+                          {t("common.rebook")}
                         </Button>
                       )}
                     </div>
@@ -266,24 +268,24 @@ const CustomerDashboard = () => {
       <Dialog open={cancelDialog.open} onOpenChange={(open) => setCancelDialog({ open, booking: open ? cancelDialog.booking : null })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel booking?</DialogTitle>
+            <DialogTitle>{t("customer.cancelBookingTitle")}</DialogTitle>
             <DialogDescription>
               {cancelDialog.booking && cancelDialog.booking.status !== "pending" ? (
                 <>
-                  A driver has already accepted this job. Cancelling now will charge a{" "}
-                  <strong>$10 CAD</strong> fee.
+                  {t("customer.cancelWithFee", { fee: "" })}{" "}
+                  <strong>{formatCurrency(10)}</strong>
                 </>
               ) : (
-                "Are you sure you want to cancel this booking? No fee will apply."
+                t("customer.cancelNoFee")
               )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancelDialog({ open: false, booking: null })}>
-              Keep booking
+              {t("customer.keepBooking")}
             </Button>
             <Button variant="destructive" onClick={handleConfirmCancel} disabled={cancelling === cancelDialog.booking?.id}>
-              {cancelling === cancelDialog.booking?.id ? "Cancelling…" : "Confirm cancellation"}
+              {cancelling === cancelDialog.booking?.id ? t("common.cancelling") : t("customer.confirmCancellation")}
             </Button>
           </DialogFooter>
         </DialogContent>
