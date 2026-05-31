@@ -12,6 +12,7 @@ import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
 import { useDriverGeolocation } from "@/hooks/useDriverGeolocation";
+import { useI18n } from "@/contexts/I18nContext";
 
 export type JobStatus = "assigned" | "arrived" | "in_transit" | "completed";
 
@@ -33,6 +34,7 @@ const sizeLabel = (s: string): Job["moveSize"] =>
 
 const DriverDashboard = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
 
   // Stream GPS to driver_profiles while online so the 20km RLS filter works
@@ -151,7 +153,7 @@ const DriverDashboard = () => {
           loadAvailable();
           const newRow: any = payload.new;
           if (payload.eventType === "INSERT" && newRow?.status === "available") {
-            toast.success("New job request available!");
+            toast.success(t("driver.newJob"));
           }
         }
       )
@@ -159,12 +161,12 @@ const DriverDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadAvailable]);
+  }, [loadAvailable, t]);
 
   const handleAcceptJob = async (jobId: string) => {
     if (!user) return;
     if (activeJob) {
-      toast.error("Finish your current job first");
+      toast.error(t("driver.finishCurrent"));
       return;
     }
     const booking = available.find((j) => j.id === jobId);
@@ -182,7 +184,7 @@ const DriverDashboard = () => {
       .single();
     if (error) return toast.error(error.message);
     await supabase.from("bookings").update({ status: "assigned" }).eq("id", booking.bookingId);
-    toast.success("Job accepted");
+    toast.success(t("driver.jobAccepted"));
     setActiveJob({ ...booking, jobId: data.id, id: data.id, status: "assigned", completionCode: code });
     loadAvailable();
   };
@@ -216,7 +218,7 @@ const DriverDashboard = () => {
       } catch (e) {
         console.warn("release-earnings failed", e);
       }
-      toast.success("Job completed! Earnings released.");
+      toast.success(t("driver.jobCompletedToast"));
       setTimeout(() => {
         setActiveJob(null);
         loadAvailable();
@@ -242,8 +244,8 @@ const DriverDashboard = () => {
 
             {!isOnline && (
               <div className="rounded-xl bg-muted p-4 text-center">
-                <p className="text-muted-foreground text-sm font-medium">You're currently offline</p>
-                <p className="text-muted-foreground text-xs mt-1">Go online to receive job requests</p>
+                <p className="text-muted-foreground text-sm font-medium">{t("driver.offlineTitle")}</p>
+                <p className="text-muted-foreground text-xs mt-1">{t("driver.offlineSubtitle")}</p>
               </div>
             )}
 
