@@ -1,4 +1,5 @@
 import { DollarSign, TrendingUp, CheckCircle2, Star } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface DriverStatsProps {
   todayEarnings: number;
@@ -8,25 +9,27 @@ interface DriverStatsProps {
 }
 
 export const DriverStats = ({ todayEarnings, weekEarnings, completedJobs, rating }: DriverStatsProps) => {
+  const { t, formatCurrency } = useI18n();
+
   return (
     <div className="space-y-3">
       {/* Earnings Hero */}
       <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
-        <p className="text-xs font-medium opacity-80 uppercase tracking-wider">Today's Earnings</p>
+        <p className="text-xs font-medium opacity-80 uppercase tracking-wider">{t("driver.todayEarnings")}</p>
         <p className="text-3xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          ${todayEarnings.toFixed(2)}
+          {formatCurrency(todayEarnings)}
         </p>
         <div className="flex items-center gap-1 mt-2 text-xs opacity-80">
           <TrendingUp className="w-3 h-3" />
-          <span>+12% vs yesterday</span>
+          <span>{t("driver.vsYesterday")}</span>
         </div>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-2">
-        <StatCard icon={<DollarSign className="w-4 h-4 text-primary" />} label="This Week" value={`$${weekEarnings}`} />
-        <StatCard icon={<CheckCircle2 className="w-4 h-4 text-[hsl(var(--swift-success))]" />} label="Completed" value={`${completedJobs}`} />
-        <StatCard icon={<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />} label="Rating" value={`${rating}`} />
+        <StatCard icon={<DollarSign className="w-4 h-4 text-primary" />} label={t("driver.thisWeek")} value={formatCurrency(weekEarnings, { maximumFractionDigits: 0, minimumFractionDigits: 0 })} />
+        <StatCard icon={<CheckCircle2 className="w-4 h-4 text-[hsl(var(--swift-success))]" />} label={t("driver.completed")} value={`${completedJobs}`} />
+        <StatCard icon={<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />} label={t("driver.rating")} value={`${rating}`} />
       </div>
     </div>
   );
