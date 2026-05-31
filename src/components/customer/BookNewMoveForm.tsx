@@ -324,7 +324,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             </div>
           )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
-            <span>{t("common.total")}</span><span className="text-primary">{formatCurrency(quote.finalPrice)}</span>
+            <span className="text-cyan-500">{t("common.total")}</span><span className="text-cyan-500">{formatCurrency(quote.finalPrice)}</span>
           </div>
         </CardContent>
       </Card>
