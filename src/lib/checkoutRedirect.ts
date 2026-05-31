@@ -15,7 +15,7 @@ export const reserveStripeCheckoutWindow = () => {
   if (!checkoutWindow) return null;
 
   try {
-    checkoutWindow.document.write(`<!doctype html><html><head><title>Preparing checkout…</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f172a;color:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{text-align:center;padding:24px;max-width:420px}p{color:#94a3b8;line-height:1.5}a{color:#86efac;font-weight:700}</style></head><body><main><h1>Preparing checkout…</h1><p>If this page does not continue, return to SwiftGo and try again.</p></main></body></html>`);
+    checkoutWindow.document.write(`<!doctype html><html><head><title>Preparing checkout…</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f172a;color:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{text-align:center;padding:24px;max-width:420px}p{color:#94a3b8;line-height:1.5}a{color:#86efac;font-weight:700}</style></head><body><main><h1>Preparing checkout…</h1><p>If this page does not continue, return to SwiftMuv and try again.</p></main></body></html>`);
     checkoutWindow.document.close();
   } catch (_err) {
     // The browser may prevent writing to the reserved tab; we can still navigate it later.
@@ -105,7 +105,7 @@ export const openStripeCheckout = (checkoutUrl: string, reservedWindow: Window |
       writeCheckoutHandoffPage(reservedWindow, target);
       return "opened";
     } catch (_err) {
-      showReservedCheckoutError(reservedWindow, "Your browser blocked the Stripe checkout redirect. Please return to SwiftGo and try again with popups enabled.");
+      showReservedCheckoutError(reservedWindow, "Your browser blocked the Stripe checkout redirect. Please return to SwiftMuv and try again with popups enabled.");
       throw new Error("Your browser blocked the Stripe checkout redirect. Please allow popups and try again.");
     }
   }

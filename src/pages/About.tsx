@@ -83,11 +83,11 @@ const About = () => {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold mb-6">Our Story</h2>
           <p className="text-base sm:text-lg leading-relaxed text-muted-foreground">
-            At SwiftMove, we believe that moving items—whether it's a single piece of
+            At SwiftMuv, we believe that moving items—whether it's a single piece of
             furniture or an entire inventory shipment—should never be a source of stress.
             Traditionally, local logistics has been plagued by friction: opaque pricing,
             unreliable timelines, and endless back-and-forth communication. We built
-            SwiftMove to change that. SwiftMove is a lightning-fast, secure digital
+            SwiftMuv to change that. SwiftMuv is a lightning-fast, secure digital
             marketplace designed to connect customers with top-tier, verified logistics
             providers instantly. By leveraging modern technology, we remove the guesswork
             from transit, offering radical transparency, real-time tracking, and upfront
