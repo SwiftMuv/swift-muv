@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import BankDetailsForm from "@/components/driver/BankDetailsForm";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface JobRow { id: string; driver_earnings: number; earnings_status: string; completed_at: string | null; }
 interface PayoutRow { id: string; amount: number; status: string; created_at: string; }
@@ -13,6 +14,7 @@ interface BankRow { id: string; bank_name: string; account_last4: string; accoun
 
 const WalletScreen = () => {
   const { user } = useAuth();
+  const { t, formatCurrency, formatDate } = useI18n();
   const [loading, setLoading] = useState(true);
   const [bank, setBank] = useState<BankRow | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
@@ -58,13 +60,13 @@ const WalletScreen = () => {
 
   const handleWithdraw = async () => {
     if (!bank) {
-      toast.error("Link a bank account first");
+      toast.error(t("wallet.linkBankFirst"));
       setShowBankForm(true);
       return;
     }
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) return toast.error("Enter a valid amount");
-    if (amt > available) return toast.error(`Only $${available.toFixed(2)} available`);
+    if (!amt || amt <= 0) return toast.error(t("wallet.enterValidAmount"));
+    if (amt > available) return toast.error(t("wallet.onlyAvailable", { amount: formatCurrency(available) }));
     setWithdrawing(true);
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
@@ -73,8 +75,8 @@ const WalletScreen = () => {
       body: { amount: amt },
     });
     setWithdrawing(false);
-    if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Withdraw failed");
-    toast.success(`Withdrawal of $${amt.toFixed(2)} requested`);
+    if (error || data?.error) return toast.error(data?.error ?? error?.message ?? t("wallet.withdrawFailed"));
+    toast.success(t("wallet.withdrawRequested", { amount: formatCurrency(amt) }));
     setShowWithdraw(false);
     setAmount("");
     load();
@@ -87,11 +89,11 @@ const WalletScreen = () => {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-5 text-primary-foreground relative overflow-hidden">
-        <p className="text-xs font-medium uppercase tracking-wider opacity-80">Available Balance</p>
-        <p className="text-4xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${available.toFixed(2)}</p>
+        <p className="text-xs font-medium uppercase tracking-wider opacity-80">{t("wallet.availableBalance")}</p>
+        <p className="text-4xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{formatCurrency(available)}</p>
         {pendingEarnings > 0 && (
           <p className="text-xs mt-1 opacity-70 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> ${pendingEarnings.toFixed(2)} pending (in-progress jobs)
+            <Clock className="w-3 h-3" /> {t("wallet.pending", { amount: formatCurrency(pendingEarnings) })}
           </p>
         )}
         <div className="mt-4 flex gap-2">
@@ -102,11 +104,11 @@ const WalletScreen = () => {
               disabled={available <= 0}
               className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0"
             >
-              <ArrowUpRight className="w-4 h-4 mr-1.5" /> Withdraw
+              <ArrowUpRight className="w-4 h-4 mr-1.5" /> {t("wallet.withdraw")}
             </Button>
           ) : (
             <Button onClick={() => setShowBankForm(true)} variant="secondary" className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0">
-              <Landmark className="w-4 h-4 mr-1.5" /> Link bank account
+              <Landmark className="w-4 h-4 mr-1.5" /> {t("wallet.linkBank")}
             </Button>
           )}
         </div>
@@ -121,14 +123,14 @@ const WalletScreen = () => {
 
       {showWithdraw && (
         <div className="rounded-xl bg-card border p-4 space-y-3">
-          <p className="text-sm font-medium">Request withdrawal to {bank?.bank_name} ••{bank?.account_last4}</p>
-          <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-          <p className="text-xs text-muted-foreground">Pending — processed within 1-3 business days</p>
+          <p className="text-sm font-medium">{t("wallet.requestWithdrawal", { bank: `${bank?.bank_name} ••${bank?.account_last4}` })}</p>
+          <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={t("wallet.amount")} />
+          <p className="text-xs text-muted-foreground">{t("wallet.pendingProcessing")}</p>
           <div className="flex gap-2">
             <Button onClick={handleWithdraw} disabled={withdrawing} className="flex-1 rounded-xl h-11 font-semibold">
-              {withdrawing && <Loader2 className="h-4 w-4 animate-spin mr-1" />}Request payout
+              {withdrawing && <Loader2 className="h-4 w-4 animate-spin mr-1" />}{t("wallet.requestPayout")}
             </Button>
-            <Button variant="outline" className="rounded-xl h-11" onClick={() => setShowWithdraw(false)}>Cancel</Button>
+            <Button variant="outline" className="rounded-xl h-11" onClick={() => setShowWithdraw(false)}>{t("common.cancel")}</Button>
           </div>
         </div>
       )}
@@ -136,20 +138,20 @@ const WalletScreen = () => {
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-card border p-3 text-center">
           <DollarSign className="w-4 h-4 mx-auto text-primary mb-1" />
-          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${thisWeek.toFixed(0)}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">This Week</p>
+          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{formatCurrency(thisWeek, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{t("driver.thisWeek")}</p>
         </div>
         <div className="rounded-xl bg-card border p-3 text-center">
           <TrendingUp className="w-4 h-4 mx-auto text-[hsl(var(--swift-success))] mb-1" />
-          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${thisMonth.toFixed(0)}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">This Month</p>
+          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{formatCurrency(thisMonth, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{t("wallet.thisMonth")}</p>
         </div>
       </div>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Withdrawals</h2>
+        <h2 className="text-lg font-semibold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{t("wallet.withdrawals")}</h2>
         {payouts.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No withdrawals yet</p>
+          <p className="text-sm text-muted-foreground text-center py-6">{t("wallet.noWithdrawals")}</p>
         ) : (
           <div className="rounded-xl bg-card border divide-y divide-border overflow-hidden">
             {payouts.map((p) => (
@@ -158,11 +160,11 @@ const WalletScreen = () => {
                   <ArrowUpRight className="w-4 h-4 text-[hsl(var(--swift-info))]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">Withdrawal</p>
-                  <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString()} · {p.status}</p>
+                  <p className="text-sm font-medium">{t("wallet.withdrawal")}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(p.created_at)} · {p.status}</p>
                 </div>
                 <p className="text-sm font-semibold tabular-nums" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                  −${Number(p.amount).toFixed(2)}
+                  −{formatCurrency(Number(p.amount))}
                 </p>
               </div>
             ))}
