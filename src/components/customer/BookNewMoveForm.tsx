@@ -149,9 +149,9 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       {/* Hero quote */}
       <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card">
         <CardContent className="relative p-5">
-          <p className="text-xs font-medium uppercase tracking-wider text-primary">{t("booking.estimatedTotal")}</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-cyan-500">{t("booking.estimatedTotal")}</p>
           <div className="mt-1 flex items-end justify-between">
-            <p className="text-3xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <p className="text-3xl font-bold tracking-tight text-cyan-500" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               {formatCurrency(quote.finalPrice)}
             </p>
             {distanceKm > 0 && (
