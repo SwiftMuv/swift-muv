@@ -271,10 +271,7 @@ const CustomerDashboard = () => {
             <DialogTitle>{t("customer.cancelBookingTitle")}</DialogTitle>
             <DialogDescription>
               {cancelDialog.booking && cancelDialog.booking.status !== "pending" ? (
-                <>
-                  {t("customer.cancelWithFee", { fee: "" })}{" "}
-                  <strong>{formatCurrency(10)}</strong>
-                </>
+                t("customer.cancelWithFee", { fee: formatCurrency(10) })
               ) : (
                 t("customer.cancelNoFee")
               )}
