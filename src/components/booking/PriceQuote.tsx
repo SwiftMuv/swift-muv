@@ -54,7 +54,7 @@ const PriceQuote = ({ moveSize, hasPickup, hasDropoff, onBook, isBooking = false
         <div className="my-2 border-t border-border" />
         <div className="flex justify-between text-base">
           <span className="font-semibold text-foreground">{t("common.total")}</span>
-          <span className="font-bold text-primary">{formatCurrency(total)}</span>
+          <span className="font-bold text-cyan-500">{formatCurrency(total)}</span>
         </div>
       </div>
 
