@@ -12,9 +12,9 @@ interface ActiveJobSheetProps {
 }
 
 const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; color: string }[] = [
-  { status: "arrived", label: "Arrived at Pickup", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
-  { status: "in_transit", label: "Start Trip (In Transit)", icon: <Truck className="w-4 h-4" />, color: "bg-primary" },
-  { status: "completed", label: "Complete Trip", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
+  { status: "arrived", label: "driver.arrivedPickup", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
+  { status: "in_transit", label: "driver.startTrip", icon: <Truck className="w-4 h-4" />, color: "bg-primary" },
+  { status: "completed", label: "driver.completeTrip", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
 ];
 
 export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => {
@@ -141,7 +141,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
           className={`w-full rounded-xl h-12 font-semibold gap-2 text-white ${nextStep.color} hover:opacity-90`}
         >
           {nextStep.icon}
-          {nextStep.label}
+          {t(nextStep.label)}
         </Button>
       </SheetContent>
     </Sheet>

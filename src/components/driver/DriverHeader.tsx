@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/swiftmuv-logo.png";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface DriverHeaderProps {
   isOnline: boolean;
@@ -21,6 +22,7 @@ interface DriverHeaderProps {
 
 export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderProps) => {
   const { signOut } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const displayName = driverName?.trim() || "Driver";
@@ -77,13 +79,13 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
               <div className="px-2 py-1.5">
                 <p className="text-sm font-semibold truncate">{displayName}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {isOnline ? "Online" : "Offline"}
+                  {isOnline ? t("common.online") : t("common.offline")}
                 </p>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/about")} className="text-sm">
                 <Info className="w-4 h-4 mr-2" />
-                About Us
+                {t("common.aboutUs")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -91,7 +93,7 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
                 className="text-sm text-[hsl(var(--swift-danger))] focus:text-[hsl(var(--swift-danger))]"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Sign out
+                {t("common.signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
