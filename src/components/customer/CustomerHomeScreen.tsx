@@ -1,5 +1,6 @@
 import { Star, Quote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useI18n } from "@/contexts/I18nContext";
 import heroWallpaper from "@/assets/home-hero-wallpaper.jpg";
 import vehicle1 from "@/assets/customer-vehicle-1.jpg";
 import vehicle2 from "@/assets/customer-vehicle-2.jpg";
@@ -99,6 +100,8 @@ const videos = [
 ];
 
 export const CustomerHomeScreen = () => {
+  const { t } = useI18n();
+
   return (
     <div className="space-y-6 pb-4">
       {/* Hero with wallpaper */}
@@ -112,12 +115,12 @@ export const CustomerHomeScreen = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
         <div className="relative p-5 pt-32">
-          <p className="text-xs uppercase tracking-widest text-primary font-semibold">Welcome back</p>
+          <p className="text-xs uppercase tracking-widest text-primary font-semibold">{t("customer.welcome")}</p>
           <h2 className="mt-1 text-2xl font-bold text-foreground leading-tight drop-shadow">
-            Move smarter with SwiftMuv
+            {t("customer.heroTitle")}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Trusted by thousands of happy customers across the city.
+            {t("customer.heroSubtitle")}
           </p>
         </div>
       </div>
@@ -125,8 +128,8 @@ export const CustomerHomeScreen = () => {
       {/* Satisfied customers */}
       <section className="space-y-3">
         <div className="flex items-end justify-between">
-          <h3 className="text-lg font-semibold text-foreground">Happy customers</h3>
-          <span className="text-xs text-muted-foreground">4.9 ★ average</span>
+          <h3 className="text-lg font-semibold text-foreground">{t("customer.happyCustomers")}</h3>
+          <span className="text-xs text-muted-foreground">{t("customer.averageRating")}</span>
         </div>
         <div className="grid grid-cols-1 gap-3">
           {testimonials.map((t) => (
@@ -170,7 +173,7 @@ export const CustomerHomeScreen = () => {
 
       {/* Videos */}
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold text-foreground">Vans on the move</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t("customer.videosTitle")}</h3>
         <div className="grid grid-cols-1 gap-3">
           {videos.map((v) => (
             <Card key={v.title} className="overflow-hidden">
