@@ -6,40 +6,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useI18n } from "@/contexts/I18nContext";
-
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "fr", label: "Français" },
-  { code: "es", label: "Español" },
-  { code: "ar", label: "العربية" },
-  { code: "pt", label: "Português" },
-  { code: "de", label: "Deutsch" },
-  { code: "it", label: "Italiano" },
-  { code: "zh", label: "中文" },
-  { code: "ja", label: "日本語" },
-  { code: "hi", label: "हिन्दी" },
-  { code: "ru", label: "Русский" },
-  { code: "tr", label: "Türkçe" },
-];
-
-const CURRENCIES = [
-  { code: "CAD", label: "CAD $" },
-  { code: "USD", label: "USD $" },
-  { code: "EUR", label: "EUR €" },
-  { code: "GBP", label: "GBP £" },
-  { code: "AUD", label: "AUD $" },
-  { code: "NZD", label: "NZD $" },
-  { code: "CHF", label: "CHF" },
-  { code: "JPY", label: "JPY ¥" },
-  { code: "CNY", label: "CNY ¥" },
-  { code: "INR", label: "INR ₹" },
-  { code: "BRL", label: "BRL R$" },
-  { code: "MXN", label: "MXN $" },
-  { code: "ZAR", label: "ZAR R" },
-  { code: "AED", label: "AED د.إ" },
-  { code: "NGN", label: "NGN ₦" },
-];
+import { CURRENCIES, LANGUAGES, useI18n } from "@/contexts/I18nContext";
 
 interface Props {
   className?: string;

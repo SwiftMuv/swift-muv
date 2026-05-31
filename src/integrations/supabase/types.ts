@@ -142,6 +142,8 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          preferred_currency: string
+          preferred_language: string
           updated_at: string
           user_id: string
         }
@@ -152,6 +154,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          preferred_currency?: string
+          preferred_language?: string
           updated_at?: string
           user_id: string
         }
@@ -162,6 +166,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          preferred_currency?: string
+          preferred_language?: string
           updated_at?: string
           user_id?: string
         }
@@ -299,6 +305,8 @@ export type Database = {
           license_plate: string | null
           location_updated_at: string | null
           phone: string | null
+          preferred_currency: string
+          preferred_language: string
           profile_picture_url: string | null
           rating: number | null
           stripe_connect_id: string | null
@@ -333,6 +341,8 @@ export type Database = {
           license_plate?: string | null
           location_updated_at?: string | null
           phone?: string | null
+          preferred_currency?: string
+          preferred_language?: string
           profile_picture_url?: string | null
           rating?: number | null
           stripe_connect_id?: string | null
@@ -367,6 +377,8 @@ export type Database = {
           license_plate?: string | null
           location_updated_at?: string | null
           phone?: string | null
+          preferred_currency?: string
+          preferred_language?: string
           profile_picture_url?: string | null
           rating?: number | null
           stripe_connect_id?: string | null

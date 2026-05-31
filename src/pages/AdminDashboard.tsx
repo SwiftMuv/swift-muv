@@ -11,6 +11,7 @@ import {
   LogOut, Users, Package, DollarSign, CheckCircle2, XCircle, Shield, Loader2,
   TrendingUp, UserCheck, Truck, RefreshCw,
 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
@@ -53,11 +54,9 @@ type VehicleCategoryRow = {
   display_order: number;
 };
 
-const fmtCAD = (n: number) =>
-  new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n || 0);
-
 const AdminDashboard = () => {
   const { user, signOut } = useAuth();
+  const { formatCurrency } = useI18n();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -278,8 +277,8 @@ const AdminDashboard = () => {
           <StatCard label="Bookings" value={String(stats.totalBookings)} icon={<Package className="h-4 w-4" />} onClick={() => selectTile("all")} active={activeTab === "bookings" && bookingFilter === "all"} />
           <StatCard label="Pending" value={String(stats.pending)} icon={<Loader2 className="h-4 w-4" />} onClick={() => selectTile("pending")} active={activeTab === "bookings" && bookingFilter === "pending"} />
           <StatCard label="Completed" value={String(stats.completed)} icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => selectTile("completed")} active={activeTab === "bookings" && bookingFilter === "completed"} />
-          <StatCard label="Revenue" value={fmtCAD(stats.totalRevenue)} icon={<DollarSign className="h-4 w-4" />} />
-          <StatCard label="Today" value={fmtCAD(stats.todayRevenue)} icon={<TrendingUp className="h-4 w-4" />} />
+          <StatCard label="Revenue" value={formatCurrency(stats.totalRevenue)} icon={<DollarSign className="h-4 w-4" />} />
+          <StatCard label="Today" value={formatCurrency(stats.todayRevenue)} icon={<TrendingUp className="h-4 w-4" />} />
           <StatCard label="Active drivers" value={String(activeDrivers)} icon={<UserCheck className="h-4 w-4" />} />
           <StatCard label="Pending drivers" value={String(pendingDrivers.length)} icon={<Users className="h-4 w-4" />} onClick={() => setActiveTab("drivers")} active={activeTab === "drivers"} />
           <StatCard label="Cancelled" value={String(stats.cancelled)} icon={<XCircle className="h-4 w-4" />} onClick={() => selectTile("cancelled")} active={activeTab === "bookings" && bookingFilter === "cancelled"} />
@@ -315,7 +314,7 @@ const AdminDashboard = () => {
                         <div
                           className="w-full rounded-t bg-gradient-to-t from-primary/60 to-primary transition-all"
                           style={{ height: `${h}%` }}
-                          title={fmtCAD(d.revenue)}
+                          title={formatCurrency(d.revenue)}
                         />
                         <span className="text-[10px] text-muted-foreground">{d.label}</span>
                       </div>
@@ -411,7 +410,7 @@ const AdminDashboard = () => {
                         <Badge variant={b.status === "completed" ? "default" : b.status === "cancelled" ? "destructive" : "secondary"}>
                           {b.status}
                         </Badge>
-                        <span className="font-semibold">{fmtCAD(Number(b.total_price))}</span>
+                        <span className="font-semibold">{formatCurrency(Number(b.total_price))}</span>
                       </div>
                     </div>
                   ))
@@ -448,7 +447,7 @@ const AdminDashboard = () => {
                         <Badge variant={b.status === "completed" ? "default" : b.status === "cancelled" ? "destructive" : "secondary"}>
                           {b.status}
                         </Badge>
-                        <span className="font-semibold">{fmtCAD(Number(b.total_price))}</span>
+                        <span className="font-semibold">{formatCurrency(Number(b.total_price))}</span>
                         {b.status !== "completed" && b.status !== "cancelled" && (
                           <>
                             <Button size="sm" variant="outline" onClick={() => updateBookingStatus(b.id, "completed")} disabled={actioningId === b.id}>

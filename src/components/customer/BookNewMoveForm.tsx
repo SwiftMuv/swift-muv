@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
+import { useI18n } from "@/contexts/I18nContext";
 import {
   calculateMovePrice,
   type MoveType,
@@ -35,6 +36,7 @@ const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "
 
 const BookNewMoveForm = ({ onBooked }: Props) => {
   const { user } = useAuth();
+  const { t, formatCurrency } = useI18n();
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
@@ -147,10 +149,10 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       {/* Hero quote */}
       <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card">
         <CardContent className="relative p-5">
-          <p className="text-xs font-medium uppercase tracking-wider text-primary">Estimated total</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-primary">{t("booking.estimatedTotal")}</p>
           <div className="mt-1 flex items-end justify-between">
             <p className="text-3xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              ${quote.finalPrice.toFixed(2)}
+              {formatCurrency(quote.finalPrice)}
             </p>
             {distanceKm > 0 && (
               <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
@@ -160,7 +162,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           </div>
           {calculating && (
             <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> calculating distance…
+              <Loader2 className="h-3 w-3 animate-spin" /> {t("booking.calculatingDistance")}
             </p>
           )}
         </CardContent>
@@ -171,19 +173,19 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         <CardContent className="space-y-3 p-5">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Route className="h-4 w-4" /></div>
-            <h3 className="font-semibold">Route</h3>
+            <h3 className="font-semibold">{t("booking.route")}</h3>
           </div>
           <div className="space-y-3 pl-1">
             <div>
-              <Label className="text-xs text-muted-foreground"><MapPin className="inline h-3 w-3 mr-1" />Pickup</Label>
+              <Label className="text-xs text-muted-foreground"><MapPin className="inline h-3 w-3 mr-1" />{t("booking.pickup")}</Label>
               <div className="mt-1">
-                <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder="Pickup address" />
+                <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder={t("booking.pickupPlaceholder")} />
               </div>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground"><Navigation className="inline h-3 w-3 mr-1" />Drop-off</Label>
+              <Label className="text-xs text-muted-foreground"><Navigation className="inline h-3 w-3 mr-1" />{t("booking.dropoff")}</Label>
               <div className="mt-1">
-                <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder="Drop-off address" />
+                <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.dropoffPlaceholder")} />
               </div>
             </div>
           </div>
@@ -199,7 +201,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             </div>
             <div className="flex-1">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                {suvSelected ? "Selected" : "Recommended"}
+                {suvSelected ? t("booking.selected") : t("booking.recommended")}
               </p>
               <p className="font-semibold">{quote.recommendedVehicle}</p>
               <p className="text-[11px] text-muted-foreground">
@@ -216,9 +218,9 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Package className="h-4 w-4" /></div>
-              <h3 className="font-semibold">Inventory</h3>
+               <h3 className="font-semibold">{t("booking.inventory")}</h3>
             </div>
-            <span className="text-xs text-muted-foreground">{itemCount} item{itemCount === 1 ? "" : "s"}</span>
+             <span className="text-xs text-muted-foreground">{itemCount} {t(itemCount === 1 ? "booking.item" : "booking.items")}</span>
           </div>
           <InventoryPicker
             selected={selectedItems}
@@ -236,9 +238,9 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Users className="h-4 w-4" /></div>
               <div>
-                <h3 className="font-semibold">Additional crew</h3>
+                <h3 className="font-semibold">{t("booking.additionalCrew")}</h3>
                 <p className="text-[11px] text-muted-foreground">
-                  Optional · ${quote.crewMemberFee}/person
+                  {t("booking.optionalPerson", { amount: formatCurrency(quote.crewMemberFee) })}
                 </p>
               </div>
             </div>
@@ -246,7 +248,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           </div>
           {crewEnabled && (
             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
-              <span className="text-sm font-medium">Crew members</span>
+              <span className="text-sm font-medium">{t("booking.crewMembers")}</span>
               <div className="flex items-center gap-2">
                 <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full"
                   onClick={() => setCrewCount((c) => Math.max(1, c - 1))} disabled={crewCount <= 1}>
@@ -268,20 +270,20 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         <CardContent className="space-y-2 p-5 text-sm">
           <div className="mb-2 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Receipt className="h-4 w-4" /></div>
-            <h3 className="font-semibold">Price breakdown</h3>
+             <h3 className="font-semibold">{t("booking.priceBreakdown")}</h3>
           </div>
           {quote.isFlatRate ? (
             <>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">SUV flat rate (local)</span>
-                <span>${Number(breakdown.flatRate ?? 0).toFixed(2)}</span>
+                <span className="text-muted-foreground">{t("booking.suvFlatRate")}</span>
+                <span>{formatCurrency(Number(breakdown.flatRate ?? 0))}</span>
               </div>
               {moveType !== "local" && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
+                    {t("booking.distance")} ({distanceKm} km × {formatCurrency(Number(breakdown.ratePerKm ?? 0))}/km)
                   </span>
-                  <span>${(Number(breakdown.serviceCost ?? 0) - Number(breakdown.flatRate ?? 0)).toFixed(2)}</span>
+                  <span>{formatCurrency(Number(breakdown.serviceCost ?? 0) - Number(breakdown.flatRate ?? 0))}</span>
                 </div>
               )}
             </>
@@ -290,25 +292,25 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
               {moveType === "local" && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Volume ({quote.totalVolumeCuFt.toFixed(0)} ft³ × ${breakdown.ratePerCuFt}/ft³)
+                    {t("booking.volume")} ({quote.totalVolumeCuFt.toFixed(0)} ft³ × {formatCurrency(Number(breakdown.ratePerCuFt ?? 0))}/ft³)
                   </span>
-                  <span>${quote.servicePrice.toFixed(2)}</span>
+                  <span>{formatCurrency(quote.servicePrice)}</span>
                 </div>
               )}
               {moveType === "intercity" && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Distance ({distanceKm} km × ${breakdown.ratePerKm}/km)
+                    {t("booking.distance")} ({distanceKm} km × {formatCurrency(Number(breakdown.ratePerKm ?? 0))}/km)
                   </span>
-                  <span>${quote.servicePrice.toFixed(2)}</span>
+                  <span>{formatCurrency(quote.servicePrice)}</span>
                 </div>
               )}
               {moveType === "inter-province" && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Weight ({quote.totalWeightLbs.toFixed(0)} lb × ${breakdown.ratePerLb}/lb)
+                    {t("booking.weight")} ({quote.totalWeightLbs.toFixed(0)} lb × {formatCurrency(Number(breakdown.ratePerLb ?? 0))}/lb)
                   </span>
-                  <span>${quote.servicePrice.toFixed(2)}</span>
+                  <span>{formatCurrency(quote.servicePrice)}</span>
                 </div>
               )}
             </>
@@ -316,13 +318,13 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           {effectiveCrew > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                Additional crew ({effectiveCrew} × ${quote.crewMemberFee})
+                {t("booking.additionalCrew")} ({effectiveCrew} × {formatCurrency(quote.crewMemberFee)})
               </span>
-              <span>${quote.crewCost.toFixed(2)}</span>
+              <span>{formatCurrency(quote.crewCost)}</span>
             </div>
           )}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
-            <span>Total</span><span className="text-primary">${quote.finalPrice.toFixed(2)} CAD</span>
+            <span>{t("common.total")}</span><span className="text-primary">{formatCurrency(quote.finalPrice)}</span>
           </div>
         </CardContent>
       </Card>
@@ -330,10 +332,10 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       <div className="pt-2">
         <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12 w-full text-base font-semibold">
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {submitting ? "Preparing checkout…" : `Book Now · $${quote.finalPrice.toFixed(2)}`}
+          {submitting ? t("booking.preparingCheckout") : t("booking.bookNow", { amount: formatCurrency(quote.finalPrice) })}
         </Button>
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          No booking is created until your payment is confirmed. Cancel anytime before paying.
+          {t("booking.paymentNote")}
         </p>
       </div>
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck } from "lucide-react";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface ActiveJobSheetProps {
   job: Job | null;
@@ -11,12 +12,13 @@ interface ActiveJobSheetProps {
 }
 
 const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; color: string }[] = [
-  { status: "arrived", label: "Arrived at Pickup", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
-  { status: "in_transit", label: "Start Trip (In Transit)", icon: <Truck className="w-4 h-4" />, color: "bg-primary" },
-  { status: "completed", label: "Complete Trip", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
+  { status: "arrived", label: "driver.arrivedPickup", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
+  { status: "in_transit", label: "driver.startTrip", icon: <Truck className="w-4 h-4" />, color: "bg-primary" },
+  { status: "completed", label: "driver.completeTrip", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
 ];
 
 export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => {
+  const { t, formatCurrency } = useI18n();
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
 
@@ -46,9 +48,9 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
             <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-2">
               <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
-            <SheetTitle className="text-xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Job Completed!</SheetTitle>
-            <p className="text-sm text-muted-foreground">Earnings added to your wallet</p>
-            <p className="text-2xl font-bold text-primary mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${job.price}</p>
+            <SheetTitle className="text-xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{t("driver.jobCompleted")}</SheetTitle>
+            <p className="text-sm text-muted-foreground">{t("driver.earningsWallet")}</p>
+            <p className="text-2xl font-bold text-primary mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{formatCurrency(job.price)}</p>
           </SheetHeader>
         </SheetContent>
       </Sheet>
@@ -61,10 +63,10 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
         <SheetHeader className="pb-3">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Active Job · {job.id}
+              {t("driver.activeJob")} · {job.id}
             </SheetTitle>
             <span className="text-lg font-bold text-primary" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              ${job.price}
+              {formatCurrency(job.price)}
             </span>
           </div>
         </SheetHeader>
@@ -115,7 +117,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
         {isCompleteStep && (
           <div className="mb-4">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
-              Enter 4-digit Job Code
+              {t("driver.enterCode")}
             </label>
             <Input
               value={codeInput}
@@ -129,7 +131,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
                 codeError ? "border-destructive" : ""
               }`}
             />
-            {codeError && <p className="text-xs text-destructive mt-1">Invalid code. Please try again.</p>}
+            {codeError && <p className="text-xs text-destructive mt-1">{t("driver.invalidCode")}</p>}
           </div>
         )}
 
@@ -139,7 +141,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
           className={`w-full rounded-xl h-12 font-semibold gap-2 text-white ${nextStep.color} hover:opacity-90`}
         >
           {nextStep.icon}
-          {nextStep.label}
+          {t(nextStep.label)}
         </Button>
       </SheetContent>
     </Sheet>

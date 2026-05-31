@@ -2,6 +2,7 @@ import { Calendar, DollarSign, ChevronDown, RotateCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface CompletedJob {
   id: string;
@@ -23,6 +24,7 @@ const sizeLabel = (s?: string): CompletedJob["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
 
 const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: CompletedJob) => void }) => {
+  const { t, formatCurrency } = useI18n();
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="rounded-2xl bg-card border p-4 space-y-3">
@@ -42,9 +44,9 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
       <div className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2">
         <div className="flex items-center gap-1.5">
           <DollarSign className="w-4 h-4 text-primary" />
-          <span className="text-sm font-semibold">${job.earnings.toFixed(2)}</span>
+          <span className="text-sm font-semibold">{formatCurrency(job.earnings)}</span>
           {job.tip > 0 && (
-            <span className="text-[10px] text-[hsl(var(--swift-success))] font-medium">+${job.tip} tip</span>
+            <span className="text-[10px] text-[hsl(var(--swift-success))] font-medium">+{formatCurrency(job.tip)} tip</span>
           )}
         </div>
         <button
@@ -52,7 +54,7 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
           className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-xs font-semibold px-3 py-1 hover:bg-primary/25 transition-colors"
         >
           <RotateCw className="w-3 h-3" />
-          Rebook
+          {t("common.rebook")}
         </button>
       </div>
 
@@ -60,7 +62,7 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-full justify-center"
       >
-        Route details
+        {t("history.routeDetails")}
         <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
 
@@ -83,6 +85,7 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
 
 const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
   const { user } = useAuth();
+  const { t, formatCurrency } = useI18n();
   const [items, setItems] = useState<CompletedJob[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -115,13 +118,13 @@ const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
     <div className="space-y-4">
       <div className="rounded-2xl bg-card border p-4 flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted-foreground">Total Earned</p>
+          <p className="text-xs text-muted-foreground">{t("history.totalEarned")}</p>
           <p className="text-2xl font-bold text-primary" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            ${totalEarnings.toFixed(2)}
+            {formatCurrency(totalEarnings)}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-muted-foreground">Completed Trips</p>
+          <p className="text-xs text-muted-foreground">{t("history.completedTrips")}</p>
           <p className="text-2xl font-bold">{items.length}</p>
         </div>
       </div>
@@ -129,11 +132,11 @@ const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
       <div className="space-y-3">
         {loading ? (
           <div className="rounded-xl bg-card border p-6 text-center">
-            <p className="text-muted-foreground text-sm">Loading...</p>
+            <p className="text-muted-foreground text-sm">{t("history.loading")}</p>
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-xl bg-card border p-6 text-center">
-            <p className="text-muted-foreground text-sm">No completed trips yet</p>
+            <p className="text-muted-foreground text-sm">{t("history.noTrips")}</p>
           </div>
         ) : (
           items.map((job) => <HistoryCard key={job.id} job={job} onRebook={() => onRebook?.()} />)

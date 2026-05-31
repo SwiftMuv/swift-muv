@@ -9,6 +9,7 @@ import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useI18n } from "@/contexts/I18nContext";
 import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
@@ -30,6 +31,7 @@ const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "
 const BookingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, formatCurrency } = useI18n();
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
@@ -140,26 +142,26 @@ const BookingPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          Book a Move
+          {t("dashboard.customer.title.bookings")}
         </h1>
       </header>
 
       <div className="flex-1 space-y-6 p-4 pb-8">
         <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-4 py-2.5">
           <CalendarDays className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">Today, ASAP</span>
+          <span className="text-sm font-medium text-foreground">{t("booking.todayAsap")}</span>
         </div>
 
         <div className="space-y-3">
-          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pickup</label>
-          <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder="Enter pickup address" />
-          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Drop-off</label>
-          <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder="Enter drop-off address" />
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
+          <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder={t("booking.enterPickup")} />
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.dropoff")}</label>
+          <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.enterDropoff")} />
         </div>
 
         {distance && (
           <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Trip</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("booking.trip")}</p>
             <p className="text-sm font-semibold">{distanceKm} km · {moveType}</p>
           </div>
         )}
@@ -172,7 +174,7 @@ const BookingPage = () => {
               <div>
                 <p className="font-semibold">Extra Large Car / SUV</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Bags & luggage only · flat $50 local{moveType !== "local" ? " + $1.20/km" : ""}
+                  {t("booking.flatSuv", { flat: formatCurrency(50), extra: moveType !== "local" ? t("booking.perKmExtra", { rate: formatCurrency(1.2) }) : "" })}
                 </p>
               </div>
             </div>
@@ -181,7 +183,7 @@ const BookingPage = () => {
         </div>
 
         <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Inventory</h2>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("booking.inventory")}</h2>
           <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
         </div>
 
@@ -190,11 +192,11 @@ const BookingPage = () => {
             <div className="flex items-center gap-2">
               <Truck className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Recommended</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("booking.recommended")}</p>
                 <p className="font-semibold">{quote.recommendedVehicle}</p>
               </div>
             </div>
-            <p className="mt-3 text-2xl font-bold text-primary">${quote.finalPrice.toFixed(2)} CAD</p>
+            <p className="mt-3 text-2xl font-bold text-primary">{formatCurrency(quote.finalPrice)}</p>
           </div>
         )}
 
@@ -204,9 +206,9 @@ const BookingPage = () => {
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-semibold">Additional crew</p>
+                <p className="font-semibold">{t("booking.additionalCrew")}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Optional · ${quote.crewMemberFee}/person
+                  {t("booking.optionalPerson", { amount: formatCurrency(quote.crewMemberFee) })}
                 </p>
               </div>
             </div>
@@ -214,7 +216,7 @@ const BookingPage = () => {
           </div>
           {crewEnabled && (
             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
-              <span className="text-sm font-medium">Crew members</span>
+              <span className="text-sm font-medium">{t("booking.crewMembers")}</span>
               <div className="flex items-center gap-2">
                 <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full"
                   onClick={() => setCrewCount((c) => Math.max(1, c - 1))} disabled={crewCount <= 1}>-</Button>
@@ -232,7 +234,7 @@ const BookingPage = () => {
           className="h-12 w-full text-base font-semibold"
         >
           {booking && <Loader2 className="h-4 w-4 animate-spin" />}
-          {booking ? "Processing…" : `Book Now · $${quote.finalPrice.toFixed(2)}`}
+          {booking ? t("booking.processing") : t("booking.bookNow", { amount: formatCurrency(quote.finalPrice) })}
         </Button>
       </div>
 

@@ -1,4 +1,5 @@
 import { Home, Wallet, Clock, User } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface BottomNavProps {
   activeTab: string;
@@ -6,13 +7,15 @@ interface BottomNavProps {
 }
 
 const tabs = [
-  { id: "home", label: "Home", icon: Home },
-  { id: "wallet", label: "Wallet", icon: Wallet },
-  { id: "history", label: "Activity", icon: Clock },
-  { id: "profile", label: "Account", icon: User },
+  { id: "home", labelKey: "nav.home", icon: Home },
+  { id: "wallet", labelKey: "nav.wallet", icon: Wallet },
+  { id: "history", labelKey: "nav.activity", icon: Clock },
+  { id: "profile", labelKey: "nav.account", icon: User },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
+  const { t } = useI18n();
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t safe-bottom">
       <div className="flex items-center justify-around px-2 pt-2 pb-1">
@@ -27,7 +30,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
               }`}
             >
               <tab.icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-[10px] font-medium">{t(tab.labelKey)}</span>
             </button>
           );
         })}

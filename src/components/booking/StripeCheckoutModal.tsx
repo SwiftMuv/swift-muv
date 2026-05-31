@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import { Loader2, Lock, X } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface StripeCheckoutModalProps {
   open: boolean;
@@ -17,6 +18,7 @@ const getStripe = (key: string) => {
 };
 
 const StripeCheckoutModal = ({ open, clientSecret, publishableKey, onClose }: StripeCheckoutModalProps) => {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -47,15 +49,15 @@ const StripeCheckoutModal = ({ open, clientSecret, publishableKey, onClose }: St
             </div>
             <div>
               <h2 className="text-sm font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Secure checkout
+                {t("booking.secureCheckout")}
               </h2>
-              <p className="text-[10px] text-muted-foreground">Held until your driver arrives at drop-off</p>
+              <p className="text-[10px] text-muted-foreground">{t("booking.heldUntilDropoff")}</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-foreground transition hover:bg-secondary/80"
-            aria-label="Close checkout"
+            aria-label={t("booking.closeCheckout")}
           >
             <X className="h-5 w-5" />
           </button>
@@ -64,7 +66,7 @@ const StripeCheckoutModal = ({ open, clientSecret, publishableKey, onClose }: St
           {(!clientSecret || !stripePromise || !ready) && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Preparing secure payment…</p>
+              <p className="text-sm text-muted-foreground">{t("booking.preparingPayment")}</p>
             </div>
           )}
           {mounted && clientSecret && stripePromise && (
