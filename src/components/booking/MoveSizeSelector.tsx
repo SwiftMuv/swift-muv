@@ -26,12 +26,12 @@ const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => (
             onClick={() => onSelect(id)}
             className={`flex flex-col items-start gap-2 rounded-2xl border-2 p-4 text-left transition-all ${
               isActive
-                ? "border-primary bg-primary/5 shadow-sm"
-                : "border-border bg-card hover:border-primary/30"
+                ? "border-cyan-500 bg-cyan-500/5 shadow-sm"
+                : "border-border bg-card hover:border-cyan-500/30"
             }`}
           >
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-              isActive ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+              isActive ? "bg-cyan-500 text-white" : "bg-secondary text-muted-foreground"
             }`}>
               <Icon className="h-5 w-5" />
             </div>
@@ -39,7 +39,7 @@ const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => (
               <p className="text-sm font-semibold text-foreground">{label}</p>
               <p className="text-xs text-muted-foreground">{desc}</p>
             </div>
-            <p className="text-sm font-bold text-primary">From ${basePrice}</p>
+            <p className="text-sm font-bold text-cyan-500">From ${basePrice}</p>
           </button>
         );
       })}

@@ -11,9 +11,7 @@ interface AddressInputProps {
 
 const AddressInput = ({ label, placeholder, value, onChange, icon = "pickup" }: AddressInputProps) => (
   <div className="flex items-start gap-3">
-    <div className={`mt-2.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-      icon === "pickup" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
-    }`}>
+    <div className="mt-2.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
       <MapPin className="h-5 w-5" />
     </div>
     <div className="flex-1 space-y-1">

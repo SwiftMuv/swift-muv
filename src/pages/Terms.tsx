@@ -6,7 +6,7 @@ import logo from "@/assets/swiftmuv-logo.png";
 const customerSections = [
   {
     title: "1. Nature of the Marketplace",
-    body: "SwiftMove is a technology platform that connects users with independent logistics providers. SwiftMove is not a common carrier, freight forwarder, or moving company, and does not itself transport goods.",
+    body: "SwiftMuv is a technology platform that connects users with independent logistics providers. SwiftMuv is not a common carrier, freight forwarder, or moving company, and does not itself transport goods.",
   },
   {
     title: "2. Bookings & Algorithmic Pricing",
@@ -25,11 +25,11 @@ const customerSections = [
 const providerSections = [
   {
     title: "1. Independent Contractor Status",
-    body: "Providers explicitly acknowledge and agree that they are independent contractors using SwiftMove's software to obtain bookings. Nothing in these Terms creates an employment, agency, partnership, or joint-venture relationship with SwiftMove.",
+    body: "Providers explicitly acknowledge and agree that they are independent contractors using SwiftMuv's software to obtain bookings. Nothing in these Terms creates an employment, agency, partnership, or joint-venture relationship with SwiftMuv.",
   },
   {
     title: "2. Onboarding & Verification",
-    body: "Providers must successfully complete and maintain SwiftMove's verification workflows, including a valid driver's license, clean background check, and mandatory commercial vehicle liability insurance for the vehicle(s) operated on the platform.",
+    body: "Providers must successfully complete and maintain SwiftMuv's verification workflows, including a valid driver's license, clean background check, and mandatory commercial vehicle liability insurance for the vehicle(s) operated on the platform.",
   },
   {
     title: "3. Performance Standards",
@@ -37,7 +37,7 @@ const providerSections = [
   },
   {
     title: "4. Escrow & Commission",
-    body: "SwiftMove holds booking funds in escrow and deducts a marketplace service fee from the booking total before initiating vendor settlement. Net earnings are released to the provider via automated digital deposits in accordance with the payout schedule.",
+    body: "SwiftMuv holds booking funds in escrow and deducts a marketplace service fee from the booking total before initiating vendor settlement. Net earnings are released to the provider via automated digital deposits in accordance with the payout schedule.",
   },
 ];
 
@@ -89,7 +89,7 @@ const Terms = () => {
             Terms and Conditions
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Please read these terms carefully before using the SwiftMove marketplace.
+            Please read these terms carefully before using the SwiftMuv marketplace.
           </p>
           <p className="mt-2 text-xs uppercase tracking-wider font-semibold text-accent">
             Last Updated: May 2026

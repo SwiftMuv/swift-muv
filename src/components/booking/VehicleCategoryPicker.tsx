@@ -37,8 +37,8 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
             className={cn(
               "group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-slate-900 p-3 text-left shadow-sm transition-all",
               selected
-                ? "border-primary shadow-[var(--shadow-primary)] ring-2 ring-primary/30"
-                : "border-slate-700 hover:border-primary/50 hover:shadow-md",
+                ? "border-cyan-500 shadow-[0_0_0_3px_rgba(6,182,212,0.25)] ring-2 ring-cyan-500/30"
+                : "border-slate-700 hover:border-cyan-500/50 hover:shadow-md",
             )}
           >
             {isPremium && (
@@ -47,7 +47,7 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
               </span>
             )}
             {selected && (
-              <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+              <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500 text-white shadow-md">
                 <Check className="h-4 w-4" />
               </span>
             )}
@@ -60,7 +60,7 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
                   className="h-full w-full object-contain p-1 transition-transform group-hover:scale-105"
                 />
               ) : (
-                <Icon className="h-12 w-12 text-primary" />
+                <Icon className="h-12 w-12 text-cyan-500" />
               )}
             </div>
             <div className="mt-2">
