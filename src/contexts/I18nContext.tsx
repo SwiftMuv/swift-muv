@@ -40,8 +40,8 @@ export const CURRENCIES = [
   { code: "NGN", label: "NGN ₦" },
 ] as const;
 
-const SUPPORTED_LANG_CODES = new Set(LANGUAGES.map((l) => l.code));
-const SUPPORTED_CURRENCY_CODES = new Set(CURRENCIES.map((c) => c.code));
+const SUPPORTED_LANG_CODES = new Set<string>(LANGUAGES.map((l) => l.code));
+const SUPPORTED_CURRENCY_CODES = new Set<string>(CURRENCIES.map((c) => c.code));
 
 // Approximate FX rates relative to CAD (base). Update as needed.
 const RATES: Record<string, number> = {
@@ -166,7 +166,7 @@ export const I18nProvider = ({ children }: { children: ReactNode }) => {
     () => (key: string, vars: Record<string, string | number> = {}) => {
       const template = TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en[key] ?? key;
       return Object.entries(vars).reduce(
-        (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+        (text, [name, value]) => text.split(`{${name}}`).join(String(value)),
         template,
       );
     },
