@@ -1,5 +1,4 @@
 import { Globe, DollarSign } from "lucide-react";
-import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,6 +6,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useI18n } from "@/contexts/I18nContext";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -46,10 +46,9 @@ interface Props {
 }
 
 export const LangCurrencyMenu = ({ className }: Props) => {
-  const [lang, setLang] = useState("en");
-  const [currency, setCurrency] = useState("CAD");
+  const { lang, currency, setLang, setCurrency } = useI18n();
 
-  const currentLang = LANGUAGES.find((l) => l.code === lang)?.code.toUpperCase() ?? "EN";
+  const currentLang = lang.toUpperCase();
 
   return (
     <div className={`flex items-center gap-1.5 ${className ?? ""}`}>
@@ -61,7 +60,7 @@ export const LangCurrencyMenu = ({ className }: Props) => {
           <Globe className="w-3.5 h-3.5" />
           {currentLang}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="max-h-[60vh] overflow-y-auto">
+        <DropdownMenuContent align="center" className="max-h-[60vh] overflow-y-auto z-[60]">
           <DropdownMenuRadioGroup value={lang} onValueChange={setLang}>
             {LANGUAGES.map((l) => (
               <DropdownMenuRadioItem key={l.code} value={l.code} className="text-sm">
@@ -80,7 +79,7 @@ export const LangCurrencyMenu = ({ className }: Props) => {
           <DollarSign className="w-3.5 h-3.5" />
           {currency}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="max-h-[60vh] overflow-y-auto">
+        <DropdownMenuContent align="center" className="max-h-[60vh] overflow-y-auto z-[60]">
           <DropdownMenuRadioGroup value={currency} onValueChange={setCurrency}>
             {CURRENCIES.map((c) => (
               <DropdownMenuRadioItem key={c.code} value={c.code} className="text-sm">
