@@ -10,6 +10,8 @@ import vehicle5 from "@/assets/customer-vehicle-5.jpg";
 import vehicle6 from "@/assets/customer-vehicle-6.jpg";
 import vehicle7 from "@/assets/customer-vehicle-7.jpg";
 import vehicle8 from "@/assets/customer-vehicle-8.jpg";
+import vehicle9 from "@/assets/customer-vehicle-9.jpg";
+import vehicle10 from "@/assets/customer-vehicle-10.jpg";
 
 const testimonials = [
   {
@@ -70,11 +72,27 @@ const testimonials = [
   },
   {
     name: "Hana M.",
-    location: "Cargo van • Denver",
-    quote: "Quick small-load move with the cargo van — perfect for my one-bedroom. Fast, friendly, and fairly priced.",
+    location: "Moving truck • Denver",
+    quote: "Big moving truck rolled up right on time — fit everything from my one-bedroom in one trip. Fast, friendly, fairly priced.",
     rating: 5,
     avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&q=80&auto=format&fit=crop",
     photo: vehicle8,
+  },
+  {
+    name: "Tomás G.",
+    location: "Moving truck • Houston",
+    quote: "The crew loaded our whole 3-bedroom into a single moving truck. Smooth ride, zero damage, exactly what was quoted.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&q=80&auto=format&fit=crop",
+    photo: vehicle9,
+  },
+  {
+    name: "Olivia C.",
+    location: "Moving truck • Toronto",
+    quote: "Our SwiftMuv moving truck driver had everything wrapped, loaded, and delivered before lunch. Total pros.",
+    rating: 5,
+    avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&q=80&auto=format&fit=crop",
+    photo: vehicle10,
   },
 ];
 

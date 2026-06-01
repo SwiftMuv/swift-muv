@@ -108,7 +108,7 @@ const WalletScreen = () => {
             </Button>
           ) : (
             <Button onClick={() => setShowBankForm(true)} variant="secondary" className="rounded-xl h-10 px-5 font-semibold text-sm bg-white/20 hover:bg-white/30 text-primary-foreground border-0">
-              <Landmark className="w-4 h-4 mr-1.5" /> {t("wallet.linkBank")}
+              <ArrowUpRight className="w-4 h-4 mr-1.5" /> {t("wallet.withdraw")}
             </Button>
           )}
         </div>
