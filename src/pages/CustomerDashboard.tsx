@@ -21,6 +21,7 @@ import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
 import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
 import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
+import DriverInfoForBooking from "@/components/customer/DriverInfoForBooking";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
 import { useI18n } from "@/contexts/I18nContext";
@@ -211,6 +212,7 @@ const CustomerDashboard = () => {
                   <CardContent className="space-y-2 text-sm">
                     <p><span className="text-muted-foreground">{t("common.from")}</span> {b.pickup_address}</p>
                     <p><span className="text-muted-foreground">{t("common.to")}</span> {b.dropoff_address}</p>
+                    {isActive && b.status !== "pending" && <DriverInfoForBooking bookingId={b.id} />}
                     {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
                     {canCancel && (
                       <Button

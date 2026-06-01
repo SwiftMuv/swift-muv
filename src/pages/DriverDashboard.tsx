@@ -53,7 +53,7 @@ const DriverDashboard = () => {
   const [available, setAvailable] = useState<Job[]>([]);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
-  const [stats, setStats] = useState({ today: 0, week: 0, completed: 0 });
+  const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -116,12 +116,19 @@ const DriverDashboard = () => {
 
   const loadStats = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("jobs")
-      .select("id, completed_at, bookings:booking_id(total_price)")
-      .eq("driver_id", user.id)
-      .eq("status", "completed");
-    const rows = data ?? [];
+    const [{ data: completedRows }, { data: pendingRows }] = await Promise.all([
+      supabase
+        .from("jobs")
+        .select("id, completed_at, bookings:booking_id(total_price)")
+        .eq("driver_id", user.id)
+        .eq("status", "completed"),
+      supabase
+        .from("jobs")
+        .select("driver_earnings")
+        .eq("driver_id", user.id)
+        .eq("earnings_status", "pending"),
+    ]);
+    const rows = completedRows ?? [];
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfWeek = new Date(startOfDay);
@@ -134,7 +141,8 @@ const DriverDashboard = () => {
       if (dt && dt >= startOfDay) today += price;
       if (dt && dt >= startOfWeek) week += price;
     });
-    setStats({ today, week, completed: rows.length });
+    const pending = (pendingRows ?? []).reduce((s: number, r: any) => s + Number(r.driver_earnings ?? 0), 0);
+    setStats({ today, week, completed: rows.length, pending });
   }, [user]);
 
   useEffect(() => {
@@ -240,6 +248,7 @@ const DriverDashboard = () => {
               weekEarnings={stats.week}
               completedJobs={stats.completed}
               rating={5.0}
+              pendingEarnings={stats.pending}
             />
 
             {!isOnline && (

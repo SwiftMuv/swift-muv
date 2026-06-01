@@ -1,4 +1,4 @@
-import { DollarSign, TrendingUp, CheckCircle2, Star } from "lucide-react";
+import { DollarSign, TrendingUp, CheckCircle2, Star, Clock } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface DriverStatsProps {
@@ -6,9 +6,10 @@ interface DriverStatsProps {
   weekEarnings: number;
   completedJobs: number;
   rating: number;
+  pendingEarnings?: number;
 }
 
-export const DriverStats = ({ todayEarnings, weekEarnings, completedJobs, rating }: DriverStatsProps) => {
+export const DriverStats = ({ todayEarnings, weekEarnings, completedJobs, rating, pendingEarnings = 0 }: DriverStatsProps) => {
   const { t, formatCurrency } = useI18n();
 
   return (
@@ -23,6 +24,12 @@ export const DriverStats = ({ todayEarnings, weekEarnings, completedJobs, rating
           <TrendingUp className="w-3 h-3" />
           <span>{t("driver.vsYesterday")}</span>
         </div>
+        {pendingEarnings > 0 && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs bg-white/15 rounded-lg px-2.5 py-1.5 w-fit">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="font-medium">{t("driver.pendingEarnings")}: {formatCurrency(pendingEarnings)}</span>
+          </div>
+        )}
       </div>
 
       {/* Quick Stats */}
