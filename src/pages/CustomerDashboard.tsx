@@ -25,6 +25,7 @@ import DriverInfoForBooking from "@/components/customer/DriverInfoForBooking";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
 import { useI18n } from "@/contexts/I18nContext";
+import TermsAgreementModal from "@/components/TermsAgreementModal";
 import logo from "@/assets/swiftmuv-logo.png";
 
 interface Booking {
