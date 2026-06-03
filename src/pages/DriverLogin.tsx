@@ -86,6 +86,12 @@ const DriverLogin = () => {
     setAvatarPreview(file ? URL.createObjectURL(file) : null);
   };
 
+  const onVehiclePhoto = (file: File | null) => {
+    setVehiclePhoto(file);
+    if (vehiclePhotoPreview) URL.revokeObjectURL(vehiclePhotoPreview);
+    setVehiclePhotoPreview(file ? URL.createObjectURL(file) : null);
+  };
+
   const uploadDriverFiles = async (userId: string) => {
     // Avatar -> driver-avatars (public)
     if (avatar) {
@@ -99,6 +105,22 @@ const DriverLogin = () => {
         await supabase
           .from("driver_profiles")
           .update({ avatar_url: pub.publicUrl, profile_picture_url: pub.publicUrl })
+          .eq("user_id", userId);
+      }
+    }
+
+    // Vehicle photo -> driver-avatars (public)
+    if (vehiclePhoto) {
+      const ext = vehiclePhoto.name.split(".").pop() || "jpg";
+      const path = `${userId}/vehicle-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("driver-avatars")
+        .upload(path, vehiclePhoto, { upsert: true });
+      if (!error) {
+        const { data: pub } = supabase.storage.from("driver-avatars").getPublicUrl(path);
+        await supabase
+          .from("driver_profiles")
+          .update({ vehicle_photo_url: pub.publicUrl })
           .eq("user_id", userId);
       }
     }
