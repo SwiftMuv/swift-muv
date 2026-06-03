@@ -258,6 +258,38 @@ const DriverLogin = () => {
                 <Label htmlFor="address" className="text-foreground">Current Address</Label>
                 <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, City, Postal Code" required />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="plate" className="text-foreground">Vehicle Registration Number</Label>
+                <Input id="plate" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value.toUpperCase())} placeholder="ABC-1234" required />
+              </div>
+
+              {/* Vehicle photo upload */}
+              <div className="space-y-2">
+                <Label className="text-foreground">Vehicle Photo</Label>
+                <button
+                  type="button"
+                  onClick={() => vehiclePhotoRef.current?.click()}
+                  className="w-full h-32 rounded-xl bg-primary/10 border-2 border-dashed border-primary/30 flex items-center justify-center overflow-hidden hover:bg-primary/15 transition"
+                  aria-label="Upload vehicle photo"
+                >
+                  {vehiclePhotoPreview ? (
+                    <img src={vehiclePhotoPreview} alt="Vehicle" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-primary">
+                      <Camera className="w-7 h-7" />
+                      <span className="text-xs">Tap to upload photo of your vehicle</span>
+                    </div>
+                  )}
+                </button>
+                <input
+                  ref={vehiclePhotoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => onVehiclePhoto(e.target.files?.[0] ?? null)}
+                />
+              </div>
             </>
           )}
 
