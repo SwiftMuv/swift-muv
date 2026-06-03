@@ -30,11 +30,14 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
 
   const handleNext = () => {
     if (isCompleteStep) {
-      if (codeInput !== job.completionCode) {
+      if (!/^\d{4}$/.test(codeInput)) {
         setCodeError(true);
         return;
       }
       setCodeError(false);
+      onUpdateStatus(nextStep.status, codeInput);
+      setCodeInput("");
+      return;
     }
     onUpdateStatus(nextStep.status);
     setCodeInput("");
