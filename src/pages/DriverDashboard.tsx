@@ -13,6 +13,7 @@ import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
 import { useDriverGeolocation } from "@/hooks/useDriverGeolocation";
 import { useI18n } from "@/contexts/I18nContext";
+import TermsAgreementModal from "@/components/TermsAgreementModal";
 
 export type JobStatus = "assigned" | "arrived" | "in_transit" | "completed";
 
