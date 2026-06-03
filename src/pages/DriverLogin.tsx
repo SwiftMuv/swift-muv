@@ -159,7 +159,7 @@ const DriverLogin = () => {
     }
 
     // Sign up flow
-    if (!fullName || !dob || !phone || !address) {
+    if (!fullName || !dob || !phone || !address || !licensePlate) {
       toast.error("Please complete all required fields");
       setLoading(false);
       return;
@@ -180,6 +180,10 @@ const DriverLogin = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       try {
+        await supabase
+          .from("driver_profiles")
+          .update({ license_plate: licensePlate })
+          .eq("user_id", session.user.id);
         await uploadDriverFiles(session.user.id);
       } catch (err) {
         console.error(err);
