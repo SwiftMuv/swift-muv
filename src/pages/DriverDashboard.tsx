@@ -92,7 +92,7 @@ const DriverDashboard = () => {
     if (!user) return;
     const { data } = await supabase
       .from("jobs")
-      .select("id, booking_id, status, completion_code, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price)")
+      .select("id, booking_id, status, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price)")
       .eq("driver_id", user.id)
       .neq("status", "completed")
       .maybeSingle();
@@ -111,7 +111,6 @@ const DriverDashboard = () => {
       moveSize: sizeLabel(b.move_size),
       price: Number(b.total_price),
       status: data.status as JobStatus,
-      completionCode: data.completion_code ?? undefined,
     });
   }, [user]);
 
