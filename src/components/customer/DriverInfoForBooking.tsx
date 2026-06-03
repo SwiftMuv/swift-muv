@@ -80,33 +80,51 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
   const vehicleLabel = [info.vehicle_make, info.vehicle_model].filter(Boolean).join(" ");
 
   return (
-    <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 flex items-center gap-3">
-      <Avatar className="w-14 h-14 ring-2 ring-cyan-500/50">
-        {photo && <AvatarImage src={photo} alt={info.full_name ?? "Driver"} />}
-        <AvatarFallback>{initials}</AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">
-          {info.full_name ?? "Your driver"}
-        </p>
-        {vehicleLabel && (
-          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-            <Car className="w-3 h-3" /> {vehicleLabel}
+    <div className="space-y-2">
+      <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 flex items-center gap-3">
+        <Avatar className="w-14 h-14 ring-2 ring-cyan-500/50">
+          {photo && <AvatarImage src={photo} alt={info.full_name ?? "Driver"} />}
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">
+            {info.full_name ?? "Your driver"}
           </p>
-        )}
-        {info.license_plate && (
-          <p className="text-xs font-mono font-semibold text-cyan-500 flex items-center gap-1">
-            <IdCard className="w-3 h-3" /> {info.license_plate}
-          </p>
+          {vehicleLabel && (
+            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+              <Car className="w-3 h-3" /> {vehicleLabel}
+            </p>
+          )}
+          {info.license_plate && (
+            <p className="text-xs font-mono font-semibold text-cyan-500 flex items-center gap-1">
+              <IdCard className="w-3 h-3" /> {info.license_plate}
+            </p>
+          )}
+        </div>
+        {carImg && (
+          <img
+            src={carImg}
+            alt={vehicleLabel || "Vehicle"}
+            className="w-20 h-14 object-contain shrink-0"
+            loading="lazy"
+          />
         )}
       </div>
-      {carImg && (
-        <img
-          src={carImg}
-          alt={vehicleLabel || "Vehicle"}
-          className="w-20 h-14 object-contain shrink-0"
-          loading="lazy"
-        />
+      {completionCode && (
+        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 flex items-center gap-3">
+          <KeyRound className="w-5 h-5 text-cyan-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Completion code
+            </p>
+            <p className="text-xs text-foreground">
+              Share this with your driver only when the move is done.
+            </p>
+          </div>
+          <p className="font-mono text-xl font-bold tracking-[0.4em] text-cyan-500">
+            {completionCode}
+          </p>
+        </div>
       )}
     </div>
   );
