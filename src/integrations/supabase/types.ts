@@ -144,6 +144,7 @@ export type Database = {
           phone: string | null
           preferred_currency: string
           preferred_language: string
+          terms_accepted_at: string | null
           updated_at: string
           user_id: string
         }
@@ -156,6 +157,7 @@ export type Database = {
           phone?: string | null
           preferred_currency?: string
           preferred_language?: string
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -168,6 +170,7 @@ export type Database = {
           phone?: string | null
           preferred_currency?: string
           preferred_language?: string
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -310,6 +313,7 @@ export type Database = {
           profile_picture_url: string | null
           rating: number | null
           stripe_connect_id: string | null
+          terms_accepted_at: string | null
           updated_at: string
           user_id: string
           vehicle_category:
@@ -318,6 +322,7 @@ export type Database = {
           vehicle_color: string | null
           vehicle_make: string | null
           vehicle_model: string | null
+          vehicle_photo_url: string | null
           vehicle_year: number | null
           verification_status: Database["public"]["Enums"]["driver_verification_status"]
         }
@@ -346,6 +351,7 @@ export type Database = {
           profile_picture_url?: string | null
           rating?: number | null
           stripe_connect_id?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id: string
           vehicle_category?:
@@ -354,6 +360,7 @@ export type Database = {
           vehicle_color?: string | null
           vehicle_make?: string | null
           vehicle_model?: string | null
+          vehicle_photo_url?: string | null
           vehicle_year?: number | null
           verification_status?: Database["public"]["Enums"]["driver_verification_status"]
         }
@@ -382,6 +389,7 @@ export type Database = {
           profile_picture_url?: string | null
           rating?: number | null
           stripe_connect_id?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string
           vehicle_category?:
@@ -390,6 +398,7 @@ export type Database = {
           vehicle_color?: string | null
           vehicle_make?: string | null
           vehicle_model?: string | null
+          vehicle_photo_url?: string | null
           vehicle_year?: number | null
           verification_status?: Database["public"]["Enums"]["driver_verification_status"]
         }
