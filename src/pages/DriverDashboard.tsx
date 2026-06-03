@@ -27,7 +27,7 @@ export interface Job {
   moveSize: "Small" | "Medium" | "Large";
   price: number;
   status: JobStatus | "available";
-  completionCode?: string;
+  
 }
 
 const sizeLabel = (s: string): Job["moveSize"] =>
