@@ -732,9 +732,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      driver_reviews_public: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string | null
+          ratee_id: string | null
+          stars: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      complete_job_with_code: {
+        Args: { _code: string; _job_id: string }
+        Returns: boolean
+      }
       customer_has_job_with_driver: {
         Args: { _customer_id: string; _driver_id: string }
         Returns: boolean
@@ -751,6 +764,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_job_completion_code: { Args: { _job_id: string }; Returns: string }
       get_profiles: {
         Args: never
         Returns: {
