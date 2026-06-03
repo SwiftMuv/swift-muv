@@ -22,24 +22,34 @@ interface DriverInfo {
 const DriverInfoForBooking = ({ bookingId }: Props) => {
   const [info, setInfo] = useState<DriverInfo | null>(null);
 
+  const [completionCode, setCompletionCode] = useState<string | null>(null);
+
   useEffect(() => {
     let active = true;
     const load = async () => {
       const { data: job } = await supabase
         .from("jobs")
-        .select("driver_id")
+        .select("id, driver_id")
         .eq("booking_id", bookingId)
         .maybeSingle();
       if (!job?.driver_id) {
-        if (active) setInfo(null);
+        if (active) {
+          setInfo(null);
+          setCompletionCode(null);
+        }
         return;
       }
-      const { data: profile } = await supabase
-        .from("driver_profiles")
-        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_category, vehicle_photo_url")
-        .eq("user_id", job.driver_id)
-        .maybeSingle();
-      if (active) setInfo((profile as DriverInfo) ?? null);
+      const [{ data: profile }, { data: code }] = await Promise.all([
+        supabase
+          .from("driver_profiles")
+          .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_category, vehicle_photo_url")
+          .eq("user_id", job.driver_id)
+          .maybeSingle(),
+        supabase.rpc("get_job_completion_code", { _job_id: job.id }),
+      ]);
+      if (!active) return;
+      setInfo((profile as DriverInfo) ?? null);
+      setCompletionCode((code as string | null) ?? null);
     };
     load();
 
