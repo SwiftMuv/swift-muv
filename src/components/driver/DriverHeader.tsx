@@ -83,6 +83,10 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
                 </p>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/terms")} className="text-sm">
+                <FileText className="w-4 h-4 mr-2" />
+                {t("common.terms") !== "common.terms" ? t("common.terms") : "Terms & Conditions"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/about")} className="text-sm">
                 <Info className="w-4 h-4 mr-2" />
                 {t("common.aboutUs")}
