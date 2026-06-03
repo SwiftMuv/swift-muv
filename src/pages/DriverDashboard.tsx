@@ -239,6 +239,7 @@ const DriverDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col dark">
+      <TermsAgreementModal role="driver" />
       <DriverHeader isOnline={isOnline} onToggleOnline={toggleOnline} rating={5.0} driverName={driverName} />
 
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-5">
