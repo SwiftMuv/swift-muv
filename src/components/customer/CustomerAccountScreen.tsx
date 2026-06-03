@@ -52,6 +52,13 @@ export const CustomerAccountScreen = () => {
       </Card>
 
       <Button asChild variant="outline" className="w-full">
+        <Link to="/terms">
+          <FileText className="w-4 h-4 mr-2" />
+          Terms &amp; Conditions
+        </Link>
+      </Button>
+
+      <Button asChild variant="outline" className="w-full">
         <Link to="/about">
           <Info className="w-4 h-4 mr-2" />
           {t("common.aboutUs")}
