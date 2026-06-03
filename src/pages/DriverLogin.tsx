@@ -48,16 +48,20 @@ const DriverLogin = () => {
   const [dob, setDob] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
 
   // Files
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [vehiclePhoto, setVehiclePhoto] = useState<File | null>(null);
+  const [vehiclePhotoPreview, setVehiclePhotoPreview] = useState<string | null>(null);
   const [docs, setDocs] = useState<Record<DocSlot["key"], File | null>>({
     license_front: null,
     license_back: null,
     insurance: null,
   });
   const avatarRef = useRef<HTMLInputElement>(null);
+  const vehiclePhotoRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
 
