@@ -16,6 +16,7 @@ interface DriverInfo {
   vehicle_make: string | null;
   vehicle_model: string | null;
   vehicle_category: string | null;
+  vehicle_photo_url: string | null;
 }
 
 const DriverInfoForBooking = ({ bookingId }: Props) => {
