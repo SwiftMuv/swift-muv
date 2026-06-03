@@ -732,16 +732,7 @@ export type Database = {
       }
     }
     Views: {
-      driver_reviews_public: {
-        Row: {
-          comment: string | null
-          created_at: string | null
-          id: string | null
-          ratee_id: string | null
-          stars: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       complete_job_with_code: {
@@ -763,6 +754,15 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_driver_reviews: {
+        Args: { _driver_id: string; _limit?: number }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          stars: number
+        }[]
       }
       get_job_completion_code: { Args: { _job_id: string }; Returns: string }
       get_profiles: {
