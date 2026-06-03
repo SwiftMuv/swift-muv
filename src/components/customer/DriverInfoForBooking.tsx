@@ -60,7 +60,7 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
   if (!info) return null;
 
   const photo = info.profile_picture_url || info.avatar_url || undefined;
-  const carImg = getVehicleImage(info.vehicle_category);
+  const carImg = info.vehicle_photo_url || getVehicleImage(info.vehicle_category);
   const initials = (info.full_name ?? "Driver")
     .split(" ")
     .map((s) => s[0])
