@@ -1,4 +1,4 @@
-import { Info, LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
+import { FileText, Info, LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
