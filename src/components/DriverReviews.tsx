@@ -24,12 +24,10 @@ const DriverReviews = ({ driverId, limit = 5, title = "Recent reviews" }: Props)
     let active = true;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("ratings")
-        .select("id, stars, comment, created_at")
-        .eq("ratee_id", driverId)
-        .order("created_at", { ascending: false })
-        .limit(limit);
+      const { data } = await supabase.rpc("get_driver_reviews", {
+        _driver_id: driverId,
+        _limit: limit,
+      });
       if (!active) return;
       setReviews((data ?? []) as Review[]);
       setLoading(false);

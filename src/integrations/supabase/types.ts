@@ -735,6 +735,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_job_with_code: {
+        Args: { _code: string; _job_id: string }
+        Returns: boolean
+      }
       customer_has_job_with_driver: {
         Args: { _customer_id: string; _driver_id: string }
         Returns: boolean
@@ -751,6 +755,16 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_driver_reviews: {
+        Args: { _driver_id: string; _limit?: number }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          stars: number
+        }[]
+      }
+      get_job_completion_code: { Args: { _job_id: string }; Returns: string }
       get_profiles: {
         Args: never
         Returns: {

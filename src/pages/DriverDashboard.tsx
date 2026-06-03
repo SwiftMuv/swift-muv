@@ -27,7 +27,7 @@ export interface Job {
   moveSize: "Small" | "Medium" | "Large";
   price: number;
   status: JobStatus | "available";
-  completionCode?: string;
+  
 }
 
 const sizeLabel = (s: string): Job["moveSize"] =>
@@ -92,7 +92,7 @@ const DriverDashboard = () => {
     if (!user) return;
     const { data } = await supabase
       .from("jobs")
-      .select("id, booking_id, status, completion_code, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price)")
+      .select("id, booking_id, status, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price)")
       .eq("driver_id", user.id)
       .neq("status", "completed")
       .maybeSingle();
@@ -111,7 +111,6 @@ const DriverDashboard = () => {
       moveSize: sizeLabel(b.move_size),
       price: Number(b.total_price),
       status: data.status as JobStatus,
-      completionCode: data.completion_code ?? undefined,
     });
   }, [user]);
 
@@ -180,41 +179,40 @@ const DriverDashboard = () => {
     }
     const booking = available.find((j) => j.id === jobId);
     if (!booking) return;
-    const code = String(Math.floor(1000 + Math.random() * 9000));
     const { data, error } = await supabase
       .from("jobs")
       .insert({
         booking_id: booking.bookingId,
         driver_id: user.id,
         status: "assigned",
-        completion_code: code,
       })
-      .select()
+      .select("id")
       .single();
     if (error) return toast.error(error.message);
     await supabase.from("bookings").update({ status: "assigned" }).eq("id", booking.bookingId);
     toast.success(t("driver.jobAccepted"));
-    setActiveJob({ ...booking, jobId: data.id, id: data.id, status: "assigned", completionCode: code });
+    setActiveJob({ ...booking, jobId: data.id, id: data.id, status: "assigned" });
     loadAvailable();
   };
 
-  const handleUpdateJobStatus = async (nextStatus: JobStatus) => {
+  const handleUpdateJobStatus = async (nextStatus: JobStatus, code?: string) => {
     if (!activeJob?.jobId) return;
-    const patch: { status: JobStatus; started_at?: string; completed_at?: string } = { status: nextStatus };
-    if (nextStatus === "in_transit") patch.started_at = new Date().toISOString();
-    if (nextStatus === "completed") patch.completed_at = new Date().toISOString();
-
-    const { error } = await supabase.from("jobs").update(patch).eq("id", activeJob.jobId);
-    if (error) return toast.error(error.message);
-
-    // mirror booking status
-    const bookingStatus = nextStatus === "completed" ? "completed" : "in_progress";
-    await supabase.from("bookings").update({ status: bookingStatus }).eq("id", activeJob.bookingId);
-
-    setActiveJob({ ...activeJob, status: nextStatus });
 
     if (nextStatus === "completed") {
-      // Release escrowed funds: 80% to driver, 20% platform fee
+      if (!code) {
+        toast.error(t("driver.invalidCode"));
+        return;
+      }
+      const { data: ok, error } = await supabase.rpc("complete_job_with_code", {
+        _job_id: activeJob.jobId,
+        _code: code,
+      });
+      if (error) return toast.error(error.message);
+      if (!ok) return toast.error(t("driver.invalidCode"));
+
+      await supabase.from("bookings").update({ status: "completed" }).eq("id", activeJob.bookingId);
+      setActiveJob({ ...activeJob, status: "completed" });
+
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
@@ -233,7 +231,18 @@ const DriverDashboard = () => {
         loadAvailable();
         loadStats();
       }, 1800);
+      return;
     }
+
+    const patch: { status: JobStatus; started_at?: string } = { status: nextStatus };
+    if (nextStatus === "in_transit") patch.started_at = new Date().toISOString();
+
+    const { error } = await supabase.from("jobs").update(patch).eq("id", activeJob.jobId);
+    if (error) return toast.error(error.message);
+
+    await supabase.from("bookings").update({ status: "in_progress" }).eq("id", activeJob.bookingId);
+
+    setActiveJob({ ...activeJob, status: nextStatus });
   };
 
 

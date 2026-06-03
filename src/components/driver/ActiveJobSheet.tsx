@@ -8,7 +8,7 @@ import { useI18n } from "@/contexts/I18nContext";
 
 interface ActiveJobSheetProps {
   job: Job | null;
-  onUpdateStatus: (status: JobStatus) => void;
+  onUpdateStatus: (status: JobStatus, code?: string) => void;
 }
 
 const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; color: string }[] = [
@@ -30,11 +30,14 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
 
   const handleNext = () => {
     if (isCompleteStep) {
-      if (codeInput !== job.completionCode) {
+      if (!/^\d{4}$/.test(codeInput)) {
         setCodeError(true);
         return;
       }
       setCodeError(false);
+      onUpdateStatus(nextStep.status, codeInput);
+      setCodeInput("");
+      return;
     }
     onUpdateStatus(nextStep.status);
     setCodeInput("");
