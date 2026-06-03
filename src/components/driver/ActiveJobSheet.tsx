@@ -8,7 +8,7 @@ import { useI18n } from "@/contexts/I18nContext";
 
 interface ActiveJobSheetProps {
   job: Job | null;
-  onUpdateStatus: (status: JobStatus) => void;
+  onUpdateStatus: (status: JobStatus, code?: string) => void;
 }
 
 const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; color: string }[] = [
