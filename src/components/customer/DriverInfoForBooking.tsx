@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Car, IdCard } from "lucide-react";
+import { Car, IdCard, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getVehicleImage } from "@/lib/vehicleImages";
