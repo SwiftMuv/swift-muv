@@ -48,16 +48,20 @@ const DriverLogin = () => {
   const [dob, setDob] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
 
   // Files
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [vehiclePhoto, setVehiclePhoto] = useState<File | null>(null);
+  const [vehiclePhotoPreview, setVehiclePhotoPreview] = useState<string | null>(null);
   const [docs, setDocs] = useState<Record<DocSlot["key"], File | null>>({
     license_front: null,
     license_back: null,
     insurance: null,
   });
   const avatarRef = useRef<HTMLInputElement>(null);
+  const vehiclePhotoRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
 
@@ -82,6 +86,12 @@ const DriverLogin = () => {
     setAvatarPreview(file ? URL.createObjectURL(file) : null);
   };
 
+  const onVehiclePhoto = (file: File | null) => {
+    setVehiclePhoto(file);
+    if (vehiclePhotoPreview) URL.revokeObjectURL(vehiclePhotoPreview);
+    setVehiclePhotoPreview(file ? URL.createObjectURL(file) : null);
+  };
+
   const uploadDriverFiles = async (userId: string) => {
     // Avatar -> driver-avatars (public)
     if (avatar) {
@@ -95,6 +105,22 @@ const DriverLogin = () => {
         await supabase
           .from("driver_profiles")
           .update({ avatar_url: pub.publicUrl, profile_picture_url: pub.publicUrl })
+          .eq("user_id", userId);
+      }
+    }
+
+    // Vehicle photo -> driver-avatars (public)
+    if (vehiclePhoto) {
+      const ext = vehiclePhoto.name.split(".").pop() || "jpg";
+      const path = `${userId}/vehicle-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("driver-avatars")
+        .upload(path, vehiclePhoto, { upsert: true });
+      if (!error) {
+        const { data: pub } = supabase.storage.from("driver-avatars").getPublicUrl(path);
+        await supabase
+          .from("driver_profiles")
+          .update({ vehicle_photo_url: pub.publicUrl })
           .eq("user_id", userId);
       }
     }
@@ -133,7 +159,7 @@ const DriverLogin = () => {
     }
 
     // Sign up flow
-    if (!fullName || !dob || !phone || !address) {
+    if (!fullName || !dob || !phone || !address || !licensePlate) {
       toast.error("Please complete all required fields");
       setLoading(false);
       return;
@@ -154,6 +180,10 @@ const DriverLogin = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       try {
+        await supabase
+          .from("driver_profiles")
+          .update({ license_plate: licensePlate })
+          .eq("user_id", session.user.id);
         await uploadDriverFiles(session.user.id);
       } catch (err) {
         console.error(err);
@@ -227,6 +257,38 @@ const DriverLogin = () => {
               <div className="space-y-2">
                 <Label htmlFor="address" className="text-foreground">Current Address</Label>
                 <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, City, Postal Code" required />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="plate" className="text-foreground">Vehicle Registration Number</Label>
+                <Input id="plate" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value.toUpperCase())} placeholder="ABC-1234" required />
+              </div>
+
+              {/* Vehicle photo upload */}
+              <div className="space-y-2">
+                <Label className="text-foreground">Vehicle Photo</Label>
+                <button
+                  type="button"
+                  onClick={() => vehiclePhotoRef.current?.click()}
+                  className="w-full h-32 rounded-xl bg-primary/10 border-2 border-dashed border-primary/30 flex items-center justify-center overflow-hidden hover:bg-primary/15 transition"
+                  aria-label="Upload vehicle photo"
+                >
+                  {vehiclePhotoPreview ? (
+                    <img src={vehiclePhotoPreview} alt="Vehicle" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-primary">
+                      <Camera className="w-7 h-7" />
+                      <span className="text-xs">Tap to upload photo of your vehicle</span>
+                    </div>
+                  )}
+                </button>
+                <input
+                  ref={vehiclePhotoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => onVehiclePhoto(e.target.files?.[0] ?? null)}
+                />
               </div>
             </>
           )}

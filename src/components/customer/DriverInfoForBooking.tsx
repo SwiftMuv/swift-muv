@@ -16,6 +16,7 @@ interface DriverInfo {
   vehicle_make: string | null;
   vehicle_model: string | null;
   vehicle_category: string | null;
+  vehicle_photo_url: string | null;
 }
 
 const DriverInfoForBooking = ({ bookingId }: Props) => {
@@ -35,7 +36,7 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
       }
       const { data: profile } = await supabase
         .from("driver_profiles")
-        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_category")
+        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_category, vehicle_photo_url")
         .eq("user_id", job.driver_id)
         .maybeSingle();
       if (active) setInfo((profile as DriverInfo) ?? null);
@@ -59,7 +60,7 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
   if (!info) return null;
 
   const photo = info.profile_picture_url || info.avatar_url || undefined;
-  const carImg = getVehicleImage(info.vehicle_category);
+  const carImg = info.vehicle_photo_url || getVehicleImage(info.vehicle_category);
   const initials = (info.full_name ?? "Driver")
     .split(" ")
     .map((s) => s[0])

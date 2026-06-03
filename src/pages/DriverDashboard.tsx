@@ -13,6 +13,7 @@ import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
 import { useDriverGeolocation } from "@/hooks/useDriverGeolocation";
 import { useI18n } from "@/contexts/I18nContext";
+import TermsAgreementModal from "@/components/TermsAgreementModal";
 
 export type JobStatus = "assigned" | "arrived" | "in_transit" | "completed";
 
@@ -238,6 +239,7 @@ const DriverDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col dark">
+      <TermsAgreementModal role="driver" />
       <DriverHeader isOnline={isOnline} onToggleOnline={toggleOnline} rating={5.0} driverName={driverName} />
 
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-5">

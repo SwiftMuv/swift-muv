@@ -25,6 +25,7 @@ import DriverInfoForBooking from "@/components/customer/DriverInfoForBooking";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
 import { useI18n } from "@/contexts/I18nContext";
+import TermsAgreementModal from "@/components/TermsAgreementModal";
 import logo from "@/assets/swiftmuv-logo.png";
 
 interface Booking {
@@ -162,6 +163,7 @@ const CustomerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <TermsAgreementModal role="customer" />
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b">
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
           <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-primary/30 bg-card shrink-0">

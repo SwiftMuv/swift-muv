@@ -1,4 +1,4 @@
-import { Info, LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
+import { FileText, Info, LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,13 @@ export const CustomerAccountScreen = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Button asChild variant="outline" className="w-full">
+        <Link to="/terms">
+          <FileText className="w-4 h-4 mr-2" />
+          Terms &amp; Conditions
+        </Link>
+      </Button>
 
       <Button asChild variant="outline" className="w-full">
         <Link to="/about">

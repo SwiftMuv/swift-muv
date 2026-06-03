@@ -585,8 +585,14 @@ const ProfileScreen = () => {
       {/* Sign Out */}
       <Button
         variant="ghost"
-        className="w-full rounded-xl h-11 text-sm text-[hsl(var(--swift-danger))] hover:text-[hsl(var(--swift-danger))] hover:bg-[hsl(var(--swift-danger))]/10"
-        onClick={signOut}
+        className="w-full rounded-xl h-11 text-sm text-[hsl(var(--swift-danger))] hover:text-[hsl(var(--swift-danger))] hover:bg-[hsl(var(--swift-danger))]/10 active:scale-[0.98] transition"
+        onClick={async () => {
+          try {
+            await signOut();
+          } finally {
+            window.location.href = "/driver/login";
+          }
+        }}
       >
         <LogOut className="w-4 h-4 mr-2" />
         Sign Out
