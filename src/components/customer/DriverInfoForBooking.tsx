@@ -36,7 +36,7 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
       }
       const { data: profile } = await supabase
         .from("driver_profiles")
-        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_category")
+        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_category, vehicle_photo_url")
         .eq("user_id", job.driver_id)
         .maybeSingle();
       if (active) setInfo((profile as DriverInfo) ?? null);
