@@ -64,6 +64,9 @@ const DriverLogin = () => {
   const vehiclePhotoRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(
+    () => localStorage.getItem("keepSignedIn") === "true",
+  );
 
   const handleForgotPassword = async () => {
     if (!email) return toast.error("Enter your email above first");
