@@ -33,7 +33,7 @@ const App = () => (
           <AuthBootGate>
           <IdleLogout />
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<EntryRedirect />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/index" element={<EntryRedirect />} />
