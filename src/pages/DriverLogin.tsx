@@ -153,6 +153,7 @@ const DriverLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    localStorage.setItem("keepSignedIn", keepSignedIn ? "true" : "false");
 
     if (!isSignUp) {
       const { error } = await signIn(email, password);
