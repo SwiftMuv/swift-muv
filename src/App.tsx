@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AuthBootGate from "@/components/AuthBootGate";
 import Index from "./pages/Index.tsx";
 import CustomerLogin from "./pages/CustomerLogin.tsx";
 import DriverLogin from "./pages/DriverLogin.tsx";
