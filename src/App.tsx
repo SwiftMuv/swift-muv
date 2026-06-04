@@ -8,7 +8,7 @@ import { I18nProvider } from "@/contexts/I18nContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthBootGate from "@/components/AuthBootGate";
 import IdleLogout from "@/components/IdleLogout";
-import Index from "./pages/Index.tsx";
+import EntryRedirect from "@/components/EntryRedirect";
 import CustomerLogin from "./pages/CustomerLogin.tsx";
 import DriverLogin from "./pages/DriverLogin.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
@@ -33,10 +33,10 @@ const App = () => (
           <AuthBootGate>
           <IdleLogout />
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<EntryRedirect />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
-            <Route path="/index" element={<Index />} />
+            <Route path="/index" element={<EntryRedirect />} />
             <Route path="/login" element={<CustomerLogin />} />
             <Route path="/driver/login" element={<DriverLogin />} />
             <Route path="/reset-password" element={<ResetPassword />} />
