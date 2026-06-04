@@ -64,6 +64,9 @@ const DriverLogin = () => {
   const vehiclePhotoRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(
+    () => localStorage.getItem("keepSignedIn") === "true",
+  );
 
   const handleForgotPassword = async () => {
     if (!email) return toast.error("Enter your email above first");
@@ -150,6 +153,7 @@ const DriverLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    localStorage.setItem("keepSignedIn", keepSignedIn ? "true" : "false");
 
     if (!isSignUp) {
       const { error } = await signIn(email, password);
@@ -319,6 +323,18 @@ const DriverLogin = () => {
               </div>
             )}
           </div>
+
+          {!isSignUp && (
+            <label className="flex items-center gap-2 text-sm text-foreground select-none">
+              <input
+                type="checkbox"
+                checked={keepSignedIn}
+                onChange={(e) => setKeepSignedIn(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-primary"
+              />
+              Keep me signed in
+            </label>
+          )}
 
           {isSignUp && (
             <div className="space-y-2 pt-2">

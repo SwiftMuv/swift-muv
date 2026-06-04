@@ -19,6 +19,9 @@ const CustomerLogin = () => {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(
+    () => localStorage.getItem("keepSignedIn") === "true",
+  );
 
   const handleForgotPassword = async () => {
     if (!email) return toast.error("Enter your email above first");
@@ -39,6 +42,7 @@ const CustomerLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    localStorage.setItem("keepSignedIn", keepSignedIn ? "true" : "false");
     try {
       if (isSignUp) {
         const { error } = await signUp(email, password, "customer", fullName, { phone, address });
@@ -111,6 +115,17 @@ const CustomerLogin = () => {
               </div>
             )}
           </div>
+          {!isSignUp && (
+            <label className="flex items-center gap-2 text-sm text-foreground select-none">
+              <input
+                type="checkbox"
+                checked={keepSignedIn}
+                onChange={(e) => setKeepSignedIn(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-primary"
+              />
+              Keep me signed in
+            </label>
+          )}
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading}>
             {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
             <ArrowRight className="ml-2 h-4 w-4" />
