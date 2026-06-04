@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthBootGate from "@/components/AuthBootGate";
+import IdleLogout from "@/components/IdleLogout";
 import Index from "./pages/Index.tsx";
 import CustomerLogin from "./pages/CustomerLogin.tsx";
 import DriverLogin from "./pages/DriverLogin.tsx";
