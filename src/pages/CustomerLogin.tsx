@@ -42,6 +42,7 @@ const CustomerLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    localStorage.setItem("keepSignedIn", keepSignedIn ? "true" : "false");
     try {
       if (isSignUp) {
         const { error } = await signUp(email, password, "customer", fullName, { phone, address });
