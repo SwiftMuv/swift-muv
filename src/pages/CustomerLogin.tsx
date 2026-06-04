@@ -115,6 +115,17 @@ const CustomerLogin = () => {
               </div>
             )}
           </div>
+          {!isSignUp && (
+            <label className="flex items-center gap-2 text-sm text-foreground select-none">
+              <input
+                type="checkbox"
+                checked={keepSignedIn}
+                onChange={(e) => setKeepSignedIn(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-primary"
+              />
+              Keep me signed in
+            </label>
+          )}
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading}>
             {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
             <ArrowRight className="ml-2 h-4 w-4" />
