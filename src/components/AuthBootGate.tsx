@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { BUILD_VERSION } from "@/lib/buildVersion";
 
 const PUBLIC_PATHS = ["/", "/index", "/login", "/driver", "/driver/login", "/reset-password", "/about", "/terms"];
 
@@ -10,20 +11,30 @@ const isPublic = (path: string) =>
 /**
  * Boot-time auth gate: blocks rendering until Supabase session is resolved,
  * then redirects unauthenticated users away from protected routes before
- * any dashboard markup can flash.
+ * any dashboard markup can flash. Also forces re-login after app updates.
  */
 const AuthBootGate = ({ children }: { children: ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     if (loading) return;
+
+    const storedVersion = localStorage.getItem("appVersion");
+    if (storedVersion !== BUILD_VERSION) {
+      localStorage.setItem("appVersion", BUILD_VERSION);
+      if (user) {
+        signOut();
+      }
+      return;
+    }
+
     if (!user && !isPublic(location.pathname)) {
       const target = location.pathname.startsWith("/driver") ? "/driver/login" : "/login";
       navigate(target, { replace: true });
     }
-  }, [loading, user, location.pathname, navigate]);
+  }, [loading, user, location.pathname, navigate, signOut]);
 
   if (loading) {
     return (
