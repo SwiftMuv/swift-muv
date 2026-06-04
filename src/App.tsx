@@ -29,6 +29,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <I18nProvider>
+          <AuthBootGate>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
