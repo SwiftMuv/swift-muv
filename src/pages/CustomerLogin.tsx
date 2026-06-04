@@ -19,6 +19,9 @@ const CustomerLogin = () => {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(
+    () => localStorage.getItem("keepSignedIn") === "true",
+  );
 
   const handleForgotPassword = async () => {
     if (!email) return toast.error("Enter your email above first");
