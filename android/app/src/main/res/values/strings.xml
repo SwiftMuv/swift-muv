@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">swift-muv</string>
+    <string name="title_activity_main">swift-muv</string>
+    <string name="package_name">app.lovable.c3150a8d567e4ea6a58059caaa19da0f</string>
+    <string name="custom_url_scheme">app.lovable.c3150a8d567e4ea6a58059caaa19da0f</string>
+</resources>
