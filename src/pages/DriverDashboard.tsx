@@ -284,6 +284,7 @@ const DriverDashboard = () => {
 
         {activeTab === "wallet" && <WalletScreen />}
         {activeTab === "history" && <HistoryScreen onRebook={() => setActiveTab("search")} />}
+        {activeTab === "feedback" && <AppFeedbackScreen />}
         {activeTab === "profile" && <ProfileScreen />}
       </main>
 
