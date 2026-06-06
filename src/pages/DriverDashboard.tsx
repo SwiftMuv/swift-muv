@@ -11,6 +11,7 @@ import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
+import AppFeedbackScreen from "@/components/driver/AppFeedbackScreen";
 import { useDriverGeolocation } from "@/hooks/useDriverGeolocation";
 import { useI18n } from "@/contexts/I18nContext";
 import TermsAgreementModal from "@/components/TermsAgreementModal";
