@@ -125,11 +125,6 @@ Deno.serve(async (req) => {
     ? session.payment_intent
     : session.payment_intent?.id ?? null;
 
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
-
   // Idempotency: ignore if we already created a booking for this PI.
   if (piId) {
     const { data: existing } = await admin
