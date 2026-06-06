@@ -49,6 +49,66 @@ Deno.serve(async (req) => {
 
   const session = event.data.object as Stripe.Checkout.Session;
   const meta = (session.metadata ?? {}) as Record<string, string>;
+
+  const admin = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+
+  // ---- Tip flow: transfer 100% of tip to driver's Stripe Connect account ----
+  if (meta.kind === 'swiftmuv_tip') {
+    const jobId = meta.job_id;
+    const bookingId = meta.booking_id;
+    const driverId = meta.driver_id;
+    const amount = Number(meta.amount ?? 0);
+    if (!jobId || !driverId || !amount) {
+      return new Response(JSON.stringify({ received: true, ignored: 'tip_missing_meta' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Idempotency: skip if we already transferred this session's tip.
+    const transferGroup = `tip_${session.id}`;
+    try {
+      const existing = await stripe.transfers.list({ transfer_group: transferGroup, limit: 1 });
+      if (existing.data.length > 0) {
+        return new Response(JSON.stringify({ received: true, tip: 'already_transferred' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (e) {
+      console.warn('tip transfer lookup failed', e);
+    }
+
+    const { data: driverProfile } = await admin
+      .from('driver_profiles')
+      .select('stripe_connect_id')
+      .eq('user_id', driverId)
+      .maybeSingle();
+
+    let transferId: string | null = null;
+    if (driverProfile?.stripe_connect_id) {
+      try {
+        const transfer = await stripe.transfers.create({
+          amount: Math.round(amount * 100),
+          currency: (session.currency ?? 'cad').toLowerCase(),
+          destination: driverProfile.stripe_connect_id,
+          transfer_group: transferGroup,
+          metadata: { kind: 'swiftmuv_tip', job_id: jobId, booking_id: bookingId, driver_id: driverId },
+        });
+        transferId = transfer.id;
+      } catch (e) {
+        console.error('tip transfer failed', e);
+      }
+    } else {
+      console.warn('tip received but driver has no stripe_connect_id', { driverId, jobId });
+    }
+
+    return new Response(JSON.stringify({ received: true, tip: { amount, transferId } }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   if (meta.kind !== 'swiftmuv_booking') {
     return new Response(JSON.stringify({ received: true, ignored: 'not_swiftmuv' }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -64,11 +124,6 @@ Deno.serve(async (req) => {
   const piId = typeof session.payment_intent === 'string'
     ? session.payment_intent
     : session.payment_intent?.id ?? null;
-
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
 
   // Idempotency: ignore if we already created a booking for this PI.
   if (piId) {
