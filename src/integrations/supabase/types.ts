@@ -32,6 +32,30 @@ export type Database = {
         }
         Relationships: []
       }
+      app_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          driver_id: string
+          id: string
+          stars: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          stars: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          stars?: number
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           base_price: number
