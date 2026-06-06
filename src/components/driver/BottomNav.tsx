@@ -31,7 +31,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
               }`}
             >
               <tab.icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-              <span className="text-[10px] font-medium">{t(tab.labelKey)}</span>
+              <span className="text-[10px] font-medium">{(tab as any).fallback ? t(tab.labelKey) || (tab as any).fallback : t(tab.labelKey)}</span>
             </button>
           );
         })}
