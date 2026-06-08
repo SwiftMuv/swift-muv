@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import About from "./pages/About.tsx";
 import Terms from "./pages/Terms.tsx";
+import TermsOfService from "./pages/TermsOfService.tsx";
 
 const queryClient = new QueryClient();
 
