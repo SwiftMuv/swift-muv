@@ -147,6 +147,9 @@ const About = () => {
             <Link to="/terms-of-service" className="text-muted-foreground hover:text-foreground">
               Terms of Service
             </Link>
+            <Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground">
+              Privacy Policy
+            </Link>
             <Link to="/login" className="text-muted-foreground hover:text-foreground">
               Sign in
             </Link>
