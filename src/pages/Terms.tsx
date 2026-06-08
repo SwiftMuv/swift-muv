@@ -158,6 +158,9 @@ const Terms = () => {
             <Link to="/terms" className="opacity-80 hover:opacity-100">
               Terms
             </Link>
+            <Link to="/terms-of-service" className="opacity-80 hover:opacity-100">
+              Terms of Service
+            </Link>
           </nav>
           <p className="text-xs opacity-70">
             © {new Date().getFullYear()} SwiftMuv. All rights reserved.

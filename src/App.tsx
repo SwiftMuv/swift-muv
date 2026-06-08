@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import About from "./pages/About.tsx";
 import Terms from "./pages/Terms.tsx";
+import TermsOfService from "./pages/TermsOfService.tsx";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/" element={<EntryRedirect />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/index" element={<EntryRedirect />} />
             <Route path="/login" element={<CustomerLogin />} />
             <Route path="/driver/login" element={<DriverLogin />} />
