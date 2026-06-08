@@ -144,6 +144,9 @@ const About = () => {
             <Link to="/terms" className="text-muted-foreground hover:text-foreground">
               Terms
             </Link>
+            <Link to="/terms-of-service" className="text-muted-foreground hover:text-foreground">
+              Terms of Service
+            </Link>
             <Link to="/login" className="text-muted-foreground hover:text-foreground">
               Sign in
             </Link>

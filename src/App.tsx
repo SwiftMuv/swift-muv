@@ -37,6 +37,7 @@ const App = () => (
             <Route path="/" element={<EntryRedirect />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/index" element={<EntryRedirect />} />
             <Route path="/login" element={<CustomerLogin />} />
             <Route path="/driver/login" element={<DriverLogin />} />
