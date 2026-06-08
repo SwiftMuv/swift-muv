@@ -4,20 +4,32 @@ import logo from "@/assets/swiftmuv-logo.png";
 
 const sections = [
   {
-    title: "1. Ownership of Platform and Content",
-    body: "All content, features, and functionality of the SwiftMuv platform—including but not limited to, the software, source code, designs, text, graphics, logos, icons, images, and the \"SwiftMuv\" brand name—are the exclusive property of [Insert Your Legal Entity Name/Samuel Laryea] and are protected by Canadian and international copyright, trademark, and other intellectual property laws.",
+    title: "1. Information We Collect",
+    body: "We collect personal information you provide directly, such as your name, email address, phone number, and payment details when you register or make a booking. We also collect location data during active trips for tracking and safety purposes, and usage data to improve our platform.",
   },
   {
-    title: "2. Limited License",
-    body: "Subject to your compliance with these Terms, we grant you a limited, non-exclusive, non-transferable, and revocable license to access and use the SwiftMuv platform for its intended purpose: facilitating logistics and moving services. You may not reproduce, distribute, modify, create derivative works of, publicly display, or in any way exploit any of the material without our prior written consent.",
+    title: "2. How We Use Your Information",
+    body: "Your information is used to provide and improve our services, process transactions, match customers with drivers, send notifications, and ensure platform security. We may also use aggregated data for analytics and service optimization.",
   },
   {
-    title: "3. User Feedback",
-    body: "If you provide us with any suggestions, ideas, or feedback regarding SwiftMuv, you agree that we may use such feedback for any purpose without any obligation to you, and you hereby assign to us all rights to such feedback.",
+    title: "3. Information Sharing",
+    body: "We do not sell your personal information. We share necessary data with drivers and customers to facilitate bookings, with payment processors to handle transactions, and with service providers who assist our operations. All third parties are bound by confidentiality obligations.",
   },
   {
-    title: "4. Trademarks",
-    body: "\"SwiftMuv\" and all related graphics, logos, and service names are trademarks or trade dress of SwiftMuv in Canada. You may not use these without our prior written permission.",
+    title: "4. Data Security",
+    body: "We implement industry-standard security measures to protect your data, including encryption in transit and at rest, secure authentication, and regular security audits. However, no method of transmission over the Internet is 100% secure.",
+  },
+  {
+    title: "5. Your Rights",
+    body: "You have the right to access, correct, or delete your personal information. You may also object to certain processing activities or request data portability. Contact us at support@swiftmuv.com to exercise these rights.",
+  },
+  {
+    title: "6. Cookies & Tracking",
+    body: "We use cookies and similar technologies to enhance your experience, remember preferences, and analyze usage patterns. You can manage cookie preferences through your browser settings.",
+  },
+  {
+    title: "7. Changes to This Policy",
+    body: "We may update this Privacy Policy from time to time. We will notify you of significant changes via email or platform notifications. Continued use of SwiftMuv after changes constitutes acceptance of the updated policy.",
   },
 ];
 
@@ -30,7 +42,7 @@ const Section = ({ title, body }: { title: string; body: string }) => (
   </section>
 );
 
-const TermsOfService = () => {
+const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -52,8 +64,8 @@ const TermsOfService = () => {
             <Link to="/terms" className="opacity-80 hover:opacity-100 transition">
               Terms
             </Link>
-            <Link to="/terms-of-service" className="text-accent">
-              Terms of Service
+            <Link to="/privacy-policy" className="text-accent">
+              Privacy Policy
             </Link>
           </nav>
         </div>
@@ -69,10 +81,10 @@ const TermsOfService = () => {
             <ArrowLeft className="w-3.5 h-3.5" /> Back
           </Link>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-            Terms of Service
+            Privacy Policy
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Intellectual Property Rights and usage terms for the SwiftMuv platform.
+            How SwiftMuv collects, uses, and protects your personal information.
           </p>
           <p className="mt-2 text-xs uppercase tracking-wider font-semibold text-accent">
             Last Updated: May 2026
@@ -90,7 +102,7 @@ const TermsOfService = () => {
           </article>
 
           <p className="text-xs text-muted-foreground text-center mt-8">
-            For questions about these Terms, contact support@swiftmuv.com.
+            For privacy-related questions, contact support@swiftmuv.com.
           </p>
         </div>
       </section>
@@ -122,7 +134,7 @@ const TermsOfService = () => {
             </Link>
           </nav>
           <p className="text-xs opacity-70">
-            © {new Date().getFullYear()} SwiftMuv. All rights reserved.
+            &copy; {new Date().getFullYear()} SwiftMuv. All rights reserved.
           </p>
         </div>
       </footer>
@@ -130,4 +142,4 @@ const TermsOfService = () => {
   );
 };
 
-export default TermsOfService;
+export default PrivacyPolicy;
