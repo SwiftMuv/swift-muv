@@ -52,6 +52,9 @@ const BookingPage = () => {
   const [suvSelected, setSuvSelected] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(undefined);
   const [scheduledTime, setScheduledTime] = useState<string>("09:00");
+  const [scheduleMode, setScheduleMode] = useState<"asap" | "later">("asap");
+  const [globalFloor, setGlobalFloor] = useState<string>("");
+  const [globalHasElevator, setGlobalHasElevator] = useState<boolean>(true);
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
     setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
