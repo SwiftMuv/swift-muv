@@ -184,6 +184,54 @@ const BookingPage = () => {
           <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.enterDropoff")} />
         </div>
 
+        {/* Move date picker */}
+        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Move date
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 min-w-[180px] justify-start text-left font-normal",
+                    !scheduledAt && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Today (ASAP)"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={scheduledAt}
+                  onSelect={setScheduledAt}
+                  disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <Input
+              type="time"
+              value={scheduledTime}
+              onChange={(e) => setScheduledTime(e.target.value)}
+              className="w-[120px]"
+              disabled={!scheduledAt}
+            />
+            {scheduledAt && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setScheduledAt(undefined)}>
+                Clear
+              </Button>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Pick a future date for your move, or leave blank for ASAP today.
+          </p>
+        </div>
+
         {distance && (
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("booking.trip")}</p>
