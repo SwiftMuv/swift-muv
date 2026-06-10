@@ -53,10 +53,50 @@ Deno.serve(async (req) => {
         country: find('country'),
       };
     };
-    const [pickup, dropoff] = await Promise.all([geocode(String(origin)), geocode(String(destination))]);
+
+    // Fallback: Places API (New) text search — handles POIs / informal addresses
+    const placesSearch = async (address: string) => {
+      try {
+        const r = await fetch(`${GATEWAY_URL}/places/v1/places:searchText`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY,
+            'Content-Type': 'application/json',
+            'X-Goog-FieldMask': 'places.formattedAddress,places.location,places.addressComponents',
+          },
+          body: JSON.stringify({ textQuery: address, maxResultCount: 1 }),
+        });
+        const j = await r.json();
+        const p = j.places?.[0];
+        if (!p?.location) return null;
+        const comps = p.addressComponents ?? [];
+        const find = (type: string) =>
+          comps.find((c: { types: string[] }) => c.types.includes(type))?.shortText ?? null;
+        return {
+          lat: p.location.latitude,
+          lng: p.location.longitude,
+          formatted: p.formattedAddress ?? address,
+          province: find('administrative_area_level_1'),
+          city: find('locality') ?? find('postal_town') ?? find('administrative_area_level_2'),
+          country: find('country'),
+        };
+      } catch (e) {
+        console.warn('placesSearch failed', e);
+        return null;
+      }
+    };
+
+    const resolve = async (address: string) => (await geocode(address)) ?? (await placesSearch(address));
+    const [pickup, dropoff] = await Promise.all([resolve(String(origin)), resolve(String(destination))]);
 
     if (!pickup || !dropoff) {
-      return json({ error: 'Could not resolve addresses', pickup, dropoff }, 404);
+      return json({
+        error: 'Could not resolve addresses',
+        details: !pickup && !dropoff ? 'Both pickup and dropoff could not be resolved' : !pickup ? 'Pickup address could not be resolved' : 'Dropoff address could not be resolved',
+        pickup,
+        dropoff,
+      }, 400);
     }
 
     let km: number | null = null;
