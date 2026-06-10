@@ -55,6 +55,7 @@ const BookingPage = () => {
   const [scheduleMode, setScheduleMode] = useState<"asap" | "later">("asap");
   const [globalFloor, setGlobalFloor] = useState<string>("");
   const [globalHasElevator, setGlobalHasElevator] = useState<boolean>(true);
+  const [floorAccessEnabled, setFloorAccessEnabled] = useState<boolean>(false);
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
     setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -255,35 +256,40 @@ const BookingPage = () => {
           )}
         </div>
 
-        {/* Global Floor & Elevator/Stairs (optional, always visible) */}
+        {/* Global Floor & Elevator/Stairs (fully optional, hidden until enabled) */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Floor & access
-            </label>
-            <span className="text-[10px] text-muted-foreground">Optional</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-              <label className="text-xs text-muted-foreground">Floor #</label>
-              <Input
-                type="number"
-                min={0}
-                max={50}
-                value={globalFloor}
-                onChange={(e) => setGlobalFloor(e.target.value)}
-                placeholder="0"
-                className="h-9 w-20"
-              />
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Floor & access
+              </label>
+              <p className="text-[11px] text-muted-foreground">Optional — add if it applies</p>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
-              <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
-                {globalHasElevator ? "Elevator" : "Stairs"}
-              </span>
-              <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
-            </div>
+            <Switch checked={floorAccessEnabled} onCheckedChange={setFloorAccessEnabled} />
           </div>
+          {floorAccessEnabled && (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                <label className="text-xs text-muted-foreground">Floor #</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={globalFloor}
+                  onChange={(e) => setGlobalFloor(e.target.value)}
+                  placeholder="0"
+                  className="h-9 w-20"
+                />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
+                <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
+                  {globalHasElevator ? "Elevator" : "Stairs"}
+                </span>
+                <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
+              </div>
+            </div>
+          )}
         </div>
 
         {distance && (
@@ -314,7 +320,7 @@ const BookingPage = () => {
           <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
 
           {/* Per-item floor + elevator/stairs */}
-          {selectedItems.length > 0 && (
+          {selectedItems.length > 1 && (
             <div className="mt-3 space-y-2 rounded-xl border border-border bg-card p-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Item details (floor & access)
