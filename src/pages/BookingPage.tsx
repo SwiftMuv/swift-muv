@@ -91,7 +91,20 @@ const BookingPage = () => {
     if (!user || (itemCount === 0 && !suvSelected) || distanceKm === 0) return;
     setBooking(true);
     try {
-      const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
+      const itemsArr = selectedItems.map((i) => ({
+        id: i.id,
+        qty: i.quantity,
+        floor: i.floor_level ?? 0,
+        has_elevator: i.has_elevator ?? true,
+      }));
+      const scheduledIso = scheduledAt
+        ? (() => {
+            const [h, m] = scheduledTime.split(":").map((n) => parseInt(n, 10) || 0);
+            const d = new Date(scheduledAt);
+            d.setHours(h, m, 0, 0);
+            return d.toISOString();
+          })()
+        : null;
       const { data: inserted, error } = await supabase
         .from("bookings")
         .insert({
@@ -104,6 +117,7 @@ const BookingPage = () => {
           items: itemsArr,
           crew_count: effectiveCrew,
           vehicle_category: suvSelected ? "suv" : null,
+          scheduled_at: scheduledIso,
           pickup_lat: distance?.pickup?.lat ?? null,
           pickup_lng: distance?.pickup?.lng ?? null,
           dropoff_lat: distance?.dropoff?.lat ?? null,
