@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
+import PricingCalculator from "@/components/booking/PricingCalculator";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,9 @@ const BookingPage = () => {
   const [suvSelected, setSuvSelected] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(undefined);
   const [scheduledTime, setScheduledTime] = useState<string>("09:00");
+  const [scheduleMode, setScheduleMode] = useState<"asap" | "later">("asap");
+  const [globalFloor, setGlobalFloor] = useState<string>("");
+  const [globalHasElevator, setGlobalHasElevator] = useState<boolean>(true);
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
     setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -180,52 +184,106 @@ const BookingPage = () => {
           <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.enterDropoff")} />
         </div>
 
-        {/* Move date picker */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
-          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Move date
-          </label>
-          <div className="flex flex-wrap items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "flex-1 min-w-[180px] justify-start text-left font-normal",
-                    !scheduledAt && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Today (ASAP)"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={scheduledAt}
-                  onSelect={setScheduledAt}
-                  disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            <Input
-              type="time"
-              value={scheduledTime}
-              onChange={(e) => setScheduledTime(e.target.value)}
-              className="w-[120px]"
-              disabled={!scheduledAt}
-            />
-            {scheduledAt && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setScheduledAt(undefined)}>
-                Clear
-              </Button>
-            )}
+        {/* Move date — ASAP / Schedule for later */}
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              When do you need it?
+            </label>
+            <span className="text-[10px] text-muted-foreground">Optional</span>
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            Pick a future date for your move, or leave blank for ASAP today.
-          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => { setScheduleMode("asap"); setScheduledAt(undefined); }}
+              className={cn(
+                "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
+                scheduleMode === "asap"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              Now / ASAP
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleMode("later")}
+              className={cn(
+                "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
+                scheduleMode === "later"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              Schedule for later
+            </button>
+          </div>
+          {scheduleMode === "later" && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 min-w-[180px] justify-start text-left font-normal",
+                      !scheduledAt && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={scheduledAt}
+                    onSelect={setScheduledAt}
+                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="w-[120px]"
+                disabled={!scheduledAt}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Global Floor & Elevator/Stairs (optional, always visible) */}
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Floor & access
+            </label>
+            <span className="text-[10px] text-muted-foreground">Optional</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+              <label className="text-xs text-muted-foreground">Floor #</label>
+              <Input
+                type="number"
+                min={0}
+                max={50}
+                value={globalFloor}
+                onChange={(e) => setGlobalFloor(e.target.value)}
+                placeholder="0"
+                className="h-9 w-20"
+              />
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
+              <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
+                {globalHasElevator ? "Elevator" : "Stairs"}
+              </span>
+              <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
+            </div>
+          </div>
         </div>
 
         {distance && (
@@ -309,18 +367,8 @@ const BookingPage = () => {
           )}
         </div>
 
-        {itemCount > 0 && (
-          <div className="rounded-xl border border-primary/20 bg-card p-4">
-            <div className="flex items-center gap-2">
-              <Truck className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("booking.recommended")}</p>
-                <p className="font-semibold">{quote.recommendedVehicle}</p>
-              </div>
-            </div>
-            <p className="mt-3 text-2xl font-bold text-primary">{formatCurrency(quote.finalPrice)}</p>
-          </div>
-        )}
+        <PricingCalculator distanceKm={distanceKm} />
+
 
         {/* Additional crew (optional) */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
