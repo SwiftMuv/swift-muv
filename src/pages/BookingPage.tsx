@@ -172,10 +172,6 @@ const BookingPage = () => {
       </header>
 
       <div className="flex-1 space-y-6 p-4 pb-8">
-        <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-4 py-2.5">
-          <CalendarDays className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">{t("booking.todayAsap")}</span>
-        </div>
 
         <div className="space-y-3">
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
