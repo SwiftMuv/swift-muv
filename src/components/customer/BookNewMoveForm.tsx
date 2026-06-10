@@ -54,6 +54,16 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewCount, setCrewCount] = useState(1);
   const [suvSelected, setSuvSelected] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState<"asap" | "later">("asap");
+  const [scheduledAt, setScheduledAt] = useState<Date | undefined>(undefined);
+  const [scheduledTime, setScheduledTime] = useState<string>("09:00");
+  const [floorAccessEnabled, setFloorAccessEnabled] = useState(false);
+  const [globalFloor, setGlobalFloor] = useState<string>("");
+  const [globalHasElevator, setGlobalHasElevator] = useState<boolean>(true);
+
+  const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
+    setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
