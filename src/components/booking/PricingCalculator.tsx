@@ -132,13 +132,6 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
           <span>Distance ({km.toFixed(2)} km × {formatCurrency(round2(tierDef.perKm))}/km)</span>
           <span className="font-semibold text-white">{formatCurrency(distanceFee)}</span>
         </div>
-        <div className="my-1 border-t border-slate-700" />
-        <div className="flex items-end justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total</span>
-          <span className="text-2xl font-bold text-[#FF5722]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            {formatCurrency(total)}
-          </span>
-        </div>
       </div>
     </div>
   );
