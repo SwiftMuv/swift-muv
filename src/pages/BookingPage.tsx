@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, CarFront, Loader2, Truck, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, CarFront, Loader2, Truck, Users, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
@@ -9,6 +10,10 @@ import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
 import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 
@@ -44,6 +49,12 @@ const BookingPage = () => {
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewCount, setCrewCount] = useState(1);
   const [suvSelected, setSuvSelected] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<Date | undefined>(undefined);
+  const [scheduledTime, setScheduledTime] = useState<string>("09:00");
+
+  const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
+    setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
@@ -80,7 +91,20 @@ const BookingPage = () => {
     if (!user || (itemCount === 0 && !suvSelected) || distanceKm === 0) return;
     setBooking(true);
     try {
-      const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
+      const itemsArr = selectedItems.map((i) => ({
+        id: i.id,
+        qty: i.quantity,
+        floor: i.floor_level ?? 0,
+        has_elevator: i.has_elevator ?? true,
+      }));
+      const scheduledIso = scheduledAt
+        ? (() => {
+            const [h, m] = scheduledTime.split(":").map((n) => parseInt(n, 10) || 0);
+            const d = new Date(scheduledAt);
+            d.setHours(h, m, 0, 0);
+            return d.toISOString();
+          })()
+        : null;
       const { data: inserted, error } = await supabase
         .from("bookings")
         .insert({
@@ -93,6 +117,7 @@ const BookingPage = () => {
           items: itemsArr,
           crew_count: effectiveCrew,
           vehicle_category: suvSelected ? "suv" : null,
+          scheduled_at: scheduledIso,
           pickup_lat: distance?.pickup?.lat ?? null,
           pickup_lng: distance?.pickup?.lng ?? null,
           dropoff_lat: distance?.dropoff?.lat ?? null,
@@ -147,16 +172,60 @@ const BookingPage = () => {
       </header>
 
       <div className="flex-1 space-y-6 p-4 pb-8">
-        <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-4 py-2.5">
-          <CalendarDays className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">{t("booking.todayAsap")}</span>
-        </div>
 
         <div className="space-y-3">
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
           <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder={t("booking.enterPickup")} />
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.dropoff")}</label>
           <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.enterDropoff")} />
+        </div>
+
+        {/* Move date picker */}
+        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Move date
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 min-w-[180px] justify-start text-left font-normal",
+                    !scheduledAt && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Today (ASAP)"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={scheduledAt}
+                  onSelect={setScheduledAt}
+                  disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <Input
+              type="time"
+              value={scheduledTime}
+              onChange={(e) => setScheduledTime(e.target.value)}
+              className="w-[120px]"
+              disabled={!scheduledAt}
+            />
+            {scheduledAt && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setScheduledAt(undefined)}>
+                Clear
+              </Button>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Pick a future date for your move, or leave blank for ASAP today.
+          </p>
         </div>
 
         {distance && (
@@ -174,7 +243,7 @@ const BookingPage = () => {
               <div>
                 <p className="font-semibold">Extra Large Car / SUV</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {t("booking.flatSuv", { flat: formatCurrency(50), extra: moveType !== "local" ? t("booking.perKmExtra", { rate: formatCurrency(1.2) }) : "" })}
+                  {t("booking.flatSuv", { flat: formatCurrency(50), extra: moveType !== "local" ? t("booking.perKmExtra", { rate: formatCurrency(2) }) : "" })}
                 </p>
               </div>
             </div>
@@ -185,6 +254,59 @@ const BookingPage = () => {
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("booking.inventory")}</h2>
           <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
+
+          {/* Per-item floor + elevator/stairs */}
+          {selectedItems.length > 0 && (
+            <div className="mt-3 space-y-2 rounded-xl border border-border bg-card p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Item details (floor & access)
+              </p>
+              {selectedItems.map((it) => {
+                const floor = it.floor_level ?? 0;
+                const hasElev = it.has_elevator ?? true;
+                return (
+                  <div
+                    key={it.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                  >
+                    <div className="min-w-[140px] flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {it.item_name} <span className="text-xs text-muted-foreground">× {it.quantity}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <label className="text-[11px] text-muted-foreground">Floor</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={floor}
+                        onChange={(e) =>
+                          updateItemMeta(it.id, {
+                            floor_level: Math.max(0, parseInt(e.target.value || "0", 10) || 0),
+                          })
+                        }
+                        className="h-8 w-16"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-medium ${hasElev ? "text-primary" : "text-muted-foreground"}`}>
+                        {hasElev ? "Elevator" : "Stairs"}
+                      </span>
+                      <Switch
+                        checked={hasElev}
+                        onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v })}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-[11px] text-muted-foreground">
+                Toggle elevator off when only stairs are available at that floor.
+              </p>
+            </div>
+          )}
         </div>
 
         {itemCount > 0 && (
