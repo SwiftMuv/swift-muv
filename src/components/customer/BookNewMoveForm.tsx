@@ -104,7 +104,21 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     if (!user) return;
     setSubmitting(true);
     try {
-      const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
+      const itemsArr = selectedItems.map((i) => ({
+        id: i.id,
+        qty: i.quantity,
+        floor: i.floor_level ?? (floorAccessEnabled ? parseInt(globalFloor || "0", 10) : 0),
+        has_elevator: i.has_elevator ?? (floorAccessEnabled ? globalHasElevator : true),
+      }));
+
+      const scheduledIso = scheduleMode === "later" && scheduledAt
+        ? (() => {
+            const [h, m] = scheduledTime.split(":").map((n) => parseInt(n, 10) || 0);
+            const d = new Date(scheduledAt);
+            d.setHours(h, m, 0, 0);
+            return d.toISOString();
+          })()
+        : null;
 
       const bookingPayload = {
         pickup_address: pickup.trim(),
@@ -115,6 +129,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         items: itemsArr,
         crew_count: effectiveCrew,
         vehicle_category: suvSelected ? "suv" : null,
+        scheduled_at: scheduledIso,
         pickup_lat: distance?.pickup?.lat ?? null,
         pickup_lng: distance?.pickup?.lng ?? null,
         dropoff_lat: distance?.dropoff?.lat ?? null,
