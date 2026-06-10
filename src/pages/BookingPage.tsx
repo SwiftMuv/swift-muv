@@ -320,7 +320,7 @@ const BookingPage = () => {
           <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
 
           {/* Per-item floor + elevator/stairs */}
-          {selectedItems.length > 0 && (
+          {selectedItems.length > 1 && (
             <div className="mt-3 space-y-2 rounded-xl border border-border bg-card p-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Item details (floor & access)
