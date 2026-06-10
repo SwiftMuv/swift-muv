@@ -243,7 +243,7 @@ const BookingPage = () => {
               <div>
                 <p className="font-semibold">Extra Large Car / SUV</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {t("booking.flatSuv", { flat: formatCurrency(50), extra: moveType !== "local" ? t("booking.perKmExtra", { rate: formatCurrency(1.2) }) : "" })}
+                  {t("booking.flatSuv", { flat: formatCurrency(50), extra: moveType !== "local" ? t("booking.perKmExtra", { rate: formatCurrency(2) }) : "" })}
                 </p>
               </div>
             </div>
