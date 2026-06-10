@@ -367,18 +367,8 @@ const BookingPage = () => {
           )}
         </div>
 
-        {itemCount > 0 && (
-          <div className="rounded-xl border border-primary/20 bg-card p-4">
-            <div className="flex items-center gap-2">
-              <Truck className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("booking.recommended")}</p>
-                <p className="font-semibold">{quote.recommendedVehicle}</p>
-              </div>
-            </div>
-            <p className="mt-3 text-2xl font-bold text-primary">{formatCurrency(quote.finalPrice)}</p>
-          </div>
-        )}
+        <PricingCalculator distanceKm={distanceKm} />
+
 
         {/* Additional crew (optional) */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
