@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { CarFront, Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
+import { ArrowUpDown, CalendarDays, CarFront, Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
