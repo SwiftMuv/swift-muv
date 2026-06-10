@@ -330,6 +330,92 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             suvSelected={suvSelected}
             onSuvChange={setSuvSelected}
           />
+
+          {/* Per-item floor + elevator (only when multiple inventory items added) */}
+          {selectedItems.length > 1 && (
+            <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/10 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Item details (floor & access)
+              </p>
+              {selectedItems.map((it) => {
+                const floor = it.floor_level ?? 0;
+                const hasElev = it.has_elevator ?? true;
+                return (
+                  <div
+                    key={it.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2"
+                  >
+                    <p className="min-w-[140px] flex-1 text-sm font-medium text-foreground">
+                      {it.item_name} <span className="text-xs text-muted-foreground">× {it.quantity}</span>
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <label className="text-[11px] text-muted-foreground">Floor</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={floor}
+                        onChange={(e) =>
+                          updateItemMeta(it.id, {
+                            floor_level: Math.max(0, parseInt(e.target.value || "0", 10) || 0),
+                          })
+                        }
+                        className="h-8 w-16"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-[11px] font-medium", hasElev ? "text-primary" : "text-muted-foreground")}>
+                        {hasElev ? "Elevator" : "Stairs"}
+                      </span>
+                      <Switch
+                        checked={hasElev}
+                        onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v })}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Floor & access (global, optional toggle) */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><ArrowUpDown className="h-4 w-4" /></div>
+              <div>
+                <h3 className="font-semibold">Floor & access</h3>
+                <p className="text-[11px] text-muted-foreground">Optional — add if it applies</p>
+              </div>
+            </div>
+            <Switch checked={floorAccessEnabled} onCheckedChange={setFloorAccessEnabled} />
+          </div>
+          {floorAccessEnabled && (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">Floor #</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={globalFloor}
+                  onChange={(e) => setGlobalFloor(e.target.value)}
+                  placeholder="0"
+                  className="h-9 w-20"
+                />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
+                <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
+                  {globalHasElevator ? "Elevator" : "Stairs"}
+                </span>
+                <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
