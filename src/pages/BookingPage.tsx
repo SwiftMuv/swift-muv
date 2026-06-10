@@ -254,6 +254,59 @@ const BookingPage = () => {
         <div>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("booking.inventory")}</h2>
           <InventoryPicker selected={selectedItems} onChange={setSelectedItems} />
+
+          {/* Per-item floor + elevator/stairs */}
+          {selectedItems.length > 0 && (
+            <div className="mt-3 space-y-2 rounded-xl border border-border bg-card p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Item details (floor & access)
+              </p>
+              {selectedItems.map((it) => {
+                const floor = it.floor_level ?? 0;
+                const hasElev = it.has_elevator ?? true;
+                return (
+                  <div
+                    key={it.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                  >
+                    <div className="min-w-[140px] flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {it.item_name} <span className="text-xs text-muted-foreground">× {it.quantity}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <label className="text-[11px] text-muted-foreground">Floor</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={floor}
+                        onChange={(e) =>
+                          updateItemMeta(it.id, {
+                            floor_level: Math.max(0, parseInt(e.target.value || "0", 10) || 0),
+                          })
+                        }
+                        className="h-8 w-16"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-medium ${hasElev ? "text-primary" : "text-muted-foreground"}`}>
+                        {hasElev ? "Elevator" : "Stairs"}
+                      </span>
+                      <Switch
+                        checked={hasElev}
+                        onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v })}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-[11px] text-muted-foreground">
+                Toggle elevator off when only stairs are available at that floor.
+              </p>
+            </div>
+          )}
         </div>
 
         {itemCount > 0 && (
