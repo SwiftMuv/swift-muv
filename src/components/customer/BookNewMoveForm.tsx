@@ -218,6 +218,82 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </CardContent>
       </Card>
 
+      {/* When (ASAP / Schedule for later) */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><CalendarDays className="h-4 w-4" /></div>
+              <div>
+                <h3 className="font-semibold">When do you need it?</h3>
+                <p className="text-[11px] text-muted-foreground">Now or schedule a future date</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => { setScheduleMode("asap"); setScheduledAt(undefined); }}
+              className={cn(
+                "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
+                scheduleMode === "asap"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              Now / ASAP
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleMode("later")}
+              className={cn(
+                "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
+                scheduleMode === "later"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              Schedule for later
+            </button>
+          </div>
+          {scheduleMode === "later" && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 min-w-[180px] justify-start text-left font-normal",
+                      !scheduledAt && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={scheduledAt}
+                    onSelect={setScheduledAt}
+                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="w-[120px]"
+                disabled={!scheduledAt}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Recommended vehicle */}
       {(itemCount > 0 || suvSelected) && (
         <Card>
