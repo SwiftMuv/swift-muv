@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { CarFront, Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
+import { ArrowUpDown, CalendarDays, CarFront, Loader2, MapPin, Navigation, Package, Receipt, Route, Truck, Users } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
@@ -49,6 +54,16 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const [crewEnabled, setCrewEnabled] = useState(false);
   const [crewCount, setCrewCount] = useState(1);
   const [suvSelected, setSuvSelected] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState<"asap" | "later">("asap");
+  const [scheduledAt, setScheduledAt] = useState<Date | undefined>(undefined);
+  const [scheduledTime, setScheduledTime] = useState<string>("09:00");
+  const [floorAccessEnabled, setFloorAccessEnabled] = useState(false);
+  const [globalFloor, setGlobalFloor] = useState<string>("");
+  const [globalHasElevator, setGlobalHasElevator] = useState<boolean>(true);
+
+  const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
+    setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
 
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
@@ -89,7 +104,21 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
     if (!user) return;
     setSubmitting(true);
     try {
-      const itemsArr = selectedItems.map((i) => ({ id: i.id, qty: i.quantity }));
+      const itemsArr = selectedItems.map((i) => ({
+        id: i.id,
+        qty: i.quantity,
+        floor: i.floor_level ?? (floorAccessEnabled ? parseInt(globalFloor || "0", 10) : 0),
+        has_elevator: i.has_elevator ?? (floorAccessEnabled ? globalHasElevator : true),
+      }));
+
+      const scheduledIso = scheduleMode === "later" && scheduledAt
+        ? (() => {
+            const [h, m] = scheduledTime.split(":").map((n) => parseInt(n, 10) || 0);
+            const d = new Date(scheduledAt);
+            d.setHours(h, m, 0, 0);
+            return d.toISOString();
+          })()
+        : null;
 
       const bookingPayload = {
         pickup_address: pickup.trim(),
@@ -100,6 +129,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         items: itemsArr,
         crew_count: effectiveCrew,
         vehicle_category: suvSelected ? "suv" : null,
+        scheduled_at: scheduledIso,
         pickup_lat: distance?.pickup?.lat ?? null,
         pickup_lng: distance?.pickup?.lng ?? null,
         dropoff_lat: distance?.dropoff?.lat ?? null,
@@ -146,27 +176,23 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
   return (
     <div className="space-y-4">
-      {/* Hero quote */}
-      <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card">
-        <CardContent className="relative p-5">
-          <p className="text-xs font-medium uppercase tracking-wider text-cyan-500">{t("booking.estimatedTotal")}</p>
-          <div className="mt-1 flex items-end justify-between">
-            <p className="text-3xl font-bold tracking-tight text-cyan-500" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              {formatCurrency(quote.finalPrice)}
-            </p>
-            {distanceKm > 0 && (
-              <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                {distanceKm} km · {moveType}
-              </span>
-            )}
-          </div>
-          {calculating && (
-            <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+      {/* Trip status strip (replaces estimated total card) */}
+      {(distanceKm > 0 || calculating) && (
+        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5">
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            {t("booking.route")}
+          </span>
+          {calculating ? (
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> {t("booking.calculatingDistance")}
-            </p>
+            </span>
+          ) : (
+            <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+              {distanceKm} km · {moveType}
+            </span>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
       {/* Route */}
       <Card>
@@ -189,6 +215,82 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* When (ASAP / Schedule for later) */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><CalendarDays className="h-4 w-4" /></div>
+              <div>
+                <h3 className="font-semibold">When do you need it?</h3>
+                <p className="text-[11px] text-muted-foreground">Now or schedule a future date</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => { setScheduleMode("asap"); setScheduledAt(undefined); }}
+              className={cn(
+                "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
+                scheduleMode === "asap"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              Now / ASAP
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleMode("later")}
+              className={cn(
+                "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
+                scheduleMode === "later"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40",
+              )}
+            >
+              Schedule for later
+            </button>
+          </div>
+          {scheduleMode === "later" && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 min-w-[180px] justify-start text-left font-normal",
+                      !scheduledAt && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={scheduledAt}
+                    onSelect={setScheduledAt}
+                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="w-[120px]"
+                disabled={!scheduledAt}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -228,6 +330,92 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             suvSelected={suvSelected}
             onSuvChange={setSuvSelected}
           />
+
+          {/* Per-item floor + elevator (only when multiple inventory items added) */}
+          {selectedItems.length > 1 && (
+            <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/10 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Item details (floor & access)
+              </p>
+              {selectedItems.map((it) => {
+                const floor = it.floor_level ?? 0;
+                const hasElev = it.has_elevator ?? true;
+                return (
+                  <div
+                    key={it.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2"
+                  >
+                    <p className="min-w-[140px] flex-1 text-sm font-medium text-foreground">
+                      {it.item_name} <span className="text-xs text-muted-foreground">× {it.quantity}</span>
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <label className="text-[11px] text-muted-foreground">Floor</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={floor}
+                        onChange={(e) =>
+                          updateItemMeta(it.id, {
+                            floor_level: Math.max(0, parseInt(e.target.value || "0", 10) || 0),
+                          })
+                        }
+                        className="h-8 w-16"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-[11px] font-medium", hasElev ? "text-primary" : "text-muted-foreground")}>
+                        {hasElev ? "Elevator" : "Stairs"}
+                      </span>
+                      <Switch
+                        checked={hasElev}
+                        onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v })}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Floor & access (global, optional toggle) */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><ArrowUpDown className="h-4 w-4" /></div>
+              <div>
+                <h3 className="font-semibold">Floor & access</h3>
+                <p className="text-[11px] text-muted-foreground">Optional — add if it applies</p>
+              </div>
+            </div>
+            <Switch checked={floorAccessEnabled} onCheckedChange={setFloorAccessEnabled} />
+          </div>
+          {floorAccessEnabled && (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">Floor #</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={globalFloor}
+                  onChange={(e) => setGlobalFloor(e.target.value)}
+                  placeholder="0"
+                  className="h-9 w-20"
+                />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
+                <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
+                  {globalHasElevator ? "Elevator" : "Stairs"}
+                </span>
+                <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
