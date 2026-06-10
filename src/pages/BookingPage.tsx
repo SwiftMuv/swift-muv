@@ -184,8 +184,6 @@ const BookingPage = () => {
           <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.enterDropoff")} />
         </div>
 
-        {/* Move date picker */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
         {/* Move date — ASAP / Schedule for later */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
