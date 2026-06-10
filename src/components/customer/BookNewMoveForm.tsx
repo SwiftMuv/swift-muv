@@ -176,27 +176,23 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
 
   return (
     <div className="space-y-4">
-      {/* Hero quote */}
-      <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card">
-        <CardContent className="relative p-5">
-          <p className="text-xs font-medium uppercase tracking-wider text-cyan-500">{t("booking.estimatedTotal")}</p>
-          <div className="mt-1 flex items-end justify-between">
-            <p className="text-3xl font-bold tracking-tight text-cyan-500" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              {formatCurrency(quote.finalPrice)}
-            </p>
-            {distanceKm > 0 && (
-              <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                {distanceKm} km · {moveType}
-              </span>
-            )}
-          </div>
-          {calculating && (
-            <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+      {/* Trip status strip (replaces estimated total card) */}
+      {(distanceKm > 0 || calculating) && (
+        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5">
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            {t("booking.route")}
+          </span>
+          {calculating ? (
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> {t("booking.calculatingDistance")}
-            </p>
+            </span>
+          ) : (
+            <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+              {distanceKm} km · {moveType}
+            </span>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
       {/* Route */}
       <Card>
