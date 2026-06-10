@@ -453,7 +453,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         </CardContent>
       </Card>
 
-      {/* Breakdown */}
+      {/* Breakdown — only after a vehicle is selected or items are added */}
+      {(suvSelected || itemCount > 0) && (
       <Card>
         <CardContent className="space-y-2 p-5 text-sm">
           <div className="mb-2 flex items-center gap-2">
@@ -516,6 +517,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <div className="pt-2">
         <Button onClick={handleSubmit} disabled={!canSubmit} className="h-12 w-full text-base font-semibold">
