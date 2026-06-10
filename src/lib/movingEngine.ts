@@ -1,12 +1,12 @@
-// Vehicle-fleet pricing engine — no base fees.
-// Local: volume × per-ft³ rate. Intercity: km × per-km rate.
-// Inter-province: lbs × per-lb rate. Optional additional crew members add a flat fee per person.
+// Pricing engine (updated).
 //
-// Special case: "Extra Large Car / SUV" is for bags & luggage only (no furniture).
-// When explicitly selected:
-//   - Local move      → flat $50 CAD
-//   - Intercity / IP  → $50 + (km × $1.20)
-// Crew on SUV adds $25 per person. SUV is NEVER auto-recommended.
+// Rules:
+//   - SUV ("Extra Large Car / SUV", bags only):
+//       local      → flat $50 CAD
+//       intercity  → $50 + (km × $2.00)
+//       inter-prov → $50 + (km × $2.00)
+//   - All other vehicles: $20 base + (km × $2.00) — flat, regardless of move type.
+//   - Optional crew helpers add $15 CAD per person on every vehicle.
 
 export interface SelectedItem {
   id: number;
@@ -14,46 +14,41 @@ export interface SelectedItem {
   cubic_feet: number;
   weight_lbs: number;
   quantity: number;
+  /** Floor number where the item is located (0 = ground). */
+  floor_level?: number;
+  /** Whether an elevator is available at that location. */
+  has_elevator?: boolean;
 }
 
 export interface Vehicle {
   name: string;
   maxVolumeCuFt: number;
   maxWeightLbs: number;
-  perCuFtLocal: number;
-  perKmRateIntercity: number;
-  perLbRateInterProvince: number;
-  crewMemberFee: number;
-  // SUV uses flat-rate pricing instead of the standard formulas.
-  flatRate?: { local: number; perKm: number };
-  // If true, vehicle is excluded from auto-recommendation (must be chosen explicitly).
   manualOnly?: boolean;
 }
 
 export type MoveType = "local" | "intercity" | "inter-province";
 export type VehicleSelection = "auto" | "suv";
 
-// Flat crew rate across all vehicles: $15 CAD per additional crew member.
 export const CREW_MEMBER_RATE_CAD = 15;
+export const BASE_FEE_CAD = 20;
+export const PER_KM_RATE_CAD = 2.0;
+export const SUV_FLAT_LOCAL_CAD = 50;
+export const SUV_PER_KM_CAD = 2.0;
 
 export const SUV_VEHICLE: Vehicle = {
   name: "Extra Large Car / SUV",
   maxVolumeCuFt: 60,
   maxWeightLbs: 800,
-  perCuFtLocal: 0,
-  perKmRateIntercity: 1.20,
-  perLbRateInterProvince: 0,
-  crewMemberFee: CREW_MEMBER_RATE_CAD,
-  flatRate: { local: 50, perKm: 1.20 },
   manualOnly: true,
 };
 
 export const VEHICLE_FLEET: Vehicle[] = [
   SUV_VEHICLE,
-  { name: "Cargo Van",     maxVolumeCuFt: 120,  maxWeightLbs: 2000,  perCuFtLocal: 0.95, perKmRateIntercity: 1.45, perLbRateInterProvince: 0.18, crewMemberFee: CREW_MEMBER_RATE_CAD },
-  { name: "12ft Cube Van", maxVolumeCuFt: 400,  maxWeightLbs: 3000,  perCuFtLocal: 1.10, perKmRateIntercity: 1.80, perLbRateInterProvince: 0.26, crewMemberFee: CREW_MEMBER_RATE_CAD },
-  { name: "16ft Truck",    maxVolumeCuFt: 800,  maxWeightLbs: 4500,  perCuFtLocal: 1.25, perKmRateIntercity: 2.15, perLbRateInterProvince: 0.35, crewMemberFee: CREW_MEMBER_RATE_CAD },
-  { name: "26ft Truck",    maxVolumeCuFt: 1400, maxWeightLbs: 10000, perCuFtLocal: 1.45, perKmRateIntercity: 2.60, perLbRateInterProvince: 0.48, crewMemberFee: CREW_MEMBER_RATE_CAD },
+  { name: "Cargo Van",     maxVolumeCuFt: 120,  maxWeightLbs: 2000 },
+  { name: "12ft Cube Van", maxVolumeCuFt: 400,  maxWeightLbs: 3000 },
+  { name: "16ft Truck",    maxVolumeCuFt: 800,  maxWeightLbs: 4500 },
+  { name: "26ft Truck",    maxVolumeCuFt: 1400, maxWeightLbs: 10000 },
 ];
 
 export function recommendVehicle(items: SelectedItem[]): Vehicle {
@@ -97,64 +92,51 @@ export function calculateMovePrice({
     totalWeight += i.weight_lbs * i.quantity;
   });
 
-  let servicePrice = 0;
-  let breakdown: Record<string, unknown> = {};
+  const isSuv = vehicleSelection === "suv";
+  const km = Math.max(0, distanceKm);
 
-  if (vehicle.flatRate) {
-    // SUV flat-rate logic
-    if (moveType === "local") {
-      servicePrice = vehicle.flatRate.local;
-      breakdown = { flatRate: vehicle.flatRate.local, serviceCost: servicePrice };
-    } else {
-      servicePrice = vehicle.flatRate.local + distanceKm * vehicle.flatRate.perKm;
-      breakdown = {
-        flatRate: vehicle.flatRate.local,
-        distanceKm,
-        ratePerKm: vehicle.flatRate.perKm,
-        serviceCost: servicePrice,
-      };
-    }
+  let baseFee = 0;
+  let distanceFee = 0;
+  let servicePrice = 0;
+  const breakdown: Record<string, unknown> = {};
+
+  if (isSuv) {
+    baseFee = SUV_FLAT_LOCAL_CAD;
+    distanceFee = moveType === "local" ? 0 : km * SUV_PER_KM_CAD;
+    servicePrice = baseFee + distanceFee;
+    Object.assign(breakdown, {
+      flatRate: baseFee,
+      distanceKm: km,
+      ratePerKm: moveType === "local" ? 0 : SUV_PER_KM_CAD,
+      serviceCost: servicePrice,
+    });
   } else {
-    switch (moveType) {
-      case "local":
-        servicePrice = totalVolume * vehicle.perCuFtLocal;
-        breakdown = {
-          totalVolumeCuFt: totalVolume,
-          ratePerCuFt: vehicle.perCuFtLocal,
-          serviceCost: servicePrice,
-        };
-        break;
-      case "intercity":
-        servicePrice = distanceKm * vehicle.perKmRateIntercity;
-        breakdown = {
-          distanceKm,
-          ratePerKm: vehicle.perKmRateIntercity,
-          serviceCost: servicePrice,
-        };
-        break;
-      case "inter-province":
-        servicePrice = totalWeight * vehicle.perLbRateInterProvince;
-        breakdown = {
-          totalWeightLbs: totalWeight,
-          ratePerLb: vehicle.perLbRateInterProvince,
-          serviceCost: servicePrice,
-        };
-        break;
-    }
+    baseFee = BASE_FEE_CAD;
+    distanceFee = km * PER_KM_RATE_CAD;
+    servicePrice = baseFee + distanceFee;
+    Object.assign(breakdown, {
+      baseFee,
+      distanceKm: km,
+      ratePerKm: PER_KM_RATE_CAD,
+      serviceCost: servicePrice,
+    });
   }
 
   const safeCrew = Math.max(0, Math.floor(crewCount));
-  const crewCost = safeCrew * vehicle.crewMemberFee;
+  const crewMemberFee = CREW_MEMBER_RATE_CAD;
+  const crewCost = safeCrew * crewMemberFee;
   const finalPrice = servicePrice + crewCost;
 
   return {
     recommendedVehicle: vehicle.name,
-    isFlatRate: !!vehicle.flatRate,
+    isFlatRate: isSuv,
     totalVolumeCuFt: totalVolume,
     totalWeightLbs: totalWeight,
     crewCount: safeCrew,
-    crewMemberFee: vehicle.crewMemberFee,
+    crewMemberFee,
     crewCost,
+    baseFee,
+    distanceFee: Math.round(distanceFee * 100) / 100,
     servicePrice: Math.round(servicePrice * 100) / 100,
     finalPrice: Math.round(finalPrice * 100) / 100,
     breakdown,
