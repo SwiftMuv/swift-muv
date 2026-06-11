@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
-import { Car, Truck, PackageOpen } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Car, Truck, PackageOpen, Container, Caravan } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/contexts/I18nContext";
 import { cn } from "@/lib/utils";
 
-export type VehicleTier = "suv" | "large" | "xlarge";
+export type VehicleTier = "suv" | "pickup" | "cargo_van" | "box_truck" | "xlarge" | "moving_truck";
 
 interface TierDef {
   id: VehicleTier;
@@ -15,28 +15,31 @@ interface TierDef {
   perKm: number;
 }
 
-// Baseline SUV: $20 base / $2 per km.
-// Large: base +40%, rate +30% from SUV.
-// Extra Large: base +40%, rate +30% from Large.
+// SUV baseline kept flat. Every subsequent tier: base +40%, rate +30% from the previous.
 const SUV_BASE = 20;
 const SUV_RATE = 2;
-const LARGE_BASE = SUV_BASE * 1.4;     // 28.00
-const LARGE_RATE = SUV_RATE * 1.3;     // 2.60
-const XL_BASE = LARGE_BASE * 1.4;      // 39.20
-const XL_RATE = LARGE_RATE * 1.3;      // 3.38
+const grow = (b: number, r: number) => ({ b: b * 1.4, r: r * 1.3 });
+
+const t1 = { b: SUV_BASE, r: SUV_RATE };
+const t2 = grow(t1.b, t1.r); // pickup
+const t3 = grow(t2.b, t2.r); // cargo van
+const t4 = grow(t3.b, t3.r); // box truck
+const t5 = grow(t4.b, t4.r); // extra large
+const t6 = grow(t5.b, t5.r); // moving truck
 
 export const TIERS: TierDef[] = [
-  { id: "suv",    label: "SUV",         sub: "Bags & small loads",   icon: Car,         baseFee: SUV_BASE,   perKm: SUV_RATE },
-  { id: "large",  label: "Large",       sub: "Pickup / Box van",     icon: PackageOpen, baseFee: LARGE_BASE, perKm: LARGE_RATE },
-  { id: "xlarge", label: "Extra Large", sub: "Moving truck",         icon: Truck,       baseFee: XL_BASE,    perKm: XL_RATE },
+  { id: "suv",          label: "SUV",          sub: "Bags & small loads", icon: Car,         baseFee: t1.b, perKm: t1.r },
+  { id: "pickup",       label: "Pickup",       sub: "Small loads",        icon: Truck,       baseFee: t2.b, perKm: t2.r },
+  { id: "cargo_van",    label: "Cargo Van",    sub: "Studio / 1-bed",     icon: Caravan,     baseFee: t3.b, perKm: t3.r },
+  { id: "box_truck",    label: "Box Truck",    sub: "2-bedroom",          icon: PackageOpen, baseFee: t4.b, perKm: t4.r },
+  { id: "xlarge",       label: "Extra Large",  sub: "Large home",         icon: Container,   baseFee: t5.b, perKm: t5.r },
+  { id: "moving_truck", label: "Moving Truck", sub: "3+ bedroom",         icon: Truck,       baseFee: t6.b, perKm: t6.r },
 ];
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 interface Props {
-  /** Optional: provide distance from parent (e.g. calculated route). */
   distanceKm?: number;
-  /** Optional: notify parent of tier + price changes. */
   onChange?: (info: { tier: VehicleTier; baseFee: number; perKm: number; distanceKm: number; total: number }) => void;
 }
 
@@ -53,11 +56,12 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
 
   const tierDef = TIERS.find((t) => t.id === tier)!;
   const baseFee = round2(tierDef.baseFee);
+  const perKm = round2(tierDef.perKm);
   const distanceFee = round2(tierDef.perKm * km);
   const total = round2(baseFee + distanceFee);
 
-  useMemo(() => {
-    onChange?.({ tier, baseFee, perKm: tierDef.perKm, distanceKm: km, total });
+  useEffect(() => {
+    onChange?.({ tier, baseFee, perKm, distanceKm: km, total });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tier, km]);
 
@@ -73,15 +77,15 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
       </div>
 
       {/* Tier selector */}
-      <div className="grid grid-cols-3 gap-2">
-        {TIERS.map((t) => {
-          const Icon = t.icon;
-          const active = tier === t.id;
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {TIERS.map((tt) => {
+          const Icon = tt.icon;
+          const active = tier === tt.id;
           return (
             <button
-              key={t.id}
+              key={tt.id}
               type="button"
-              onClick={() => setTier(t.id)}
+              onClick={() => setTier(tt.id)}
               className={cn(
                 "flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 text-center transition-all",
                 active
@@ -91,9 +95,9 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
             >
               <Icon className={cn("h-5 w-5", active ? "text-[#FF5722]" : "text-slate-300")} />
               <span className={cn("text-[11px] font-bold leading-tight", active ? "text-white" : "text-slate-200")}>
-                {t.label}
+                {tt.label}
               </span>
-              <span className="text-[9px] leading-tight text-slate-400">{t.sub}</span>
+              <span className="text-[9px] leading-tight text-slate-400">{tt.sub}</span>
             </button>
           );
         })}
@@ -129,8 +133,12 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
           <span className="font-semibold text-white">{formatCurrency(baseFee)}</span>
         </div>
         <div className="flex justify-between text-slate-300">
-          <span>Distance ({km.toFixed(2)} km × {formatCurrency(round2(tierDef.perKm))}/km)</span>
+          <span>Distance ({km.toFixed(2)} km × {formatCurrency(perKm)}/km)</span>
           <span className="font-semibold text-white">{formatCurrency(distanceFee)}</span>
+        </div>
+        <div className="mt-1 flex justify-between border-t border-slate-700 pt-2 text-base">
+          <span className="font-bold text-white">Total</span>
+          <span className="font-bold text-[#FF5722]">{formatCurrency(total)}</span>
         </div>
       </div>
     </div>
