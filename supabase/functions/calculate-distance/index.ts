@@ -92,11 +92,12 @@ Deno.serve(async (req) => {
 
     if (!pickup || !dropoff) {
       return json({
-        error: 'Could not resolve addresses',
+        error: 'ADDRESS_RESOLUTION_FAILED',
         details: !pickup && !dropoff ? 'Both pickup and dropoff could not be resolved' : !pickup ? 'Pickup address could not be resolved' : 'Dropoff address could not be resolved',
         pickup,
         dropoff,
-      }, 400);
+        fallback: true,
+      });
     }
 
     let km: number | null = null;

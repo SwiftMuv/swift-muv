@@ -25,6 +25,9 @@ interface DistanceResult {
   pickup?: { lat: number; lng: number; province?: string; city?: string };
   dropoff?: { lat: number; lng: number; province?: string; city?: string };
   moveType?: MoveType;
+  error?: string;
+  details?: string;
+  fallback?: boolean;
 }
 
 const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
@@ -42,6 +45,7 @@ const BookingPage = () => {
   const [dropoff, setDropoff] = useState("");
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [distance, setDistance] = useState<DistanceResult | null>(null);
+  const [distanceError, setDistanceError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [booking, setBooking] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -62,18 +66,30 @@ const BookingPage = () => {
   };
 
   useEffect(() => {
-    if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
+    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
+      setDistance(null);
+      setDistanceError(null);
+      return;
+    }
     const t = setTimeout(async () => {
       setCalculating(true);
+      setDistanceError(null);
       try {
         const { data, error } = await supabase.functions.invoke<DistanceResult>(
           "calculate-distance",
           { body: { origin: pickup, destination: dropoff } },
         );
         if (error) throw error;
+        if (data?.fallback || data?.error) {
+          setDistance(null);
+          setDistanceError(data.details ?? "We could not resolve that route. Please choose a full address from the suggestions.");
+          return;
+        }
         if (data?.km) setDistance(data);
       } catch (e) {
         console.warn("Distance calc failed", e);
+        setDistance(null);
+        setDistanceError("We could not calculate that route. Please check both addresses and try again.");
       } finally {
         setCalculating(false);
       }
@@ -296,6 +312,11 @@ const BookingPage = () => {
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("booking.trip")}</p>
             <p className="text-sm font-semibold">{distanceKm} km · {moveType}</p>
+          </div>
+        )}
+        {distanceError && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            {distanceError}
           </div>
         )}
 
