@@ -30,6 +30,9 @@ interface DistanceResult {
   pickup?: { lat: number; lng: number; province?: string; city?: string };
   dropoff?: { lat: number; lng: number; province?: string; city?: string };
   moveType?: MoveType;
+  error?: string;
+  details?: string;
+  fallback?: boolean;
 }
 
 const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
@@ -46,6 +49,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const [dropoff, setDropoff] = useState("");
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [distance, setDistance] = useState<DistanceResult | null>(null);
+  const [distanceError, setDistanceError] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -66,18 +70,30 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   };
 
   useEffect(() => {
-    if (pickup.trim().length < 5 || dropoff.trim().length < 5) return;
+    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
+      setDistance(null);
+      setDistanceError(null);
+      return;
+    }
     const t = setTimeout(async () => {
       setCalculating(true);
+      setDistanceError(null);
       try {
         const { data, error } = await supabase.functions.invoke<DistanceResult>(
           "calculate-distance",
           { body: { origin: pickup, destination: dropoff } },
         );
         if (error) throw error;
+        if (data?.fallback || data?.error) {
+          setDistance(null);
+          setDistanceError(data.details ?? "We could not resolve that route. Please choose a full address from the suggestions.");
+          return;
+        }
         if (data?.km) setDistance(data);
       } catch (e) {
         console.warn("Distance calc failed", e);
+        setDistance(null);
+        setDistanceError("We could not calculate that route. Please check both addresses and try again.");
       } finally {
         setCalculating(false);
       }
@@ -191,6 +207,11 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
               {distanceKm} km · {moveType}
             </span>
           )}
+        </div>
+      )}
+      {distanceError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {distanceError}
         </div>
       )}
 
