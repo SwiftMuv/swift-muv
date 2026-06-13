@@ -341,10 +341,9 @@ const BookingPage = () => {
           {selectedItems.length > 1 && (
             <div className="mt-3 space-y-2 rounded-xl border border-border bg-card p-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Item details (floor & access)
+                Item access (elevator or stairs)
               </p>
               {selectedItems.map((it) => {
-                const floor = it.floor_level ?? 0;
                 const hasElev = it.has_elevator ?? true;
                 return (
                   <div
@@ -355,22 +354,6 @@ const BookingPage = () => {
                       <p className="text-sm font-medium text-foreground">
                         {it.item_name} <span className="text-xs text-muted-foreground">× {it.quantity}</span>
                       </p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                      <label className="text-[11px] text-muted-foreground">Floor</label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={50}
-                        value={floor}
-                        onChange={(e) =>
-                          updateItemMeta(it.id, {
-                            floor_level: Math.max(0, parseInt(e.target.value || "0", 10) || 0),
-                          })
-                        }
-                        className="h-8 w-16"
-                      />
                     </div>
                     <div className="flex items-center gap-3">
                       <label className="flex items-center gap-1.5 cursor-pointer">
@@ -392,7 +375,7 @@ const BookingPage = () => {
                 );
               })}
               <p className="text-[11px] text-muted-foreground">
-                Check Stairs when no elevator is available at that floor.
+                Check Stairs when no elevator is available for that item.
               </p>
             </div>
           )}
