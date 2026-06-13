@@ -1,11 +1,12 @@
 // Pricing engine (updated).
 //
-// Rules:
+// Per-vehicle pricing — the bigger the vehicle, the higher the price.
 //   - SUV ("Extra Large Car / SUV", bags only):
 //       local      → flat $50 CAD
 //       intercity  → $50 + (km × $2.00)
 //       inter-prov → $50 + (km × $2.00)
-//   - All other vehicles: $20 base + (km × $2.00) — flat, regardless of move type.
+//   - All other vehicles: each tier compounds +40% base fee and +30% per-km
+//     rate from the previous (smaller) tier, starting from $20 base / $2/km.
 //   - Optional crew helpers add $15 CAD per person on every vehicle.
 
 export interface SelectedItem {
@@ -25,6 +26,10 @@ export interface Vehicle {
   maxVolumeCuFt: number;
   maxWeightLbs: number;
   manualOnly?: boolean;
+  /** Base fee for this vehicle in CAD. */
+  baseFee: number;
+  /** Per-km rate for this vehicle in CAD. */
+  perKmRate: number;
 }
 
 export type MoveType = "local" | "intercity" | "inter-province";
@@ -36,19 +41,29 @@ export const PER_KM_RATE_CAD = 2.0;
 export const SUV_FLAT_LOCAL_CAD = 50;
 export const SUV_PER_KM_CAD = 2.0;
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// Compounded scale for non-SUV fleet: +40% base, +30% per-km per tier.
+const BASE_STEP = 1.4;
+const RATE_STEP = 1.3;
+const tierBase = (level: number) => round2(BASE_FEE_CAD * Math.pow(BASE_STEP, level));
+const tierRate = (level: number) => round2(PER_KM_RATE_CAD * Math.pow(RATE_STEP, level));
+
 export const SUV_VEHICLE: Vehicle = {
   name: "Extra Large Car / SUV",
   maxVolumeCuFt: 60,
   maxWeightLbs: 800,
   manualOnly: true,
+  baseFee: SUV_FLAT_LOCAL_CAD,
+  perKmRate: SUV_PER_KM_CAD,
 };
 
 export const VEHICLE_FLEET: Vehicle[] = [
   SUV_VEHICLE,
-  { name: "Cargo Van",     maxVolumeCuFt: 120,  maxWeightLbs: 2000 },
-  { name: "12ft Cube Van", maxVolumeCuFt: 400,  maxWeightLbs: 3000 },
-  { name: "16ft Truck",    maxVolumeCuFt: 800,  maxWeightLbs: 4500 },
-  { name: "26ft Truck",    maxVolumeCuFt: 1400, maxWeightLbs: 10000 },
+  { name: "Cargo Van",     maxVolumeCuFt: 120,  maxWeightLbs: 2000,  baseFee: tierBase(0), perKmRate: tierRate(0) }, // $20.00 / $2.00
+  { name: "12ft Cube Van", maxVolumeCuFt: 400,  maxWeightLbs: 3000,  baseFee: tierBase(1), perKmRate: tierRate(1) }, // $28.00 / $2.60
+  { name: "16ft Truck",    maxVolumeCuFt: 800,  maxWeightLbs: 4500,  baseFee: tierBase(2), perKmRate: tierRate(2) }, // $39.20 / $3.38
+  { name: "26ft Truck",    maxVolumeCuFt: 1400, maxWeightLbs: 10000, baseFee: tierBase(3), perKmRate: tierRate(3) }, // $54.88 / $4.39
 ];
 
 export function recommendVehicle(items: SelectedItem[]): Vehicle {
