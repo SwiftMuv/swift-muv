@@ -157,7 +157,15 @@ export function calculateMovePrice({
   const safeCrew = Math.max(0, Math.floor(crewCount));
   const crewMemberFee = CREW_MEMBER_RATE_CAD;
   const crewCost = safeCrew * crewMemberFee;
-  const finalPrice = servicePrice + crewCost;
+
+  // Heavy item surcharge — applies per unit for items over 50 lb.
+  let heavyItemFee = 0;
+  items.forEach((i) => {
+    heavyItemFee += heavyItemFeePerUnit(i.weight_lbs) * i.quantity;
+  });
+  heavyItemFee = round2(heavyItemFee);
+
+  const finalPrice = servicePrice + crewCost + heavyItemFee;
 
   return {
     recommendedVehicle: vehicle.name,
@@ -168,6 +176,7 @@ export function calculateMovePrice({
     crewMemberFee,
     crewCost,
     baseFee,
+    heavyItemFee,
     distanceFee: Math.round(distanceFee * 100) / 100,
     servicePrice: Math.round(servicePrice * 100) / 100,
     finalPrice: Math.round(finalPrice * 100) / 100,
