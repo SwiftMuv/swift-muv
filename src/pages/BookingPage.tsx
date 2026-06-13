@@ -14,8 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
+
 import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
@@ -284,7 +286,7 @@ const BookingPage = () => {
             <Switch checked={floorAccessEnabled} onCheckedChange={setFloorAccessEnabled} />
           </div>
           {floorAccessEnabled && (
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
                 <label className="text-xs text-muted-foreground">Floor #</label>
@@ -298,12 +300,20 @@ const BookingPage = () => {
                   className="h-9 w-20"
                 />
               </div>
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
-                <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
-                  {globalHasElevator ? "Elevator" : "Stairs"}
-                </span>
-                <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
-              </div>
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5 cursor-pointer">
+                <Checkbox
+                  checked={globalHasElevator}
+                  onCheckedChange={(v) => setGlobalHasElevator(v === true)}
+                />
+                <span className="text-xs font-medium text-foreground">Elevator</span>
+              </label>
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5 cursor-pointer">
+                <Checkbox
+                  checked={!globalHasElevator}
+                  onCheckedChange={(v) => setGlobalHasElevator(!(v === true))}
+                />
+                <span className="text-xs font-medium text-foreground">Stairs</span>
+              </label>
             </div>
           )}
         </div>
@@ -375,20 +385,27 @@ const BookingPage = () => {
                         className="h-8 w-16"
                       />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[11px] font-medium ${hasElev ? "text-primary" : "text-muted-foreground"}`}>
-                        {hasElev ? "Elevator" : "Stairs"}
-                      </span>
-                      <Switch
-                        checked={hasElev}
-                        onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v })}
-                      />
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={hasElev}
+                          onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v === true })}
+                        />
+                        <span className="text-[11px] font-medium text-foreground">Elevator</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={!hasElev}
+                          onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: !(v === true) })}
+                        />
+                        <span className="text-[11px] font-medium text-foreground">Stairs</span>
+                      </label>
                     </div>
                   </div>
                 );
               })}
               <p className="text-[11px] text-muted-foreground">
-                Toggle elevator off when only stairs are available at that floor.
+                Check Stairs when no elevator is available at that floor.
               </p>
             </div>
           )}
