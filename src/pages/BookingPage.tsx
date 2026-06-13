@@ -385,20 +385,27 @@ const BookingPage = () => {
                         className="h-8 w-16"
                       />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[11px] font-medium ${hasElev ? "text-primary" : "text-muted-foreground"}`}>
-                        {hasElev ? "Elevator" : "Stairs"}
-                      </span>
-                      <Switch
-                        checked={hasElev}
-                        onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v })}
-                      />
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={hasElev}
+                          onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v === true })}
+                        />
+                        <span className="text-[11px] font-medium text-foreground">Elevator</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={!hasElev}
+                          onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: !(v === true) })}
+                        />
+                        <span className="text-[11px] font-medium text-foreground">Stairs</span>
+                      </label>
                     </div>
                   </div>
                 );
               })}
               <p className="text-[11px] text-muted-foreground">
-                Toggle elevator off when only stairs are available at that floor.
+                Check Stairs when no elevator is available at that floor.
               </p>
             </div>
           )}
