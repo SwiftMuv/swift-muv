@@ -286,7 +286,7 @@ const BookingPage = () => {
             <Switch checked={floorAccessEnabled} onCheckedChange={setFloorAccessEnabled} />
           </div>
           {floorAccessEnabled && (
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
                 <label className="text-xs text-muted-foreground">Floor #</label>
@@ -300,12 +300,20 @@ const BookingPage = () => {
                   className="h-9 w-20"
                 />
               </div>
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
-                <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
-                  {globalHasElevator ? "Elevator" : "Stairs"}
-                </span>
-                <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
-              </div>
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5 cursor-pointer">
+                <Checkbox
+                  checked={globalHasElevator}
+                  onCheckedChange={(v) => setGlobalHasElevator(v === true)}
+                />
+                <span className="text-xs font-medium text-foreground">Elevator</span>
+              </label>
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5 cursor-pointer">
+                <Checkbox
+                  checked={!globalHasElevator}
+                  onCheckedChange={(v) => setGlobalHasElevator(!(v === true))}
+                />
+                <span className="text-xs font-medium text-foreground">Stairs</span>
+              </label>
             </div>
           )}
         </div>
