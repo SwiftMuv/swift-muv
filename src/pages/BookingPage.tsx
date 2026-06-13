@@ -14,8 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
+
 import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 
 const CHECKOUT_FUNCTION = "stripe_checkout";
