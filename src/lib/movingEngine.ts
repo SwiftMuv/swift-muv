@@ -49,6 +49,20 @@ const RATE_STEP = 1.3;
 const tierBase = (level: number) => round2(BASE_FEE_CAD * Math.pow(BASE_STEP, level));
 const tierRate = (level: number) => round2(PER_KM_RATE_CAD * Math.pow(RATE_STEP, level));
 
+/**
+ * Heavy-item surcharge (per unit). Items above 50 lb attract an extra fee
+ * depending on weight:
+ *   50–100 lb  → $5
+ *   100–200 lb → $7
+ *   > 200 lb   → $10
+ */
+export function heavyItemFeePerUnit(weightLbs: number): number {
+  if (weightLbs <= 50) return 0;
+  if (weightLbs <= 100) return 5;
+  if (weightLbs <= 200) return 7;
+  return 10;
+}
+
 export const SUV_VEHICLE: Vehicle = {
   name: "Extra Large Car / SUV",
   maxVolumeCuFt: 60,
