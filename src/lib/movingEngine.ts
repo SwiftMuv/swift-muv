@@ -126,13 +126,16 @@ export function calculateMovePrice({
       serviceCost: servicePrice,
     });
   } else {
-    baseFee = BASE_FEE_CAD;
-    distanceFee = km * PER_KM_RATE_CAD;
+    // Use per-vehicle base + per-km rate so bigger vehicles cost more.
+    baseFee = vehicle.baseFee;
+    const ratePerKm = vehicle.perKmRate;
+    distanceFee = km * ratePerKm;
     servicePrice = baseFee + distanceFee;
     Object.assign(breakdown, {
+      vehicle: vehicle.name,
       baseFee,
       distanceKm: km,
-      ratePerKm: PER_KM_RATE_CAD,
+      ratePerKm,
       serviceCost: servicePrice,
     });
   }
