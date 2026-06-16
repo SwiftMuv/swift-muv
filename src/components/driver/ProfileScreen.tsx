@@ -202,6 +202,32 @@ const ProfileScreen = () => {
     setSaving(false);
   };
 
+  const handleSaveVehicle = async () => {
+    if (!user) return;
+    setSavingVehicle(true);
+    const { error } = await supabase
+      .from("driver_profiles")
+      .update({
+        vehicle_make: vehicleMake || null,
+        vehicle_model: vehicleModel || null,
+        vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
+        vehicle_color: vehicleColor || null,
+        license_plate: licensePlate || null,
+        cargo_capacity_lbs: cargoCapacity ? parseInt(cargoCapacity) : null,
+        cargo_space_cuft: cargoSpace ? parseInt(cargoSpace) : null,
+        vehicle_category: (vehicleCategory || null) as VehicleCategory | null,
+      })
+      .eq("user_id", user.id);
+
+    if (error) toast.error("Failed to save vehicle details");
+    else {
+      toast.success("Vehicle details updated");
+      setEditingVehicle(false);
+      loadAll();
+    }
+    setSavingVehicle(false);
+  };
+
   const handleAvatarChange = async (file: File) => {
     if (!user) return;
     setUploadingAvatar(true);
