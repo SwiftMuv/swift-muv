@@ -443,10 +443,53 @@ const ProfileScreen = () => {
 
       {/* Vehicle Details */}
       <section className="rounded-xl bg-card border overflow-hidden">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-4 pt-3 pb-2">
-          Vehicle
-        </h3>
-        {editing ? (
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Vehicle
+          </h3>
+          {editing ? null : editingVehicle ? (
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-lg h-7 text-xs"
+                onClick={() => {
+                  setEditingVehicle(false);
+                  // reset to last loaded values
+                  setVehicleMake(profile?.vehicle_make ?? "");
+                  setVehicleModel(profile?.vehicle_model ?? "");
+                  setVehicleYear(profile?.vehicle_year?.toString() ?? "");
+                  setVehicleColor(profile?.vehicle_color ?? "");
+                  setLicensePlate(profile?.license_plate ?? "");
+                  setCargoCapacity(profile?.cargo_capacity_lbs?.toString() ?? "");
+                  setCargoSpace(profile?.cargo_space_cuft?.toString() ?? "");
+                  setVehicleCategory((profile?.vehicle_category as VehicleCategory) ?? "");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="rounded-lg h-7 text-xs"
+                onClick={handleSaveVehicle}
+                disabled={savingVehicle}
+              >
+                <Save className="w-3 h-3 mr-1" />
+                {savingVehicle ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-lg h-7 text-xs bg-orange-500 hover:bg-orange-600 border-orange-500 text-white hover:text-white"
+              onClick={() => setEditingVehicle(true)}
+            >
+              {profile?.vehicle_make || profile?.vehicle_category ? "Edit" : "Add details"}
+            </Button>
+          )}
+        </div>
+        {editing || editingVehicle ? (
           <div className="px-4 pb-3 space-y-3">
             <div>
               <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle category</label>
