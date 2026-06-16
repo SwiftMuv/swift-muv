@@ -70,6 +70,8 @@ const ProfileScreen = () => {
   const [docs, setDocs] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState(false);
+  const [savingVehicle, setSavingVehicle] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingType, setUploadingType] = useState<DocType | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
