@@ -42,6 +42,8 @@ const DriverReviews = ({ driverId, limit = 5, title = "Recent reviews" }: Props)
     ? (reviews.reduce((s, r) => s + r.stars, 0) / reviews.length).toFixed(1)
     : null;
 
+  if (!loading && reviews.length === 0) return null;
+
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">

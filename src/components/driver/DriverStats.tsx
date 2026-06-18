@@ -5,12 +5,13 @@ interface DriverStatsProps {
   todayEarnings: number;
   weekEarnings: number;
   completedJobs: number;
-  rating: number;
+  rating?: number | null;
   pendingEarnings?: number;
 }
 
 export const DriverStats = ({ todayEarnings, weekEarnings, completedJobs, rating, pendingEarnings = 0 }: DriverStatsProps) => {
   const { t, formatCurrency } = useI18n();
+  const hasRating = typeof rating === "number" && rating > 0;
 
   return (
     <div className="space-y-3">
@@ -33,10 +34,12 @@ export const DriverStats = ({ todayEarnings, weekEarnings, completedJobs, rating
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid gap-2 ${hasRating ? "grid-cols-3" : "grid-cols-2"}`}>
         <StatCard icon={<DollarSign className="w-4 h-4 text-primary" />} label={t("driver.thisWeek")} value={formatCurrency(weekEarnings, { maximumFractionDigits: 0, minimumFractionDigits: 0 })} />
         <StatCard icon={<CheckCircle2 className="w-4 h-4 text-[hsl(var(--swift-success))]" />} label={t("driver.completed")} value={`${completedJobs}`} />
-        <StatCard icon={<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />} label={t("driver.rating")} value={`${rating}`} />
+        {hasRating && (
+          <StatCard icon={<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />} label={t("driver.rating")} value={`${rating}`} />
+        )}
       </div>
     </div>
   );

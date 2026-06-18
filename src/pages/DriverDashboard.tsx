@@ -54,6 +54,7 @@ const DriverDashboard = () => {
   const [available, setAvailable] = useState<Job[]>([]);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
+  const [driverRating, setDriverRating] = useState<number | null>(null);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -61,10 +62,13 @@ const DriverDashboard = () => {
     if (!user) return;
     supabase
       .from("driver_profiles")
-      .select("full_name")
+      .select("full_name,rating")
       .eq("user_id", user.id)
       .maybeSingle()
-      .then(({ data }) => setDriverName(data?.full_name ?? null));
+      .then(({ data }) => {
+        setDriverName(data?.full_name ?? null);
+        setDriverRating((data?.rating as number | null) ?? null);
+      });
   }, [user]);
 
   const loadAvailable = useCallback(async () => {
@@ -249,7 +253,7 @@ const DriverDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col dark">
       <TermsAgreementModal role="driver" />
-      <DriverHeader isOnline={isOnline} onToggleOnline={toggleOnline} rating={5.0} driverName={driverName} />
+      <DriverHeader isOnline={isOnline} onToggleOnline={toggleOnline} rating={driverRating} driverName={driverName} />
 
       <main className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-5">
         {activeTab === "home" && (
@@ -258,7 +262,7 @@ const DriverDashboard = () => {
               todayEarnings={stats.today}
               weekEarnings={stats.week}
               completedJobs={stats.completed}
-              rating={5.0}
+              rating={driverRating}
               pendingEarnings={stats.pending}
             />
 

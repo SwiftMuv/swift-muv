@@ -15,7 +15,7 @@ import { useI18n } from "@/contexts/I18nContext";
 interface DriverHeaderProps {
   isOnline: boolean;
   onToggleOnline: () => void;
-  rating: number;
+  rating?: number | null;
   driverName?: string | null;
   avatarUrl?: string | null;
 }
