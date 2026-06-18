@@ -654,6 +654,9 @@ const ProfileScreen = () => {
         </section>
       )}
 
+      {/* App Feedback */}
+      <AppFeedbackScreen />
+
       {/* Sign Out */}
       <Button
         variant="ghost"
