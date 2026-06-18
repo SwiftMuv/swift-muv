@@ -386,10 +386,12 @@ const ProfileScreen = () => {
             <ShieldCheck className="w-3 h-3 mr-1" />
             {allVerified ? "Pro Verified" : "Verification Pending"}
           </Badge>
-          <Badge variant="secondary" className="text-xs font-semibold">
-            <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />{" "}
-            {profile?.rating?.toString() ?? "5.0"}
-          </Badge>
+          {typeof profile?.rating === "number" && profile.rating > 0 && (
+            <Badge variant="secondary" className="text-xs font-semibold">
+              <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />{" "}
+              {profile.rating.toString()}
+            </Badge>
+          )}
         </div>
       </div>
 
