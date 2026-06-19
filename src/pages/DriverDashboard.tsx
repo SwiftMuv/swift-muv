@@ -55,6 +55,8 @@ const DriverDashboard = () => {
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [driverRating, setDriverRating] = useState<number | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -62,12 +64,14 @@ const DriverDashboard = () => {
     if (!user) return;
     supabase
       .from("driver_profiles")
-      .select("full_name,rating")
+      .select("full_name,rating,is_verified,verification_status")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         setDriverName(data?.full_name ?? null);
         setDriverRating((data?.rating as number | null) ?? null);
+        setIsVerified(Boolean((data as any)?.is_verified));
+        setVerificationStatus(((data as any)?.verification_status as string | null) ?? null);
       });
   }, [user]);
 
