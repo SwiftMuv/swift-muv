@@ -55,6 +55,8 @@ const DriverDashboard = () => {
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [driverRating, setDriverRating] = useState<number | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -62,12 +64,14 @@ const DriverDashboard = () => {
     if (!user) return;
     supabase
       .from("driver_profiles")
-      .select("full_name,rating")
+      .select("full_name,rating,is_verified,verification_status")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         setDriverName(data?.full_name ?? null);
         setDriverRating((data?.rating as number | null) ?? null);
+        setIsVerified(Boolean((data as any)?.is_verified));
+        setVerificationStatus(((data as any)?.verification_status as string | null) ?? null);
       });
   }, [user]);
 
@@ -273,7 +277,20 @@ const DriverDashboard = () => {
               </div>
             )}
 
-            {isOnline && (
+            {isOnline && isVerified === false && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-center">
+                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                  {t("driver.pendingApprovalTitle") || "Account pending admin approval"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {verificationStatus === "rejected"
+                    ? (t("driver.verificationRejected") || "Your verification was rejected. Please contact support.")
+                    : (t("driver.pendingApprovalSubtitle") || "You'll be able to view and accept jobs once an admin approves your account.")}
+                </p>
+              </div>
+            )}
+
+            {isOnline && isVerified === true && (
               <DriverJobsTabs
                 loading={loading}
                 available={available}
