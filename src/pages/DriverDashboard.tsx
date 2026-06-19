@@ -277,7 +277,20 @@ const DriverDashboard = () => {
               </div>
             )}
 
-            {isOnline && (
+            {isOnline && isVerified === false && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-center">
+                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                  {t("driver.pendingApprovalTitle") || "Account pending admin approval"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {verificationStatus === "rejected"
+                    ? (t("driver.verificationRejected") || "Your verification was rejected. Please contact support.")
+                    : (t("driver.pendingApprovalSubtitle") || "You'll be able to view and accept jobs once an admin approves your account.")}
+                </p>
+              </div>
+            )}
+
+            {isOnline && isVerified === true && (
               <DriverJobsTabs
                 loading={loading}
                 available={available}
