@@ -44,6 +44,17 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+tasks.register('verifyCapacitorWebAssets') {
+    doLast {
+        def indexHtml = file('src/main/assets/public/index.html')
+        if (!indexHtml.exists()) {
+            throw new GradleException('Missing Android WebView assets. Run `npm run build` then `npx cap sync android` before opening/running the project in Android Studio.')
+        }
+    }
+}
+
+preBuild.dependsOn verifyCapacitorWebAssets
+
 try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) {

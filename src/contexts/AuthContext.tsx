@@ -50,17 +50,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadRole = async (userId: string) => {
+      try {
+        const nextRole = await fetchRole(userId);
+        if (isMounted) setRole(nextRole);
+      } catch (error) {
+        console.error("Unable to initialize user role", error);
+        if (isMounted) setRole(null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           setLoading(true);
           window.setTimeout(() => {
-            fetchRole(session.user.id).then((nextRole) => {
-              setRole(nextRole);
-              setLoading(false);
-            });
+            loadRole(session.user.id);
           }, 0);
         } else {
           setRole(null);
@@ -69,19 +81,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const nextRole = await fetchRole(session.user.id);
-        setRole(nextRole);
-      } else {
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!isMounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          loadRole(session.user.id);
+        } else {
+          setRole(null);
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        console.error("Unable to initialize auth session", error);
+        if (!isMounted) return;
+        setSession(null);
+        setUser(null);
         setRole(null);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (
