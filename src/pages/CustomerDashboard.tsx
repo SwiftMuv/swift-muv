@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import BookNewMoveForm from "@/components/customer/BookNewMoveForm";
+import UberBookingScreen from "@/components/customer/UberBookingScreen";
 import { CustomerBottomNav } from "@/components/customer/CustomerBottomNav";
 import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
 import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
@@ -183,9 +183,7 @@ const CustomerDashboard = () => {
         {activeTab === "home" && <CustomerHomeScreen />}
 
         {activeTab === "bookings" && (
-          <div className="space-y-4 pb-4">
-            <BookNewMoveForm onBooked={loadBookings} />
-          </div>
+          <UberBookingScreen onBooked={loadBookings} onClose={() => setActiveTab("home")} />
         )}
 
         {activeTab === "activities" && (
