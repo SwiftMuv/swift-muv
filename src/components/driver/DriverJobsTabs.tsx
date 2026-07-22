@@ -1,9 +1,10 @@
-import { MapPin, DollarSign, Truck, ArrowRight, Loader2 } from "lucide-react";
+import { MapPin, DollarSign, Truck, ArrowRight, Loader2, Navigation, Clock, Sparkles } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/contexts/I18nContext";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
+import { cn } from "@/lib/utils";
 
 interface Props {
   loading: boolean;
@@ -50,23 +51,50 @@ export const DriverJobsTabs = ({ loading, available, activeJob, onAccept, onUpda
             <p className="text-sm text-muted-foreground">{t("driver.noJobs")}</p>
           </div>
         ) : (
-          available.map((j) => (
-            <div key={j.id} className="rounded-2xl bg-card border p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-                  {j.moveSize}
-                </span>
-                <span className="flex items-center gap-1 font-bold text-primary">
-                  <DollarSign className="w-4 h-4" />{formatCurrency(j.price)}
-                </span>
+          available.map((j, i) => {
+            const closest = i === 0 && j.distanceKm != null;
+            return (
+              <div
+                key={j.id}
+                className={cn(
+                  "rounded-2xl bg-card border p-4 space-y-3 animate-fade-in transition-shadow hover:shadow-md",
+                  closest && "border-primary/60 shadow-[0_6px_20px_hsl(var(--primary)/0.18)]",
+                )}
+                style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}
+              >
+                <div className="flex justify-between items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                      {j.moveSize}
+                    </span>
+                    {closest && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">
+                        <Sparkles className="w-3 h-3" /> Closest
+                      </span>
+                    )}
+                    {j.distanceKm != null && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-foreground/70">
+                        <Navigation className="w-3 h-3" /> {j.distanceKm.toFixed(1)} km
+                      </span>
+                    )}
+                    {j.etaMinutes != null && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-foreground/70">
+                        <Clock className="w-3 h-3" /> {j.etaMinutes} min
+                      </span>
+                    )}
+                  </div>
+                  <span className="flex items-center gap-1 font-bold text-primary shrink-0">
+                    <DollarSign className="w-4 h-4" />{formatCurrency(j.price)}
+                  </span>
+                </div>
+                <Row icon={MapPin} text={`${t("driver.pickup")} ${j.pickupAddress}`} />
+                <Row icon={MapPin} text={`${t("driver.dropoff")} ${j.dropoffAddress}`} />
+                <Button onClick={() => onAccept(j.id)} className="w-full rounded-xl h-11 gap-2">
+                  {t("driver.acceptJob")} <ArrowRight className="w-4 h-4" />
+                </Button>
               </div>
-              <Row icon={MapPin} text={`${t("driver.pickup")} ${j.pickupAddress}`} />
-              <Row icon={MapPin} text={`${t("driver.dropoff")} ${j.dropoffAddress}`} />
-              <Button onClick={() => onAccept(j.id)} className="w-full rounded-xl h-11 gap-2">
-                {t("driver.acceptJob")} <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          ))
+            );
+          })
         )}
       </TabsContent>
 
@@ -102,3 +130,4 @@ export const DriverJobsTabs = ({ loading, available, activeJob, onAccept, onUpda
     </Tabs>
   );
 };
+
