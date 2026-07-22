@@ -323,25 +323,46 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         <div className="w-10" />
       </div>
 
-      {/* Bottom sheet */}
+      {/* Bottom sheet — drag-to-expand, Uber-style spring motion */}
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 z-20 rounded-t-3xl bg-white shadow-[0_-8px_32px_rgba(15,23,42,0.18)] transition-[max-height] duration-300",
+          "absolute inset-x-0 bottom-0 z-20 rounded-t-3xl bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.22)] will-change-transform",
+          "transition-[max-height,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] animate-slide-in-up",
           sheetCollapsed ? "max-h-[120px]" : "max-h-[85vh]",
         )}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {/* Drag handle */}
-        <button
-          type="button"
+        {/* Drag handle — tap or swipe */}
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setSheetCollapsed((v) => !v)}
-          className="flex w-full justify-center pt-2.5 pb-1"
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSheetCollapsed((v) => !v)}
+          onTouchStart={(e) => {
+            const startY = e.touches[0].clientY;
+            const onMove = (ev: TouchEvent) => {
+              const dy = ev.touches[0].clientY - startY;
+              if (dy > 40) { setSheetCollapsed(true); cleanup(); }
+              else if (dy < -40) { setSheetCollapsed(false); cleanup(); }
+            };
+            const cleanup = () => {
+              window.removeEventListener("touchmove", onMove);
+              window.removeEventListener("touchend", cleanup);
+            };
+            window.addEventListener("touchmove", onMove, { passive: true });
+            window.addEventListener("touchend", cleanup);
+          }}
+          className="flex w-full cursor-grab justify-center pt-2.5 pb-1 active:cursor-grabbing touch-none select-none"
           aria-label={sheetCollapsed ? "Expand" : "Collapse"}
         >
-          <span className="block h-1.5 w-12 rounded-full bg-slate-300" />
-        </button>
+          <span className={cn(
+            "block h-1.5 w-12 rounded-full transition-colors",
+            sheetCollapsed ? "bg-slate-400" : "bg-slate-300",
+          )} />
+        </div>
 
         <div className="max-h-[calc(85vh-32px)] overflow-y-auto px-4 pb-4">
+
           {step === "where" && (
             <div className="space-y-4">
               {/* Address inputs */}
