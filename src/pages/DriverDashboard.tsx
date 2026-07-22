@@ -27,11 +27,25 @@ export interface Job {
   moveSize: "Small" | "Medium" | "Large";
   price: number;
   status: JobStatus | "available";
-  
+  distanceKm?: number | null;
+  etaMinutes?: number | null;
 }
 
 const sizeLabel = (s: string): Job["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
+
+// Haversine distance in km
+const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const R = 6371;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+};
+
 
 const DriverDashboard = () => {
   const { user } = useAuth();
@@ -78,12 +92,33 @@ const DriverDashboard = () => {
   const loadAvailable = useCallback(async () => {
     const { data, error } = await supabase
       .from("bookings")
-      .select("id, pickup_address, dropoff_address, move_size, total_price, status")
+      .select("id, pickup_address, dropoff_address, move_size, total_price, status, pickup_lat, pickup_lng")
       .eq("status", "pending" as never)
       .order("created_at", { ascending: false });
     if (error) return;
-    setAvailable(
-      (data ?? []).map((b) => ({
+
+    // Try to load driver's live location for proximity sorting/ETA
+    let driverLat: number | null = null;
+    let driverLng: number | null = null;
+    if (user) {
+      const { data: dp } = await supabase
+        .from("driver_profiles")
+        .select("current_lat, current_lng")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      driverLat = (dp as any)?.current_lat ?? null;
+      driverLng = (dp as any)?.current_lng ?? null;
+    }
+
+    const jobs: Job[] = (data ?? []).map((b: any) => {
+      let distanceKm: number | null = null;
+      let etaMinutes: number | null = null;
+      if (driverLat != null && driverLng != null && b.pickup_lat != null && b.pickup_lng != null) {
+        distanceKm = haversineKm(driverLat, driverLng, b.pickup_lat, b.pickup_lng);
+        // Assume ~35 km/h avg urban speed
+        etaMinutes = Math.max(1, Math.round((distanceKm / 35) * 60));
+      }
+      return {
         id: b.id,
         bookingId: b.id,
         customerName: "Customer",
@@ -91,10 +126,23 @@ const DriverDashboard = () => {
         dropoffAddress: b.dropoff_address,
         moveSize: sizeLabel(b.move_size as string),
         price: Number(b.total_price),
-        status: "available",
-      }))
-    );
-  }, []);
+        status: "available" as const,
+        distanceKm,
+        etaMinutes,
+      };
+    });
+
+    // Sort by proximity when we have geo data, else keep insertion order (recency)
+    jobs.sort((a, b) => {
+      if (a.distanceKm == null && b.distanceKm == null) return 0;
+      if (a.distanceKm == null) return 1;
+      if (b.distanceKm == null) return -1;
+      return a.distanceKm - b.distanceKm;
+    });
+
+    setAvailable(jobs);
+  }, [user]);
+
 
   const loadActiveJob = useCallback(async () => {
     if (!user) return;
