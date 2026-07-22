@@ -3,12 +3,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
+  Clock,
   Loader2,
-  MapPin,
-  Navigation,
+  Minus,
+  Plus,
+  Search,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -51,16 +53,36 @@ interface DistanceResult {
 interface VehicleTile {
   name: string;
   capacity: string;
+  eta: string;
   image: string;
   isSuv?: boolean;
 }
 
 const VEHICLE_TILES: VehicleTile[] = [
-  { name: "Extra Large Car / SUV", capacity: "Bags · flat", image: SuvImg, isSuv: true },
-  { name: "Cargo Van", capacity: "120 ft³ · 2,000 lb", image: CargoVanImg },
-  { name: "Pickup / 12ft", capacity: "400 ft³ · 3,000 lb", image: PickupImg },
-  { name: "16ft Truck", capacity: "800 ft³ · 4,500 lb", image: BoxTruckImg },
-  { name: "26ft Truck", capacity: "1,400 ft³ · 10,000 lb", image: MovingTruckImg },
+  { name: "SwiftGo SUV", capacity: "Bags · flat items", eta: "3 min away", image: SuvImg, isSuv: true },
+  { name: "Cargo Van", capacity: "1–2 rooms · 2,000 lb", eta: "5 min away", image: CargoVanImg },
+  { name: "12ft Pickup", capacity: "Studio · 3,000 lb", eta: "6 min away", image: PickupImg },
+  { name: "16ft Truck", capacity: "1 bedroom · 4,500 lb", eta: "8 min away", image: BoxTruckImg },
+  { name: "26ft Truck", capacity: "3+ bedrooms · 10,000 lb", eta: "12 min away", image: MovingTruckImg },
+];
+
+// Uber-style near-monochrome map — grayscale roads, muted land, subtle water.
+const UBER_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#e8ede4" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#f0f0f0" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#e6e6e6" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#dcdcdc" }] },
+  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9d6dd" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#7a8a92" }] },
 ];
 
 const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
@@ -75,9 +97,8 @@ const priceForTile = (tile: VehicleTile, distanceKm: number, moveType: MoveType)
     const q = calculateMovePrice({ items: [], moveType, distanceKm, vehicleSelection: "suv" });
     return q.finalPrice;
   }
-  // Map tile to vehicle (skip SUV at index 0).
   const idx = VEHICLE_TILES.findIndex((t) => t.name === tile.name);
-  const vehicle = VEHICLE_FLEET[idx]; // parallel index (SUV=0, then Cargo, 12ft, 16ft, 26ft)
+  const vehicle = VEHICLE_FLEET[idx];
   if (!vehicle) return 0;
   const base = vehicle.baseFee + vehicle.perKmRate * Math.max(0, distanceKm);
   return Math.round(base * 100) / 100;
@@ -88,12 +109,14 @@ interface Props {
   onClose?: () => void;
 }
 
+type Snap = "peek" | "half" | "full";
+
 const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
-  const { t, formatCurrency } = useI18n();
+  const { formatCurrency } = useI18n();
   const { ready: mapsReady } = useGoogleMaps();
 
-  const [step, setStep] = useState<"where" | "schedule">("where");
+  const [step, setStep] = useState<"where" | "vehicle" | "schedule">("where");
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
   const [distance, setDistance] = useState<DistanceResult | null>(null);
@@ -109,7 +132,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
-  const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const [snap, setSnap] = useState<Snap>("half");
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement | null>(null);
@@ -117,20 +140,19 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const pickupMarkerRef = useRef<google.maps.Marker | null>(null);
   const dropoffMarkerRef = useRef<google.maps.Marker | null>(null);
   const routeLineRef = useRef<google.maps.Polyline | null>(null);
+  const routeCasingRef = useRef<google.maps.Polyline | null>(null);
 
   // Init map
   useEffect(() => {
     if (!mapsReady || !mapDivRef.current || mapRef.current) return;
     mapRef.current = new google.maps.Map(mapDivRef.current, {
       center: { lat: 45.5017, lng: -73.5673 },
-      zoom: 12,
+      zoom: 13,
       disableDefaultUI: true,
       gestureHandling: "greedy",
-      styles: [
-        { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-        { featureType: "poi", stylers: [{ visibility: "off" }] },
-        { featureType: "transit", stylers: [{ visibility: "off" }] },
-      ],
+      clickableIcons: false,
+      backgroundColor: "#f5f5f5",
+      styles: UBER_MAP_STYLES,
     });
   }, [mapsReady]);
 
@@ -155,7 +177,11 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           setDistanceError(data.details ?? "Route could not be resolved. Pick full addresses from the suggestions.");
           return;
         }
-        if (data?.km) setDistance(data);
+        if (data?.km) {
+          setDistance(data);
+          setStep("vehicle");
+          setSnap("half");
+        }
       } catch (e) {
         console.warn("Distance calc failed", e);
         setDistance(null);
@@ -167,9 +193,19 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     return () => clearTimeout(timer);
   }, [pickup, dropoff]);
 
-  // Update markers + fit bounds
+  // Custom Uber-style dot markers via SVG
+  const makeDotIcon = (fill: string, ring = "#ffffff"): google.maps.Symbol => ({
+    path: google.maps.SymbolPath.CIRCLE,
+    scale: 8,
+    fillColor: fill,
+    fillOpacity: 1,
+    strokeColor: ring,
+    strokeWeight: 3,
+  });
+
+  // Update markers + route
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !mapsReady) return;
     const map = mapRef.current;
     const p = distance?.pickup;
     const d = distance?.dropoff;
@@ -177,44 +213,55 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     pickupMarkerRef.current?.setMap(null);
     dropoffMarkerRef.current?.setMap(null);
     routeLineRef.current?.setMap(null);
+    routeCasingRef.current?.setMap(null);
     pickupMarkerRef.current = null;
     dropoffMarkerRef.current = null;
     routeLineRef.current = null;
+    routeCasingRef.current = null;
 
     if (p) {
       pickupMarkerRef.current = new google.maps.Marker({
         position: { lat: p.lat, lng: p.lng },
         map,
-        label: { text: "A", color: "#fff", fontWeight: "700" },
+        icon: makeDotIcon("#0F172A"),
       });
     }
     if (d) {
       dropoffMarkerRef.current = new google.maps.Marker({
         position: { lat: d.lat, lng: d.lng },
         map,
-        label: { text: "B", color: "#fff", fontWeight: "700" },
+        icon: makeDotIcon("#0F172A"),
       });
     }
     if (p && d) {
+      const path = [
+        { lat: p.lat, lng: p.lng },
+        { lat: d.lat, lng: d.lng },
+      ];
+      // White casing under black line — Uber signature route look.
+      routeCasingRef.current = new google.maps.Polyline({
+        path,
+        strokeColor: "#ffffff",
+        strokeOpacity: 1,
+        strokeWeight: 8,
+        map,
+      });
       routeLineRef.current = new google.maps.Polyline({
-        path: [
-          { lat: p.lat, lng: p.lng },
-          { lat: d.lat, lng: d.lng },
-        ],
-        strokeColor: "#FF5722",
-        strokeOpacity: 0.9,
-        strokeWeight: 4,
+        path,
+        strokeColor: "#0F172A",
+        strokeOpacity: 1,
+        strokeWeight: 5,
         map,
       });
       const bounds = new google.maps.LatLngBounds();
       bounds.extend({ lat: p.lat, lng: p.lng });
       bounds.extend({ lat: d.lat, lng: d.lng });
-      map.fitBounds(bounds, 80);
+      map.fitBounds(bounds, { top: 80, bottom: 340, left: 48, right: 48 });
     } else if (p) {
       map.setCenter({ lat: p.lat, lng: p.lng });
       map.setZoom(14);
     }
-  }, [distance]);
+  }, [distance, mapsReady]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
@@ -223,7 +270,6 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   const items: SelectedItem[] = useMemo(() => {
     if (selectedTile.isSuv) return [];
-    // Synthesize a dummy inventory sized for the chosen tile so recommendVehicle picks it.
     const idx = VEHICLE_TILES.findIndex((v) => v.name === selectedTile.name);
     const vehicle = VEHICLE_FLEET[idx];
     if (!vehicle) return [];
@@ -298,227 +344,301 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     }
   };
 
+  // Sheet drag
+  const dragStateRef = useRef<{ startY: number; startSnap: Snap } | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+
+  const snapHeights: Record<Snap, string> = {
+    peek: "160px",
+    half: "56vh",
+    full: "92vh",
+  };
+
+  const onDragStart = (clientY: number) => {
+    dragStateRef.current = { startY: clientY, startSnap: snap };
+    setDragOffset(0);
+  };
+  const onDragMove = (clientY: number) => {
+    if (!dragStateRef.current) return;
+    setDragOffset(clientY - dragStateRef.current.startY);
+  };
+  const onDragEnd = () => {
+    const st = dragStateRef.current;
+    if (!st) return;
+    const dy = dragOffset;
+    let next: Snap = st.startSnap;
+    if (dy < -60) next = st.startSnap === "peek" ? "half" : "full";
+    else if (dy > 60) next = st.startSnap === "full" ? "half" : "peek";
+    dragStateRef.current = null;
+    setDragOffset(0);
+    setSnap(next);
+  };
+
+  const goBack = () => {
+    if (step === "schedule") { setStep("vehicle"); return; }
+    if (step === "vehicle") { setStep("where"); return; }
+    onClose?.();
+  };
+
   return (
-    <div className="fixed inset-0 z-30 bg-slate-100">
-      {/* Full-screen map background */}
+    <div className="fixed inset-0 z-30 bg-[#f5f5f5] font-sans text-slate-900">
+      {/* Full-screen map */}
       <div ref={mapDivRef} className="absolute inset-0" />
       {!mapsReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-200">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="absolute inset-0 flex items-center justify-center bg-[#f5f5f5]">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-900" />
         </div>
       )}
 
-      {/* Top bar */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between p-3">
+      {/* Top back button — Uber floating pill */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-4">
         <button
-          onClick={() => (step === "schedule" ? setStep("where") : onClose?.())}
-          className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg"
+          onClick={goBack}
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] active:scale-95 transition"
           aria-label="Back"
         >
-          <ArrowLeft className="h-5 w-5 text-slate-800" />
+          <ArrowLeft className="h-5 w-5 text-slate-900" strokeWidth={2.5} />
         </button>
-        <div className="pointer-events-auto rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow">
-          {step === "where" ? "Where to?" : "Schedule & confirm"}
-        </div>
-        <div className="w-10" />
+        {routeReady && step !== "where" && (
+          <div className="pointer-events-auto rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-lg">
+            {distanceKm.toFixed(1)} km · {moveType}
+          </div>
+        )}
+        <div className="w-11" />
       </div>
 
-      {/* Bottom sheet — drag-to-expand, Uber-style spring motion */}
+      {/* Bottom sheet */}
       <div
-        className={cn(
-          "absolute inset-x-0 bottom-0 z-20 rounded-t-3xl bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.22)] will-change-transform",
-          "transition-[max-height,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] animate-slide-in-up",
-          sheetCollapsed ? "max-h-[120px]" : "max-h-[85vh]",
-        )}
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        ref={sheetRef}
+        className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-[28px] bg-white shadow-[0_-16px_48px_rgba(0,0,0,0.18)] will-change-transform"
+        style={{
+          height: snapHeights[snap],
+          transform: `translateY(${Math.max(0, dragOffset)}px)`,
+          transition: dragStateRef.current ? "none" : "height 380ms cubic-bezier(0.22,1,0.36,1), transform 380ms cubic-bezier(0.22,1,0.36,1)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
       >
-        {/* Drag handle — tap or swipe */}
+        {/* Drag handle */}
         <div
           role="button"
           tabIndex={0}
-          onClick={() => setSheetCollapsed((v) => !v)}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSheetCollapsed((v) => !v)}
-          onTouchStart={(e) => {
-            const startY = e.touches[0].clientY;
-            const onMove = (ev: TouchEvent) => {
-              const dy = ev.touches[0].clientY - startY;
-              if (dy > 40) { setSheetCollapsed(true); cleanup(); }
-              else if (dy < -40) { setSheetCollapsed(false); cleanup(); }
+          onClick={() => setSnap(snap === "full" ? "half" : snap === "half" ? "peek" : "half")}
+          onTouchStart={(e) => onDragStart(e.touches[0].clientY)}
+          onTouchMove={(e) => onDragMove(e.touches[0].clientY)}
+          onTouchEnd={onDragEnd}
+          onMouseDown={(e) => {
+            onDragStart(e.clientY);
+            const mv = (ev: MouseEvent) => onDragMove(ev.clientY);
+            const up = () => {
+              onDragEnd();
+              window.removeEventListener("mousemove", mv);
+              window.removeEventListener("mouseup", up);
             };
-            const cleanup = () => {
-              window.removeEventListener("touchmove", onMove);
-              window.removeEventListener("touchend", cleanup);
-            };
-            window.addEventListener("touchmove", onMove, { passive: true });
-            window.addEventListener("touchend", cleanup);
+            window.addEventListener("mousemove", mv);
+            window.addEventListener("mouseup", up);
           }}
-          className="flex w-full cursor-grab justify-center pt-2.5 pb-1 active:cursor-grabbing touch-none select-none"
-          aria-label={sheetCollapsed ? "Expand" : "Collapse"}
+          className="flex w-full shrink-0 cursor-grab justify-center pt-3 pb-2 active:cursor-grabbing touch-none select-none"
+          aria-label="Drag sheet"
         >
-          <span className={cn(
-            "block h-1.5 w-12 rounded-full transition-colors",
-            sheetCollapsed ? "bg-slate-400" : "bg-slate-300",
-          )} />
+          <span className="block h-1 w-10 rounded-full bg-slate-300" />
         </div>
 
-        <div className="max-h-[calc(85vh-32px)] overflow-y-auto px-4 pb-4">
-
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-5 pb-6">
           {step === "where" && (
-            <div className="space-y-4">
-              {/* Address inputs */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="space-y-5 pt-1">
+              <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-slate-900">
+                Where are you moving?
+              </h1>
+
+              {/* Address stack — Uber's dot/line/square pattern */}
+              <div className="rounded-2xl bg-[#f4f4f4] p-3">
                 <div className="flex items-start gap-3">
-                  <div className="mt-2 flex flex-col items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    <span className="h-8 w-px bg-slate-300" />
+                  <div className="mt-3 flex flex-col items-center">
+                    <span className="h-2.5 w-2.5 rounded-full bg-slate-900" />
+                    <span className="my-1 h-8 w-0.5 bg-slate-300" />
                     <span className="h-2.5 w-2.5 rounded-sm bg-slate-900" />
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                        <MapPin className="mr-1 inline h-3 w-3" />
-                        Pickup
-                      </label>
+                  <div className="flex-1 divide-y divide-slate-200">
+                    <div className="pb-1">
                       <PlacesAutocomplete
                         value={pickup}
                         onChange={setPickup}
-                        placeholder="Enter pickup address"
-                        className="border-slate-200 bg-slate-50"
+                        placeholder="Pickup location"
+                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-slate-900 shadow-none focus-visible:ring-0"
                       />
                     </div>
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                        <Navigation className="mr-1 inline h-3 w-3" />
-                        Drop-off
-                      </label>
+                    <div className="pt-1">
                       <PlacesAutocomplete
                         value={dropoff}
                         onChange={setDropoff}
                         placeholder="Where to?"
-                        className="border-slate-200 bg-slate-50"
+                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-slate-900 shadow-none focus-visible:ring-0"
                       />
                     </div>
                   </div>
+                  {(pickup || dropoff) && (
+                    <button
+                      onClick={() => { setPickup(""); setDropoff(""); setDistance(null); }}
+                      className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-600"
+                      aria-label="Clear"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
-
-                {calculating && (
-                  <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Calculating route…
-                  </p>
-                )}
-                {routeReady && (
-                  <p className="mt-2 text-[11px] font-semibold text-emerald-600">
-                    {distanceKm.toFixed(1)} km · {moveType}
-                  </p>
-                )}
-                {distanceError && (
-                  <p className="mt-2 text-[11px] font-medium text-red-600">{distanceError}</p>
-                )}
               </div>
 
-              {/* Vehicle horizontal scroller */}
-              <div>
-                <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  Choose your ride
+              {calculating && (
+                <p className="flex items-center gap-2 text-[13px] text-slate-500">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding your route…
                 </p>
-                <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden">
-                  {VEHICLE_TILES.map((tile) => {
-                    const active = selectedTile.name === tile.name;
-                    const price = routeReady ? priceForTile(tile, distanceKm, moveType) : null;
-                    return (
-                      <button
-                        key={tile.name}
-                        type="button"
-                        onClick={() => setSelectedTile(tile)}
+              )}
+              {distanceError && (
+                <p className="text-[13px] font-medium text-red-600">{distanceError}</p>
+              )}
+
+              {/* Recent / hint list — pure Uber list rows */}
+              <div className="space-y-1 pt-1">
+                <p className="px-1 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Tips
+                </p>
+                {[
+                  "Pick a full address from suggestions for accurate pricing",
+                  "Schedule up to 30 days in advance",
+                  "Add extra crew for heavy items",
+                ].map((h) => (
+                  <div key={h} className="flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-slate-50">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100">
+                      <Search className="h-4 w-4 text-slate-700" />
+                    </div>
+                    <span className="flex-1 text-[14px] text-slate-700">{h}</span>
+                    <ChevronRight className="h-4 w-4 text-slate-400" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === "vehicle" && (
+            <div className="space-y-3 pt-1">
+              <h2 className="text-[22px] font-extrabold tracking-tight text-slate-900">
+                Choose a vehicle
+              </h2>
+
+              <div className="divide-y divide-slate-100">
+                {VEHICLE_TILES.map((tile) => {
+                  const active = selectedTile.name === tile.name;
+                  const price = routeReady ? priceForTile(tile, distanceKm, moveType) : null;
+                  return (
+                    <button
+                      key={tile.name}
+                      type="button"
+                      onClick={() => setSelectedTile(tile)}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-1 py-3 text-left transition-colors",
+                        active && "bg-slate-50",
+                      )}
+                    >
+                      <div
                         className={cn(
-                          "flex w-32 shrink-0 snap-start flex-col items-center gap-1.5 rounded-2xl border-2 bg-white p-3 text-center transition-all",
-                          active
-                            ? "border-primary bg-primary/5 shadow-[0_6px_20px_rgba(255,87,34,0.25)]"
-                            : "border-slate-200 hover:border-primary/40",
+                          "flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-[#f4f4f4]",
+                          active && "ring-2 ring-slate-900",
                         )}
                       >
-                        <div className="flex h-16 w-full items-center justify-center">
-                          <img
-                            src={tile.image}
-                            alt={tile.name}
-                            className="max-h-full max-w-full object-contain"
-                            loading="lazy"
-                          />
+                        <img
+                          src={tile.image}
+                          alt={tile.name}
+                          className="max-h-14 max-w-16 object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-[15px] font-bold text-slate-900">{tile.name}</p>
                         </div>
-                        <p className={cn("text-[12px] font-bold leading-tight", active ? "text-primary" : "text-slate-900")}>
-                          {tile.name}
+                        <p className="flex items-center gap-1 text-[12px] text-slate-500">
+                          <Clock className="h-3 w-3" /> {tile.eta}
                         </p>
-                        <p className="text-[10px] leading-tight text-slate-500">{tile.capacity}</p>
-                        <p className={cn("mt-0.5 text-[13px] font-bold", active ? "text-primary" : "text-slate-800")}>
+                        <p className="truncate text-[12px] text-slate-500">{tile.capacity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[15px] font-extrabold text-slate-900">
                           {price != null ? formatCurrency(price) : "—"}
                         </p>
-                      </button>
-                    );
-                  })}
-                </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
-              <Button
-                onClick={() => setStep("schedule")}
-                disabled={!routeReady}
-                className="h-12 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-lg hover:bg-primary/90"
-              >
-                Continue to Schedule
-              </Button>
+              <div className="pt-3">
+                <PaymentRow />
+                <Button
+                  onClick={() => setStep("schedule")}
+                  disabled={!routeReady}
+                  className="mt-2 h-14 w-full rounded-2xl bg-slate-900 text-[16px] font-bold text-white shadow-lg hover:bg-slate-800 active:scale-[0.99] transition disabled:bg-slate-300 disabled:text-slate-500"
+                >
+                  Choose {selectedTile.name}
+                </Button>
+              </div>
             </div>
           )}
 
           {step === "schedule" && (
-            <div className="space-y-4">
-              {/* Summary */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-[11px] uppercase tracking-wider text-slate-500">Trip</p>
-                <p className="mt-1 line-clamp-1 text-sm font-semibold text-slate-900">{pickup}</p>
-                <p className="line-clamp-1 text-sm text-slate-600">→ {dropoff}</p>
-                <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2 text-xs">
-                  <span className="font-semibold text-slate-700">{selectedTile.name}</span>
-                  <span className="font-semibold text-primary">{formatCurrency(quote.finalPrice)}</span>
+            <div className="space-y-4 pt-1">
+              <h2 className="text-[22px] font-extrabold tracking-tight text-slate-900">
+                Review and confirm
+              </h2>
+
+              {/* Trip summary */}
+              <div className="rounded-2xl bg-[#f4f4f4] p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1.5 flex flex-col items-center">
+                    <span className="h-2 w-2 rounded-full bg-slate-900" />
+                    <span className="my-1 h-6 w-0.5 bg-slate-300" />
+                    <span className="h-2 w-2 rounded-sm bg-slate-900" />
+                  </div>
+                  <div className="flex-1 space-y-2 text-[13px]">
+                    <p className="line-clamp-1 font-semibold text-slate-900">{pickup}</p>
+                    <p className="line-clamp-1 font-semibold text-slate-900">{dropoff}</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Schedule */}
-              <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  <CalendarDays className="mr-1 inline h-3 w-3" /> When
+              {/* When */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  When
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setScheduleMode("asap"); setScheduledAt(undefined); }}
-                    className={cn(
-                      "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
-                      scheduleMode === "asap"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-slate-200 text-slate-700",
-                    )}
-                  >
-                    Now / ASAP
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setScheduleMode("later")}
-                    className={cn(
-                      "rounded-lg border-2 px-3 py-2 text-sm font-semibold transition-all",
-                      scheduleMode === "later"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-slate-200 text-slate-700",
-                    )}
-                  >
-                    Schedule
-                  </button>
+                  {(["asap", "later"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => { setScheduleMode(mode); if (mode === "asap") setScheduledAt(undefined); }}
+                      className={cn(
+                        "rounded-xl px-3 py-3 text-[14px] font-bold transition",
+                        scheduleMode === mode
+                          ? "bg-slate-900 text-white"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+                      )}
+                    >
+                      {mode === "asap" ? "Now" : "Schedule"}
+                    </button>
+                  ))}
                 </div>
                 {scheduleMode === "later" && (
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className={cn("flex-1 justify-start text-left font-normal", !scheduledAt && "text-slate-500")}
+                          className={cn(
+                            "h-11 flex-1 justify-start rounded-xl border-slate-200 text-left font-semibold",
+                            !scheduledAt && "text-slate-500",
+                          )}
                         >
                           <CalendarDays className="mr-2 h-4 w-4" />
                           {scheduledAt ? format(scheduledAt, "EEE, MMM d") : "Pick a date"}
@@ -539,7 +659,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       type="time"
                       value={scheduledTime}
                       onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-[110px]"
+                      className="h-11 w-[120px] rounded-xl border-slate-200 font-semibold"
                       disabled={!scheduledAt}
                     />
                   </div>
@@ -547,54 +667,58 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               </div>
 
               {/* Crew */}
-              <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+                      <Users className="h-4 w-4 text-slate-900" />
+                    </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">Additional crew</p>
-                      <p className="text-[11px] text-slate-500">
-                        Optional · {formatCurrency(CREW_MEMBER_RATE_CAD)} per person
+                      <p className="text-[14px] font-bold text-slate-900">Extra crew</p>
+                      <p className="text-[12px] text-slate-500">
+                        {formatCurrency(CREW_MEMBER_RATE_CAD)} per person
                       </p>
                     </div>
                   </div>
                   <Switch checked={crewEnabled} onCheckedChange={setCrewEnabled} />
                 </div>
                 {crewEnabled && (
-                  <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <span className="text-sm">Crew members</span>
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
+                    <span className="text-[14px] font-semibold text-slate-900">Crew members</span>
                     <div className="flex items-center gap-2">
-                      <Button size="icon" variant="outline" className="h-8 w-8 rounded-full"
-                        onClick={() => setCrewCount((c) => Math.max(1, c - 1))} disabled={crewCount <= 1}>-</Button>
-                      <span className="w-5 text-center text-sm font-semibold">{crewCount}</span>
-                      <Button size="icon" variant="outline" className="h-8 w-8 rounded-full"
-                        onClick={() => setCrewCount((c) => Math.min(6, c + 1))} disabled={crewCount >= 6}>+</Button>
+                      <button
+                        onClick={() => setCrewCount((c) => Math.max(1, c - 1))}
+                        disabled={crewCount <= 1}
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm disabled:opacity-40"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="w-6 text-center text-[15px] font-bold">{crewCount}</span>
+                      <button
+                        onClick={() => setCrewCount((c) => Math.min(6, c + 1))}
+                        disabled={crewCount >= 6}
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm disabled:opacity-40"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
 
+              <PaymentRow />
+
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || !routeReady}
-                className="h-12 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-lg hover:bg-primary/90"
+                className="h-14 w-full rounded-2xl bg-slate-900 text-[16px] font-bold text-white shadow-lg hover:bg-slate-800 active:scale-[0.99] transition disabled:bg-slate-300 disabled:text-slate-500"
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {submitting ? "Preparing…" : `Confirm ${formatCurrency(quote.finalPrice)}`}
+                {submitting ? "Preparing…" : `Confirm · ${formatCurrency(quote.finalPrice)}`}
               </Button>
             </div>
           )}
         </div>
-
-        {/* Collapse indicator */}
-        <button
-          type="button"
-          onClick={() => setSheetCollapsed((v) => !v)}
-          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500"
-          aria-label="Toggle sheet"
-        >
-          {sheetCollapsed ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
       </div>
 
       <StripeCheckoutModal
@@ -610,5 +734,20 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     </div>
   );
 };
+
+const PaymentRow = () => (
+  <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-[#f4f4f4] px-4 py-3 text-left transition hover:bg-slate-100">
+    <div className="flex items-center gap-3">
+      <div className="flex h-9 w-14 items-center justify-center rounded-md bg-slate-900 text-[10px] font-bold text-white">
+        CARD
+      </div>
+      <div>
+        <p className="text-[13px] font-bold text-slate-900">Personal · Card</p>
+        <p className="text-[11px] text-slate-500">Charged after confirmation</p>
+      </div>
+    </div>
+    <ChevronRight className="h-4 w-4 text-slate-400" />
+  </button>
+);
 
 export default UberBookingScreen;
