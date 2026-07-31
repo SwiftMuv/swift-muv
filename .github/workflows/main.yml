@@ -1,14 +1,13 @@
-name: DeployOS Build
+name: DeployOS Runner
 on:
   repository_dispatch:
-    types: [build, deployos_build]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -19,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Android App
+      - name: Build Android Bundle
         run: |
           npm run build
           npx cap sync android
