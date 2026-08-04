@@ -16,6 +16,7 @@ import {
   Camera,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import swiftmuvLogo from "@/assets/swiftmuv-logo.png";
 
 type DocType = Database["public"]["Enums"]["driver_document_type"];
 
