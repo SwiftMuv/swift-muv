@@ -162,6 +162,30 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [snap, setSnap] = useState<Snap>("half");
+  const [recents, setRecents] = useState<string[]>(() => loadRecents());
+
+  const pickupInvalid = looksIncomplete(pickup);
+  const dropoffInvalid = looksIncomplete(dropoff);
+
+  const rememberPlaces = (...places: string[]) => {
+    setRecents((prev) => {
+      const next = [...places.map((p) => p.trim()).filter(Boolean), ...prev]
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .slice(0, MAX_RECENTS);
+      try {
+        localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+      } catch { /* storage unavailable */ }
+      return next;
+    });
+  };
+
+  const clearRecents = () => {
+    setRecents([]);
+    try {
+      localStorage.removeItem(RECENTS_KEY);
+    } catch { /* storage unavailable */ }
+  };
+
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement | null>(null);
