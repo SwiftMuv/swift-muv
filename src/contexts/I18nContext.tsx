@@ -95,7 +95,7 @@ Object.assign(TRANSLATIONS.it, { "nav.home": "Home", "nav.bookings": "Prenotazio
 
 // Merge feature-area dictionaries. Languages without their own entries fall back to English.
 const ALL_LANGS = LANGUAGES.map((l) => l.code);
-for (const dict of [customerDict, driverDict, bookingDict]) {
+for (const dict of [customerDict, driverDict, bookingDict, authDict]) {
   const en = dict.en ?? {};
   for (const code of ALL_LANGS) {
     TRANSLATIONS[code] = { ...TRANSLATIONS[code], ...en, ...(dict[code] ?? {}) };
