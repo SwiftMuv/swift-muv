@@ -302,7 +302,7 @@ const ProfileScreen = () => {
       return;
     }
     setPreviewDoc({
-      name: slot.name,
+      name: t(slot.nameKey),
       url: data.signedUrl,
       isPdf: latest.file_path.toLowerCase().endsWith(".pdf"),
     });
@@ -586,7 +586,7 @@ const ProfileScreen = () => {
             const hasDoc = status !== "missing";
             const isLoadingPreview = previewLoading === slot.type;
             return (
-              <div key={slot.name} className="flex items-center gap-2 px-4 py-3">
+              <div key={slot.type} className="flex items-center gap-2 px-4 py-3">
                 {(() => {
                   const thumb = thumbs[slot.type];
                   if (thumb && !thumb.isPdf) {
