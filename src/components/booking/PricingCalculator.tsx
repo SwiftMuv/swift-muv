@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Car, Truck, Container } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
 
 export type VehicleTier = "suv" | "large" | "xlarge";
 
@@ -30,8 +31,6 @@ export const TIERS: TierDef[] = [
   { id: "xlarge", label: "Extra Large", sub: "Moving Truck",         icon: Container, baseFee: round2(XL_BASE),    perKm: round2(XL_RATE) },
 ];
 
-const fmt = (n: number) =>
-  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 interface Props {
   distanceKm?: number;
@@ -39,6 +38,8 @@ interface Props {
 }
 
 export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) => {
+  const { formatCurrency } = useI18n();
+  const fmt = (n: number) => formatCurrency(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [tier, setTier] = useState<VehicleTier>("suv");
   const [localKm, setLocalKm] = useState<string>("");
 
