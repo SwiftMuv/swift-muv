@@ -34,9 +34,26 @@ export const RecoveryEmail = ({
           src={LOGO_URL}
           alt="SwiftMuv"
           width="160"
-          style={{ margin: '0 0 24px', display: 'block' }}
+          height="44"
+          style={{
+            margin: '0 0 8px',
+            display: 'block',
+            width: '160px',
+            maxWidth: '100%',
+            height: 'auto',
+            border: '0',
+            outline: 'none',
+            textDecoration: 'none',
+            lineHeight: '100%',
+            fontFamily: '"Space Grotesk", -apple-system, Helvetica, Arial, sans-serif',
+            fontSize: '20px',
+            fontWeight: 'bold' as const,
+            color: 'hsl(220, 25%, 10%)',
+          }}
         />
+        <Text style={wordmark}>SwiftMuv — Moving forward. Effortlessly.</Text>
         <Heading style={h1}>Reset your password</Heading>
+
         <Text style={text}>
           We received a request to reset your password for {siteName}. Click
           the button below to choose a new password.
@@ -57,6 +74,14 @@ export default RecoveryEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: '"DM Sans", -apple-system, Helvetica, Arial, sans-serif' }
 const container = { padding: '24px 28px', maxWidth: '560px' }
+const wordmark = {
+  fontFamily: '"Space Grotesk", -apple-system, Helvetica, Arial, sans-serif',
+  fontSize: '12px',
+  fontWeight: 'bold' as const,
+  letterSpacing: '0.4px',
+  color: 'hsl(220, 10%, 45%)',
+  margin: '0 0 24px',
+}
 const h1 = {
   fontFamily: '"Space Grotesk", -apple-system, Helvetica, Arial, sans-serif',
   fontSize: '24px',

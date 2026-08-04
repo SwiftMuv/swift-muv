@@ -1,17 +1,20 @@
 /// <reference types="google.maps" />
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
   CalendarDays,
   ChevronRight,
   Clock,
   Loader2,
+  MapPin,
   Minus,
   Plus,
   Search,
   Users,
   X,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,6 +117,29 @@ interface Props {
 
 type Snap = "peek" | "half" | "full";
 
+const RECENTS_KEY = "swiftmuv_recent_places";
+const MAX_RECENTS = 6;
+
+const loadRecents = (): string[] => {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string").slice(0, MAX_RECENTS) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Shared dark-sheet input styling with high-contrast focus ring + invalid state.
+const fieldClass =
+  "h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-white shadow-none placeholder:text-neutral-500 " +
+  "focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 rounded-md";
+const invalidFieldClass = "text-red-300 placeholder:text-red-400/70 focus-visible:ring-red-400";
+
+// A "full" address needs at least a number-ish token and a comma or several words.
+const looksIncomplete = (v: string) => v.trim().length > 0 && v.trim().length < 8;
+
+
 const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
   const { formatCurrency } = useI18n();
@@ -136,6 +162,30 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [snap, setSnap] = useState<Snap>("half");
+  const [recents, setRecents] = useState<string[]>(() => loadRecents());
+
+  const pickupInvalid = looksIncomplete(pickup);
+  const dropoffInvalid = looksIncomplete(dropoff);
+
+  const rememberPlaces = (...places: string[]) => {
+    setRecents((prev) => {
+      const next = [...places.map((p) => p.trim()).filter(Boolean), ...prev]
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .slice(0, MAX_RECENTS);
+      try {
+        localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+      } catch { /* storage unavailable */ }
+      return next;
+    });
+  };
+
+  const clearRecents = () => {
+    setRecents([]);
+    try {
+      localStorage.removeItem(RECENTS_KEY);
+    } catch { /* storage unavailable */ }
+  };
+
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement | null>(null);
@@ -182,6 +232,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         }
         if (data?.km) {
           setDistance(data);
+          rememberPlaces(pickup, dropoff);
           setStep("vehicle");
           setSnap("half");
         }
@@ -456,7 +507,12 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               </h1>
 
               {/* Address stack — Uber's dot/line/square pattern */}
-              <div className="rounded-2xl bg-neutral-900 p-3">
+              <div
+                className={cn(
+                  "rounded-2xl bg-neutral-900 p-3 ring-1 transition-colors",
+                  distanceError ? "ring-red-500" : "ring-neutral-800 focus-within:ring-2 focus-within:ring-white",
+                )}
+              >
                 <div className="flex items-start gap-3">
                   <div className="mt-3 flex flex-col items-center">
                     <span className="h-2.5 w-2.5 rounded-full bg-white" />
@@ -469,7 +525,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                         value={pickup}
                         onChange={setPickup}
                         placeholder="Pickup location"
-                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-white shadow-none focus-visible:ring-0"
+                        className={cn(fieldClass, pickupInvalid && invalidFieldClass)}
                       />
                     </div>
                     <div className="pt-1">
@@ -477,14 +533,14 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                         value={dropoff}
                         onChange={setDropoff}
                         placeholder="Where to?"
-                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-white shadow-none focus-visible:ring-0"
+                        className={cn(fieldClass, dropoffInvalid && invalidFieldClass)}
                       />
                     </div>
                   </div>
                   {(pickup || dropoff) && (
                     <button
                       onClick={() => { setPickup(""); setDropoff(""); setDistance(null); }}
-                      className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-800 text-neutral-300"
+                      className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                       aria-label="Clear"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -493,13 +549,66 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 </div>
               </div>
 
+              {(pickupInvalid || dropoffInvalid) && !distanceError && (
+                <p className="flex items-center gap-1.5 text-[13px] font-medium text-red-400" role="alert">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  Enter a full street address for {pickupInvalid ? "pickup" : "drop-off"}.
+                </p>
+              )}
+
               {calculating && (
                 <p className="flex items-center gap-2 text-[13px] text-neutral-400">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding your route…
                 </p>
               )}
               {distanceError && (
-                <p className="text-[13px] font-medium text-red-400">{distanceError}</p>
+                <p className="flex items-center gap-1.5 text-[13px] font-medium text-red-400" role="alert">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {distanceError}
+                </p>
+              )}
+
+              {/* Recent places — quick-fill chips */}
+              {recents.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                      Recent places
+                    </p>
+                    <button
+                      type="button"
+                      onClick={clearRecents}
+                      className="rounded-md px-1 text-[11px] font-semibold text-neutral-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recents.map((r) => (
+                      <div
+                        key={r}
+                        className="flex items-center overflow-hidden rounded-full border border-neutral-700 bg-neutral-900"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setPickup(r)}
+                          className="max-w-[180px] truncate px-3 py-2 text-[12px] font-semibold text-white hover:bg-neutral-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset"
+                          title={`Use as pickup: ${r}`}
+                        >
+                          <MapPin className="mr-1.5 inline h-3 w-3 text-neutral-400" />
+                          {r}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDropoff(r)}
+                          className="border-l border-neutral-700 px-2.5 py-2 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset"
+                          title={`Use as drop-off: ${r}`}
+                        >
+                          To
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Recent / hint list — pure Uber list rows */}
@@ -521,6 +630,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   </div>
                 ))}
               </div>
+
             </div>
           )}
 
