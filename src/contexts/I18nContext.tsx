@@ -5,6 +5,7 @@ import { customerDict } from "@/i18n/customer";
 import { driverDict } from "@/i18n/driver";
 import { bookingDict } from "@/i18n/booking";
 import { authDict } from "@/i18n/auth";
+import { coreDict } from "@/i18n/core";
 
 
 
