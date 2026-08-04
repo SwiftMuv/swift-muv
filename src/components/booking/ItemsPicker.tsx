@@ -1,6 +1,7 @@
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ITEM_CATALOG } from "@/lib/booking";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Props {
   quantities: Record<string, number>;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export const ItemsPicker = ({ quantities, onChange }: Props) => {
+  const { formatCurrency } = useI18n();
   const setQty = (id: string, delta: number) => {
     const next = Math.max(0, (quantities[id] ?? 0) + delta);
     onChange({ ...quantities, [id]: next });
@@ -21,7 +23,7 @@ export const ItemsPicker = ({ quantities, onChange }: Props) => {
           <div key={it.id} className={`flex items-center justify-between gap-2 px-3 py-2.5 ${qty > 0 ? "bg-primary/5" : ""}`}>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">{it.name}</p>
-              <p className="text-xs text-muted-foreground">${it.price}</p>
+              <p className="text-xs text-muted-foreground">{formatCurrency(it.price)}</p>
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => setQty(it.id, -1)} disabled={qty === 0}>

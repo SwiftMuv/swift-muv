@@ -1,4 +1,5 @@
 import { Package, Truck, Home, Building2 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 const MOVE_SIZES = [
   { id: "small", label: "Small", desc: "Few items / boxes", icon: Package, basePrice: 89 },
@@ -14,7 +15,9 @@ interface MoveSizeSelectorProps {
   onSelect: (size: MoveSize) => void;
 }
 
-const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => (
+const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => {
+  const { formatCurrency } = useI18n();
+  return (
   <div className="space-y-3">
     <h3 className="text-sm font-semibold text-foreground">Move Size</h3>
     <div className="grid grid-cols-2 gap-3">
@@ -39,7 +42,7 @@ const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => (
               <p className="text-sm font-semibold text-foreground">{label}</p>
               <p className="text-xs text-muted-foreground">{desc}</p>
             </div>
-            <p className="text-sm font-bold text-cyan-500">From ${basePrice}</p>
+            <p className="text-sm font-bold text-cyan-500">From {formatCurrency(basePrice)}</p>
           </button>
         );
       })}
