@@ -89,14 +89,14 @@ export const PlacesAutocomplete = ({
         autoComplete="off"
       />
       {open && suggestions.length > 0 && (
-        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-border bg-popover shadow-lg">
+        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
           {suggestions.map((s) => (
             <li key={s.placeId}>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handlePick(s)}
-                className="block w-full truncate px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                className="block w-full truncate px-3 py-2 text-left text-sm text-black hover:bg-slate-100"
               >
                 {s.text}
               </button>

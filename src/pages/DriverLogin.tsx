@@ -16,6 +16,7 @@ import {
   Camera,
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import swiftmuvLogo from "@/assets/swiftmuv-logo.png";
 
 type DocType = Database["public"]["Enums"]["driver_document_type"];
 
@@ -202,9 +203,12 @@ const DriverLogin = () => {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
       <div className="w-full max-w-sm space-y-6 py-8">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <Truck className="h-7 w-7 text-primary" />
-          </div>
+          <img
+            src={swiftmuvLogo}
+            alt="SwiftMuv logo"
+            className="mx-auto h-28 w-auto object-contain"
+          />
+
           <h1
             className="text-2xl font-bold text-foreground"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
