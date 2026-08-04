@@ -232,6 +232,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         }
         if (data?.km) {
           setDistance(data);
+          rememberPlaces(pickup, dropoff);
           setStep("vehicle");
           setSnap("half");
         }
