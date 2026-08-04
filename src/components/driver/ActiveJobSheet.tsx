@@ -154,7 +154,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
                 aria-label="Navigate"
                 onClick={() => {
                   const dest =
-                    job.status === "in_transit" || job.status === "loaded"
+                    job.status === "in_transit"
                       ? job.dropoffAddress
                       : job.pickupAddress;
                   window.open(
