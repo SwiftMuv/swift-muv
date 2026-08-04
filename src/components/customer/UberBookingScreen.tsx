@@ -117,6 +117,29 @@ interface Props {
 
 type Snap = "peek" | "half" | "full";
 
+const RECENTS_KEY = "swiftmuv_recent_places";
+const MAX_RECENTS = 6;
+
+const loadRecents = (): string[] => {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string").slice(0, MAX_RECENTS) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Shared dark-sheet input styling with high-contrast focus ring + invalid state.
+const fieldClass =
+  "h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-white shadow-none placeholder:text-neutral-500 " +
+  "focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 rounded-md";
+const invalidFieldClass = "text-red-300 placeholder:text-red-400/70 focus-visible:ring-red-400";
+
+// A "full" address needs at least a number-ish token and a comma or several words.
+const looksIncomplete = (v: string) => v.trim().length > 0 && v.trim().length < 8;
+
+
 const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
   const { formatCurrency } = useI18n();
