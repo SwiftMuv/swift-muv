@@ -9,6 +9,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -17,6 +18,8 @@ interface RecoveryEmailProps {
   siteName: string
   confirmationUrl: string
 }
+
+const LOGO_URL = 'https://swift-muv.lovable.app/swiftmuv-logo.png'
 
 export const RecoveryEmail = ({
   siteName,
@@ -27,6 +30,12 @@ export const RecoveryEmail = ({
     <Preview>Reset your password for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Img
+          src={LOGO_URL}
+          alt="SwiftMuv"
+          width="160"
+          style={{ margin: '0 0 24px', display: 'block' }}
+        />
         <Heading style={h1}>Reset your password</Heading>
         <Text style={text}>
           We received a request to reset your password for {siteName}. Click

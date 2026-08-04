@@ -37,8 +37,8 @@ const TermsOfService = () => {
       <header className="sticky top-0 z-40 bg-primary text-primary-foreground border-b border-primary/40">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-accent/60 bg-card">
-              <img src={logo} alt="SwiftMuv" className="w-full h-full object-cover" />
+            <div className="w-10 h-10 overflow-visible">
+              <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
             </div>
             <span className="font-bold text-lg tracking-tight">SwiftMuv</span>
           </Link>
@@ -99,8 +99,8 @@ const TermsOfService = () => {
       <footer className="border-t bg-primary text-primary-foreground">
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-accent/60">
-              <img src={logo} alt="SwiftMuv" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 overflow-visible">
+              <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
             </div>
             <span className="text-sm font-semibold">SwiftMuv</span>
           </div>

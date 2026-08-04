@@ -385,12 +385,12 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 z-30 bg-[#f5f5f5] font-sans text-slate-900">
+    <div className="fixed inset-0 z-30 bg-black font-sans text-white">
       {/* Full-screen map */}
       <div ref={mapDivRef} className="absolute inset-0" />
       {!mapsReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#f5f5f5]">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-900" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <Loader2 className="h-6 w-6 animate-spin text-white" />
         </div>
       )}
 
@@ -398,13 +398,13 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-4">
         <button
           onClick={goBack}
-          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] active:scale-95 transition"
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.6)] active:scale-95 transition"
           aria-label="Back"
         >
-          <ArrowLeft className="h-5 w-5 text-slate-900" strokeWidth={2.5} />
+          <ArrowLeft className="h-5 w-5 text-white" strokeWidth={2.5} />
         </button>
         {routeReady && step !== "where" && (
-          <div className="pointer-events-auto rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-lg">
+          <div className="pointer-events-auto rounded-full bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-black shadow-lg">
             {distanceKm.toFixed(1)} km · {moveType}
           </div>
         )}
@@ -414,7 +414,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       {/* Bottom sheet */}
       <div
         ref={sheetRef}
-        className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-[28px] bg-white shadow-[0_-16px_48px_rgba(0,0,0,0.18)] will-change-transform"
+        className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-[28px] bg-black shadow-[0_-16px_48px_rgba(0,0,0,0.7)] border-t border-neutral-800 will-change-transform"
         style={{
           height: snapHeights[snap],
           transform: `translateY(${Math.max(0, dragOffset)}px)`,
@@ -444,32 +444,32 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           className="flex w-full shrink-0 cursor-grab justify-center pt-3 pb-2 active:cursor-grabbing touch-none select-none"
           aria-label="Drag sheet"
         >
-          <span className="block h-1 w-10 rounded-full bg-slate-300" />
+          <span className="block h-1 w-10 rounded-full bg-neutral-700" />
         </div>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-5 pb-6">
           {step === "where" && (
             <div className="space-y-5 pt-1">
-              <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-slate-900">
+              <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-white">
                 Where are you moving?
               </h1>
 
               {/* Address stack — Uber's dot/line/square pattern */}
-              <div className="rounded-2xl bg-[#f4f4f4] p-3">
+              <div className="rounded-2xl bg-neutral-900 p-3">
                 <div className="flex items-start gap-3">
                   <div className="mt-3 flex flex-col items-center">
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-900" />
-                    <span className="my-1 h-8 w-0.5 bg-slate-300" />
-                    <span className="h-2.5 w-2.5 rounded-sm bg-slate-900" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-white" />
+                    <span className="my-1 h-8 w-0.5 bg-neutral-700" />
+                    <span className="h-2.5 w-2.5 rounded-sm bg-white" />
                   </div>
-                  <div className="flex-1 divide-y divide-slate-200">
+                  <div className="flex-1 divide-y divide-neutral-800">
                     <div className="pb-1">
                       <PlacesAutocomplete
                         value={pickup}
                         onChange={setPickup}
                         placeholder="Pickup location"
-                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-slate-900 shadow-none focus-visible:ring-0"
+                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-white shadow-none focus-visible:ring-0"
                       />
                     </div>
                     <div className="pt-1">
@@ -477,14 +477,14 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                         value={dropoff}
                         onChange={setDropoff}
                         placeholder="Where to?"
-                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-slate-900 shadow-none focus-visible:ring-0"
+                        className="h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-white shadow-none focus-visible:ring-0"
                       />
                     </div>
                   </div>
                   {(pickup || dropoff) && (
                     <button
                       onClick={() => { setPickup(""); setDropoff(""); setDistance(null); }}
-                      className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-600"
+                      className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-800 text-neutral-300"
                       aria-label="Clear"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -494,17 +494,17 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               </div>
 
               {calculating && (
-                <p className="flex items-center gap-2 text-[13px] text-slate-500">
+                <p className="flex items-center gap-2 text-[13px] text-neutral-400">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding your route…
                 </p>
               )}
               {distanceError && (
-                <p className="text-[13px] font-medium text-red-600">{distanceError}</p>
+                <p className="text-[13px] font-medium text-red-400">{distanceError}</p>
               )}
 
               {/* Recent / hint list — pure Uber list rows */}
               <div className="space-y-1 pt-1">
-                <p className="px-1 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <p className="px-1 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
                   Tips
                 </p>
                 {[
@@ -512,12 +512,12 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   "Schedule up to 30 days in advance",
                   "Add extra crew for heavy items",
                 ].map((h) => (
-                  <div key={h} className="flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-slate-50">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100">
-                      <Search className="h-4 w-4 text-slate-700" />
+                  <div key={h} className="flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-neutral-900">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800">
+                      <Search className="h-4 w-4 text-neutral-300" />
                     </div>
-                    <span className="flex-1 text-[14px] text-slate-700">{h}</span>
-                    <ChevronRight className="h-4 w-4 text-slate-400" />
+                    <span className="flex-1 text-[14px] text-neutral-300">{h}</span>
+                    <ChevronRight className="h-4 w-4 text-neutral-500" />
                   </div>
                 ))}
               </div>
@@ -526,11 +526,11 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
           {step === "vehicle" && (
             <div className="space-y-3 pt-1">
-              <h2 className="text-[22px] font-extrabold tracking-tight text-slate-900">
+              <h2 className="text-[22px] font-extrabold tracking-tight text-white">
                 Choose a vehicle
               </h2>
 
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-neutral-800">
                 {VEHICLE_TILES.map((tile) => {
                   const active = selectedTile.name === tile.name;
                   const price = routeReady ? priceForTile(tile, distanceKm, moveType) : null;
@@ -541,13 +541,13 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       onClick={() => setSelectedTile(tile)}
                       className={cn(
                         "flex w-full items-center gap-3 px-1 py-3 text-left transition-colors",
-                        active && "bg-slate-50",
+                        active && "bg-neutral-900",
                       )}
                     >
                       <div
                         className={cn(
-                          "flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-[#f4f4f4]",
-                          active && "ring-2 ring-slate-900",
+                          "flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-neutral-900",
+                          active && "ring-2 ring-white",
                         )}
                       >
                         <img
@@ -559,15 +559,15 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <p className="truncate text-[15px] font-bold text-slate-900">{tile.name}</p>
+                          <p className="truncate text-[15px] font-bold text-white">{tile.name}</p>
                         </div>
-                        <p className="flex items-center gap-1 text-[12px] text-slate-500">
+                        <p className="flex items-center gap-1 text-[12px] text-neutral-400">
                           <Clock className="h-3 w-3" /> {tile.eta}
                         </p>
-                        <p className="truncate text-[12px] text-slate-500">{tile.capacity}</p>
+                        <p className="truncate text-[12px] text-neutral-400">{tile.capacity}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[15px] font-extrabold text-slate-900">
+                        <p className="text-[15px] font-extrabold text-white">
                           {price != null ? formatCurrency(price) : "—"}
                         </p>
                       </div>
@@ -581,7 +581,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 <Button
                   onClick={() => setStep("schedule")}
                   disabled={!routeReady}
-                  className="mt-2 h-14 w-full rounded-2xl bg-slate-900 text-[16px] font-bold text-white shadow-lg hover:bg-slate-800 active:scale-[0.99] transition disabled:bg-slate-300 disabled:text-slate-500"
+                  className="mt-2 h-14 w-full rounded-2xl bg-white text-[16px] font-bold text-black shadow-lg hover:bg-neutral-200 active:scale-[0.99] transition disabled:bg-neutral-800 disabled:text-neutral-500"
                 >
                   Choose {selectedTile.name}
                 </Button>
@@ -591,28 +591,28 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
           {step === "schedule" && (
             <div className="space-y-4 pt-1">
-              <h2 className="text-[22px] font-extrabold tracking-tight text-slate-900">
+              <h2 className="text-[22px] font-extrabold tracking-tight text-white">
                 Review and confirm
               </h2>
 
               {/* Trip summary */}
-              <div className="rounded-2xl bg-[#f4f4f4] p-4">
+              <div className="rounded-2xl bg-neutral-900 p-4">
                 <div className="flex items-start gap-3">
                   <div className="mt-1.5 flex flex-col items-center">
-                    <span className="h-2 w-2 rounded-full bg-slate-900" />
-                    <span className="my-1 h-6 w-0.5 bg-slate-300" />
-                    <span className="h-2 w-2 rounded-sm bg-slate-900" />
+                    <span className="h-2 w-2 rounded-full bg-white" />
+                    <span className="my-1 h-6 w-0.5 bg-neutral-700" />
+                    <span className="h-2 w-2 rounded-sm bg-white" />
                   </div>
                   <div className="flex-1 space-y-2 text-[13px]">
-                    <p className="line-clamp-1 font-semibold text-slate-900">{pickup}</p>
-                    <p className="line-clamp-1 font-semibold text-slate-900">{dropoff}</p>
+                    <p className="line-clamp-1 font-semibold text-white">{pickup}</p>
+                    <p className="line-clamp-1 font-semibold text-white">{dropoff}</p>
                   </div>
                 </div>
               </div>
 
               {/* When */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
                   When
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -624,8 +624,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       className={cn(
                         "rounded-xl px-3 py-3 text-[14px] font-bold transition",
                         scheduleMode === mode
-                          ? "bg-slate-900 text-white"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+                          ? "bg-white text-black"
+                          : "bg-neutral-900 text-neutral-300 hover:bg-neutral-800",
                       )}
                     >
                       {mode === "asap" ? "Now" : "Schedule"}
@@ -639,8 +639,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "h-11 flex-1 justify-start rounded-xl border-slate-200 text-left font-semibold",
-                            !scheduledAt && "text-slate-500",
+                            "h-11 flex-1 justify-start rounded-xl border-neutral-800 text-left font-semibold",
+                            !scheduledAt && "text-neutral-400",
                           )}
                         >
                           <CalendarDays className="mr-2 h-4 w-4" />
@@ -662,7 +662,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       type="time"
                       value={scheduledTime}
                       onChange={(e) => setScheduledTime(e.target.value)}
-                      className="h-11 w-[120px] rounded-xl border-slate-200 font-semibold"
+                      className="h-11 w-[120px] rounded-xl border-neutral-800 font-semibold"
                       disabled={!scheduledAt}
                     />
                   </div>
@@ -670,15 +670,15 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               </div>
 
               {/* Crew */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-                      <Users className="h-4 w-4 text-slate-900" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-800">
+                      <Users className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-[14px] font-bold text-slate-900">Extra crew</p>
-                      <p className="text-[12px] text-slate-500">
+                      <p className="text-[14px] font-bold text-white">Extra crew</p>
+                      <p className="text-[12px] text-neutral-400">
                         {formatCurrency(CREW_MEMBER_RATE_CAD)} per person
                       </p>
                     </div>
@@ -686,13 +686,13 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   <Switch checked={crewEnabled} onCheckedChange={setCrewEnabled} />
                 </div>
                 {crewEnabled && (
-                  <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
-                    <span className="text-[14px] font-semibold text-slate-900">Crew members</span>
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-neutral-900 px-3 py-2.5">
+                    <span className="text-[14px] font-semibold text-white">Crew members</span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCrewCount((c) => Math.max(1, c - 1))}
                         disabled={crewCount <= 1}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-white shadow-sm disabled:opacity-40"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
@@ -700,7 +700,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       <button
                         onClick={() => setCrewCount((c) => Math.min(6, c + 1))}
                         disabled={crewCount >= 6}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-900 shadow-sm disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-white shadow-sm disabled:opacity-40"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
@@ -714,7 +714,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || !routeReady}
-                className="h-14 w-full rounded-2xl bg-slate-900 text-[16px] font-bold text-white shadow-lg hover:bg-slate-800 active:scale-[0.99] transition disabled:bg-slate-300 disabled:text-slate-500"
+                className="h-14 w-full rounded-2xl bg-white text-[16px] font-bold text-black shadow-lg hover:bg-neutral-200 active:scale-[0.99] transition disabled:bg-neutral-800 disabled:text-neutral-500"
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {submitting ? "Preparing…" : `Confirm · ${formatCurrency(quote.finalPrice)}`}
@@ -739,17 +739,17 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 };
 
 const PaymentRow = () => (
-  <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-[#f4f4f4] px-4 py-3 text-left transition hover:bg-slate-100">
+  <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-neutral-900 px-4 py-3 text-left transition hover:bg-neutral-800">
     <div className="flex items-center gap-3">
-      <div className="flex h-9 w-14 items-center justify-center rounded-md bg-slate-900 text-[10px] font-bold text-white">
+      <div className="flex h-9 w-14 items-center justify-center rounded-md bg-white text-[10px] font-bold text-black">
         CARD
       </div>
       <div>
-        <p className="text-[13px] font-bold text-slate-900">Personal · Card</p>
-        <p className="text-[11px] text-slate-500">Charged after confirmation</p>
+        <p className="text-[13px] font-bold text-white">Personal · Card</p>
+        <p className="text-[11px] text-neutral-400">Charged after confirmation</p>
       </div>
     </div>
-    <ChevronRight className="h-4 w-4 text-slate-400" />
+    <ChevronRight className="h-4 w-4 text-neutral-500" />
   </button>
 );
 

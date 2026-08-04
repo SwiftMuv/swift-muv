@@ -32,8 +32,8 @@ const About = () => {
       <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/30 bg-card">
-              <img src={logo} alt="SwiftMuv" className="w-full h-full object-cover" />
+            <div className="w-10 h-10 overflow-visible">
+              <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
             </div>
             <span className="font-bold text-lg tracking-tight">SwiftMuv</span>
           </Link>
@@ -129,8 +129,8 @@ const About = () => {
       <footer className="mt-auto border-t bg-card">
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-primary/30">
-              <img src={logo} alt="SwiftMuv" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 overflow-visible">
+              <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
             </div>
             <span className="text-sm font-semibold">SwiftMuv</span>
           </div>
