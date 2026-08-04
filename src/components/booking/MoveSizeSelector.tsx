@@ -48,7 +48,9 @@ const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => {
       })}
     </div>
   </div>
-);
+  );
+};
+
 
 export { MOVE_SIZES };
 export default MoveSizeSelector;
