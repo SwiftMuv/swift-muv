@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck } from "lucide-react";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
 import { useI18n } from "@/contexts/I18nContext";
+import JobChatSheet from "@/components/shared/JobChatSheet";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ActiveJobSheetProps {
   job: Job | null;
@@ -21,6 +24,33 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
   const { t, formatCurrency } = useI18n();
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState<string | null>(null);
+
+  const threadJobId = job?.jobId ?? job?.id ?? null;
+  const bookingId = job?.bookingId ?? null;
+
+  useEffect(() => {
+    if (!bookingId) return;
+    let active = true;
+    (async () => {
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("customer_id")
+        .eq("id", bookingId)
+        .maybeSingle();
+      if (!booking?.customer_id) return;
+      const { data: profile } = await supabase
+        .from("customer_profiles")
+        .select("phone")
+        .eq("user_id", booking.customer_id)
+        .maybeSingle();
+      if (active) setCustomerPhone((profile as { phone: string | null } | null)?.phone ?? null);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [bookingId]);
 
   if (!job) return null;
 
