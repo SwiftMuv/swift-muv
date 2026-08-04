@@ -17,26 +17,28 @@ import {
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import swiftmuvLogo from "@/assets/swiftmuv-logo.png";
+import { useI18n } from "@/contexts/I18nContext";
 
 type DocType = Database["public"]["Enums"]["driver_document_type"];
 
 type DocSlot = {
   key: "license_front" | "license_back" | "insurance";
-  label: string;
-  hint: string;
+  labelKey: string;
+  hintKey: string;
   docType: DocType;
   accept: string;
 };
 
 const DOC_SLOTS: DocSlot[] = [
-  { key: "license_front", label: "Driver's License (Front)", hint: "Clear photo of the front", docType: "license", accept: "image/*" },
-  { key: "license_back", label: "Driver's License (Back)", hint: "Clear photo of the back", docType: "license", accept: "image/*" },
-  { key: "insurance", label: "Insurance Documents", hint: "PDF or image accepted", docType: "insurance", accept: "image/*,application/pdf" },
+  { key: "license_front", labelKey: "auth.driver.licenseFront", hintKey: "auth.driver.licenseFrontHint", docType: "license", accept: "image/*" },
+  { key: "license_back", labelKey: "auth.driver.licenseBack", hintKey: "auth.driver.licenseBackHint", docType: "license", accept: "image/*" },
+  { key: "insurance", labelKey: "auth.driver.insurance", hintKey: "auth.driver.insuranceHint", docType: "insurance", accept: "image/*,application/pdf" },
 ];
 
 const DriverLogin = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user, role } = useAuth();
+  const { t } = useI18n();
   const [isSignUp, setIsSignUp] = useState(false);
 
   // Auth
@@ -70,12 +72,12 @@ const DriverLogin = () => {
   );
 
   const handleForgotPassword = async () => {
-    if (!email) return toast.error("Enter your email above first");
+    if (!email) return toast.error(t("auth.customer.enterEmailFirst"));
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) toast.error(error.message);
-    else toast.success("Password reset link sent. Check your inbox.");
+    else toast.success(t("auth.resetLinkSent"));
   };
 
   useEffect(() => {
@@ -139,7 +141,7 @@ const DriverLogin = () => {
         .from("driver-documents")
         .upload(path, file);
       if (upErr) {
-        toast.error(`Upload failed: ${slot.label}`);
+        toast.error(t("auth.driver.uploadFailed", { label: t(slot.labelKey) }));
         continue;
       }
       await supabase.from("driver_documents").insert({
@@ -165,7 +167,7 @@ const DriverLogin = () => {
 
     // Sign up flow
     if (!fullName || !dob || !phone || !address || !licensePlate) {
-      toast.error("Please complete all required fields");
+      toast.error(t("auth.driver.completeRequiredFields"));
       setLoading(false);
       return;
     }
@@ -195,7 +197,7 @@ const DriverLogin = () => {
       }
     }
 
-    toast.success("Account created. Welcome aboard!");
+    toast.success(t("auth.driver.accountCreated"));
     setLoading(false);
   };
 
@@ -213,10 +215,10 @@ const DriverLogin = () => {
             className="text-2xl font-bold text-foreground"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            {isSignUp ? "Become a Driver" : "Driver Login"}
+            {isSignUp ? t("auth.driver.becomeDriver") : t("auth.driver.driverLogin")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {isSignUp ? "Join our fleet and start earning" : "Sign in to your driver dashboard"}
+            {isSignUp ? t("auth.driver.signUpSubtitle") : t("auth.driver.signInSubtitle")}
           </p>
         </div>
 
@@ -229,7 +231,7 @@ const DriverLogin = () => {
                   type="button"
                   onClick={() => avatarRef.current?.click()}
                   className="relative w-24 h-24 rounded-full bg-primary/10 border-2 border-dashed border-primary/30 flex items-center justify-center overflow-hidden hover:bg-primary/15 transition"
-                  aria-label="Upload profile picture"
+                  aria-label={t("auth.driver.uploadProfilePicture")}
                 >
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
@@ -244,49 +246,49 @@ const DriverLogin = () => {
                   className="hidden"
                   onChange={(e) => onAvatar(e.target.files?.[0] ?? null)}
                 />
-                <p className="text-xs text-muted-foreground">Profile picture (optional)</p>
+                <p className="text-xs text-muted-foreground">{t("auth.driver.profilePictureOptional")}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-foreground">Full Name</Label>
-                <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full legal name" required />
+                <Label htmlFor="name" className="text-foreground">{t("auth.fullName")}</Label>
+                <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t("auth.driver.fullNamePlaceholder")} required />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dob" className="text-foreground">Date of Birth</Label>
+                <Label htmlFor="dob" className="text-foreground">{t("auth.driver.dateOfBirth")}</Label>
                 <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} required max={new Date().toISOString().split("T")[0]} />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-foreground">Telephone Number</Label>
-                <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 000 0000" required />
+                <Label htmlFor="phone" className="text-foreground">{t("auth.telephone")}</Label>
+                <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("auth.driver.telephonePlaceholder")} required />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address" className="text-foreground">Current Address</Label>
-                <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, City, Postal Code" required />
+                <Label htmlFor="address" className="text-foreground">{t("auth.currentAddress")}</Label>
+                <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t("auth.driver.currentAddressPlaceholder")} required />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="plate" className="text-foreground">Vehicle Registration Number</Label>
-                <Input id="plate" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value.toUpperCase())} placeholder="ABC-1234" required />
+                <Label htmlFor="plate" className="text-foreground">{t("auth.driver.vehicleRegistration")}</Label>
+                <Input id="plate" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value.toUpperCase())} placeholder={t("auth.driver.vehicleRegistrationPlaceholder")} required />
               </div>
 
               {/* Vehicle photo upload */}
               <div className="space-y-2">
-                <Label className="text-foreground">Vehicle Photo</Label>
+                <Label className="text-foreground">{t("auth.driver.vehiclePhoto")}</Label>
                 <button
                   type="button"
                   onClick={() => vehiclePhotoRef.current?.click()}
                   className="w-full h-32 rounded-xl bg-primary/10 border-2 border-dashed border-primary/30 flex items-center justify-center overflow-hidden hover:bg-primary/15 transition"
-                  aria-label="Upload vehicle photo"
+                  aria-label={t("auth.driver.uploadVehiclePhoto")}
                 >
                   {vehiclePhotoPreview ? (
                     <img src={vehiclePhotoPreview} alt="Vehicle" className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-primary">
                       <Camera className="w-7 h-7" />
-                      <span className="text-xs">Tap to upload photo of your vehicle</span>
+                      <span className="text-xs">{t("auth.driver.tapToUploadVehicle")}</span>
                     </div>
                   )}
                 </button>
@@ -302,19 +304,19 @@ const DriverLogin = () => {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+            <Label htmlFor="email" className="text-foreground">{t("auth.email")}</Label>
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.emailPlaceholder")} required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-white">Password</Label>
+            <Label htmlFor="password" className="text-white">{t("auth.password")}</Label>
             <div className="relative">
               <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="pr-10" />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -322,7 +324,7 @@ const DriverLogin = () => {
             {!isSignUp && (
               <div className="flex justify-end">
                 <button type="button" onClick={handleForgotPassword} className="text-xs font-medium text-primary hover:underline">
-                  Forgot password?
+                  {t("auth.forgotPassword")}
                 </button>
               </div>
             )}
@@ -336,15 +338,15 @@ const DriverLogin = () => {
                 onChange={(e) => setKeepSignedIn(e.target.checked)}
                 className="h-4 w-4 rounded border-border accent-primary"
               />
-              Keep me signed in
+              {t("auth.keepSignedIn")}
             </label>
           )}
 
           {isSignUp && (
             <div className="space-y-2 pt-2">
-              <Label className="text-foreground">Upload Documents</Label>
+              <Label className="text-foreground">{t("auth.driver.uploadDocuments")}</Label>
               <p className="text-xs text-muted-foreground -mt-1">
-                Required for verification. You can also add these later from your profile.
+                {t("auth.driver.documentsRequired")}
               </p>
               <div className="space-y-2">
                 {DOC_SLOTS.map((slot) => {
@@ -362,9 +364,9 @@ const DriverLogin = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{slot.label}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{t(slot.labelKey)}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
-                          {file ? file.name : slot.hint}
+                          {file ? file.name : t(slot.hintKey)}
                         </p>
                       </div>
                       <input
@@ -383,21 +385,21 @@ const DriverLogin = () => {
           )}
 
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading}>
-            {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
+            {loading ? t("auth.pleaseWait") : isSignUp ? t("auth.customer.createAccountBtn") : t("auth.signIn")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+          {isSignUp ? t("auth.alreadyHaveAccount") : t("auth.dontHaveAccount")}{" "}
           <button onClick={() => setIsSignUp(!isSignUp)} className="font-semibold text-primary hover:underline">
-            {isSignUp ? "Sign in" : "Sign up"}
+            {isSignUp ? t("auth.signInLink") : t("auth.signUpLink")}
           </button>
         </p>
 
         <div className="text-center">
           <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground">
-            ← Customer login
+            {t("auth.customerLoginLink")}
           </Link>
         </div>
       </div>

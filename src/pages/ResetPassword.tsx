@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { KeyRound, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 type LinkState = "validating" | "valid" | "invalid";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -51,8 +53,8 @@ const ResetPassword = () => {
     if (errorCode) {
       const friendly =
         errorCode.includes("expired") || (errorDescription || "").toLowerCase().includes("expired")
-          ? "This password reset link has expired. Please request a new one."
-          : "This password reset link is invalid or has already been used. Please request a new one.";
+          ? t("auth.resetPassword.expiredLinkMessage")
+          : t("auth.resetPassword.invalidLinkMessage");
       setLinkState("invalid");
       setLinkError(errorDescription ? `${friendly}` : friendly);
       return;
@@ -66,9 +68,7 @@ const ResetPassword = () => {
       supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
         if (error) {
           setLinkState("invalid");
-          setLinkError(
-            "This password reset link is invalid or has expired. Please request a new one.",
-          );
+          setLinkError(t("auth.resetPassword.invalidOrExpiredMessage"));
           return;
         }
         setIsRecovery(true);
@@ -105,17 +105,13 @@ const ResetPassword = () => {
       } else if (!hasRecoveryIntent && !code) {
         // No active session and no recovery intent in URL — treat as invalid entry.
         setLinkState("invalid");
-        setLinkError(
-          "No valid password reset link detected. Please request a new reset email.",
-        );
+        setLinkError(t("auth.resetPassword.noValidLinkMessage"));
       } else if (hasRecoveryIntent && !code) {
         // Wait briefly for PASSWORD_RECOVERY event; if it never comes the link is bad.
         window.setTimeout(() => {
           setLinkState((prev) => {
             if (prev === "validating") {
-              setLinkError(
-                "This password reset link is invalid or has expired. Please request a new one.",
-              );
+              setLinkError(t("auth.resetPassword.invalidOrExpiredMessage"));
               return "invalid";
             }
             return prev;
@@ -131,10 +127,10 @@ const ResetPassword = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      return toast.error("New passwords do not match");
+      return toast.error(t("auth.resetPassword.passwordsDoNotMatch"));
     }
     if (password.length < 6) {
-      return toast.error("Password must be at least 6 characters");
+      return toast.error(t("auth.resetPassword.passwordTooShort"));
     }
     setLoading(true);
 
@@ -145,7 +141,7 @@ const ResetPassword = () => {
       });
       if (signInError) {
         setLoading(false);
-        return toast.error("Old password is incorrect");
+        return toast.error(t("auth.resetPassword.oldPasswordIncorrect"));
       }
     }
 
@@ -155,12 +151,12 @@ const ResetPassword = () => {
       const msg = error.message?.toLowerCase() ?? "";
       if (msg.includes("expired") || msg.includes("invalid") || msg.includes("session")) {
         setLinkState("invalid");
-        setLinkError("Your reset session has expired. Please request a new reset email.");
+        setLinkError(t("auth.resetPassword.sessionExpiredMessage"));
         return;
       }
       return toast.error(error.message);
     }
-    toast.success("Password updated. Please sign in.");
+    toast.success(t("auth.resetPassword.passwordUpdated"));
     const redirectTo = userRole === "driver" ? "/driver/login" : "/login";
     await supabase.auth.signOut();
     navigate(redirectTo, { replace: true });
@@ -198,7 +194,7 @@ const ResetPassword = () => {
           type="button"
           onClick={() => setShow((s) => !s)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          aria-label={show ? "Hide password" : "Show password"}
+          aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
@@ -218,16 +214,16 @@ const ResetPassword = () => {
               className="text-2xl font-bold text-foreground"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
-              Link invalid or expired
+              {t("auth.resetPassword.linkInvalidTitle")}
             </h1>
             <p className="text-sm text-muted-foreground">{linkError}</p>
           </div>
           <div className="flex flex-col gap-2">
             <Button asChild className="w-full rounded-xl h-11 font-semibold">
-              <Link to="/login">Request a new reset link</Link>
+              <Link to="/login">{t("auth.resetPassword.requestNewLink")}</Link>
             </Button>
             <Button asChild variant="outline" className="w-full rounded-xl h-11">
-              <Link to="/driver/login">Driver sign in</Link>
+              <Link to="/driver/login">{t("auth.resetPassword.driverSignIn")}</Link>
             </Button>
           </div>
         </div>
@@ -240,7 +236,7 @@ const ResetPassword = () => {
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
         <div className="flex items-center gap-3 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Validating reset link…</span>
+          <span>{t("auth.resetPassword.validatingLink")}</span>
         </div>
       </div>
     );
@@ -254,24 +250,24 @@ const ResetPassword = () => {
             <KeyRound className="h-7 w-7 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Set new password
+            {t("auth.resetPassword.setNewPassword")}
           </h1>
           <p className="text-sm text-muted-foreground">
             {ready
               ? isRecovery
-                ? "Enter your new password below"
-                : "Enter your current and new password below"
-              : "Validating recovery link..."}
+                ? t("auth.resetPassword.enterNewPassword")
+                : t("auth.resetPassword.enterCurrentAndNew")
+              : t("auth.resetPassword.validatingRecovery")}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isRecovery && (
-            <PwInput id="old-password" label="Old Password" value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
+            <PwInput id="old-password" label={t("auth.resetPassword.oldPassword")} value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
           )}
-          <PwInput id="new-password" label="New Password" value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
-          <PwInput id="repeat-password" label="Repeat New Password" value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
+          <PwInput id="new-password" label={t("auth.resetPassword.newPassword")} value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
+          <PwInput id="repeat-password" label={t("auth.resetPassword.repeatNewPassword")} value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading || !ready}>
-            {loading ? "Updating..." : "Update Password"}
+            {loading ? t("auth.resetPassword.updating") : t("auth.resetPassword.updatePassword")}
           </Button>
         </form>
       </div>
