@@ -80,6 +80,8 @@ const haversineKm = (a: [number, number], b: [number, number]) => {
 const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Props) => {
   const [info, setInfo] = useState<DriverInfo | null>(null);
   const [completionCode, setCompletionCode] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const driverIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -94,10 +96,12 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
         if (active) {
           setInfo(null);
           setCompletionCode(null);
+          setJobId(null);
         }
         return;
       }
       driverIdRef.current = job.driver_id;
+      if (active) setJobId(job.id);
       const [{ data: profile }, { data: code }] = await Promise.all([
         supabase
           .from("driver_profiles")
