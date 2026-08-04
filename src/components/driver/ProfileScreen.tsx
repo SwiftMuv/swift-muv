@@ -38,6 +38,8 @@ import { VEHICLE_OPTIONS, type VehicleCategory } from "@/lib/booking";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DriverReviews from "@/components/DriverReviews";
 import AppFeedbackScreen from "@/components/driver/AppFeedbackScreen";
+import LangCurrencySettings from "@/components/LangCurrencySettings";
+
 
 type DriverProfile = Tables<"driver_profiles">;
 type DocRow = Tables<"driver_documents">;
@@ -656,7 +658,11 @@ const ProfileScreen = () => {
         </section>
       )}
 
+      {/* Language & currency */}
+      <LangCurrencySettings />
+
       {/* App Feedback */}
+
       <AppFeedbackScreen />
 
       {/* Sign Out */}
