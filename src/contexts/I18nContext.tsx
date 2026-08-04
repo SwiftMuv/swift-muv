@@ -91,6 +91,16 @@ Object.assign(TRANSLATIONS.pt, { "nav.home": "Início", "nav.bookings": "Reserva
 Object.assign(TRANSLATIONS.de, { "nav.home": "Start", "nav.bookings": "Buchungen", "nav.activities": "Aktivitäten", "nav.account": "Konto", "nav.wallet": "Wallet", "booking.bookNow": "Jetzt buchen · {amount}", "booking.estimatedTotal": "Geschätzte Summe", "common.cancel": "Abbrechen", "common.rebook": "Erneut buchen", "driver.todayEarnings": "Heutige Einnahmen", "wallet.availableBalance": "Verfügbares Guthaben", "history.totalEarned": "Gesamt verdient" });
 Object.assign(TRANSLATIONS.it, { "nav.home": "Home", "nav.bookings": "Prenotazioni", "nav.activities": "Attività", "nav.account": "Account", "nav.wallet": "Portafoglio", "booking.bookNow": "Prenota · {amount}", "booking.estimatedTotal": "Totale stimato", "common.cancel": "Annulla", "common.rebook": "Prenota di nuovo", "driver.todayEarnings": "Guadagni di oggi", "wallet.availableBalance": "Saldo disponibile", "history.totalEarned": "Totale guadagnato" });
 
+// Merge feature-area dictionaries. Languages without their own entries fall back to English.
+const ALL_LANGS = LANGUAGES.map((l) => l.code);
+for (const dict of [customerDict, driverDict, bookingDict]) {
+  const en = dict.en ?? {};
+  for (const code of ALL_LANGS) {
+    TRANSLATIONS[code] = { ...TRANSLATIONS[code], ...en, ...(dict[code] ?? {}) };
+  }
+}
+
+
 const localeFor = (lang: string) => LANGUAGES.find((l) => l.code === lang)?.locale ?? "en-CA";
 const cleanLang = (value: string | null | undefined) => (value && SUPPORTED_LANG_CODES.has(value) ? value : "en");
 const cleanCurrency = (value: string | null | undefined) => (value && SUPPORTED_CURRENCY_CODES.has(value) ? value : "CAD");
