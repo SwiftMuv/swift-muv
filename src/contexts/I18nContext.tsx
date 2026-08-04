@@ -5,6 +5,7 @@ import { customerDict } from "@/i18n/customer";
 import { driverDict } from "@/i18n/driver";
 import { bookingDict } from "@/i18n/booking";
 import { authDict } from "@/i18n/auth";
+import { coreDict } from "@/i18n/core";
 
 
 
@@ -85,13 +86,8 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
 
 const COPY_LANGS = ["es", "pt", "de", "it"];
 for (const code of COPY_LANGS) {
-  TRANSLATIONS[code] = { ...TRANSLATIONS.en };
+  TRANSLATIONS[code] = { ...TRANSLATIONS.en, ...(coreDict[code] ?? {}) };
 }
-
-Object.assign(TRANSLATIONS.es, { "nav.home": "Inicio", "nav.bookings": "Reservas", "nav.activities": "Actividades", "nav.account": "Cuenta", "nav.wallet": "Billetera", "booking.bookNow": "Reservar · {amount}", "booking.estimatedTotal": "Total estimado", "common.cancel": "Cancelar", "common.rebook": "Reservar de nuevo", "driver.todayEarnings": "Ganancias de hoy", "wallet.availableBalance": "Saldo disponible", "history.totalEarned": "Total ganado" });
-Object.assign(TRANSLATIONS.pt, { "nav.home": "Início", "nav.bookings": "Reservas", "nav.activities": "Atividades", "nav.account": "Conta", "nav.wallet": "Carteira", "booking.bookNow": "Reservar · {amount}", "booking.estimatedTotal": "Total estimado", "common.cancel": "Cancelar", "common.rebook": "Reservar novamente", "driver.todayEarnings": "Ganhos de hoje", "wallet.availableBalance": "Saldo disponível", "history.totalEarned": "Total ganho" });
-Object.assign(TRANSLATIONS.de, { "nav.home": "Start", "nav.bookings": "Buchungen", "nav.activities": "Aktivitäten", "nav.account": "Konto", "nav.wallet": "Wallet", "booking.bookNow": "Jetzt buchen · {amount}", "booking.estimatedTotal": "Geschätzte Summe", "common.cancel": "Abbrechen", "common.rebook": "Erneut buchen", "driver.todayEarnings": "Heutige Einnahmen", "wallet.availableBalance": "Verfügbares Guthaben", "history.totalEarned": "Gesamt verdient" });
-Object.assign(TRANSLATIONS.it, { "nav.home": "Home", "nav.bookings": "Prenotazioni", "nav.activities": "Attività", "nav.account": "Account", "nav.wallet": "Portafoglio", "booking.bookNow": "Prenota · {amount}", "booking.estimatedTotal": "Totale stimato", "common.cancel": "Annulla", "common.rebook": "Prenota di nuovo", "driver.todayEarnings": "Guadagni di oggi", "wallet.availableBalance": "Saldo disponibile", "history.totalEarned": "Totale guadagnato" });
 
 // Merge feature-area dictionaries. Languages without their own entries fall back to English.
 const ALL_LANGS = LANGUAGES.map((l) => l.code);

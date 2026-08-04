@@ -10,7 +10,7 @@ import { useI18n } from "@/contexts/I18nContext";
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const [searchParams] = useSearchParams();
   const total = searchParams.get("total") || "244.00";
   const moveSize = searchParams.get("size") || "Medium";
@@ -175,7 +175,7 @@ const BookingConfirmation = () => {
               <div className="my-2 border-t border-border" />
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("bk.confirmation.moveLabel", { size: moveSize })}</span>
-                <span className="font-semibold text-foreground">${total}</span>
+                <span className="font-semibold text-foreground">{formatCurrency(Number(total) || 0)}</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Shield className="h-3.5 w-3.5" />
