@@ -1,4 +1,5 @@
 import { Package, ArrowRight } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/components/ui/button";
 import type { Job } from "@/pages/DriverDashboard";
 
@@ -14,6 +15,7 @@ const moveSizeColor: Record<string, string> = {
 };
 
 export const JobCard = ({ job, onAccept }: JobCardProps) => {
+  const { t, formatCurrency } = useI18n();
   return (
     <div className="rounded-2xl bg-card border p-4 space-y-3 transition-all hover:shadow-md">
       {/* Header */}
@@ -21,11 +23,11 @@ export const JobCard = ({ job, onAccept }: JobCardProps) => {
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-muted-foreground">{job.id}</span>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${moveSizeColor[job.moveSize]}`}>
-            {job.moveSize}
+            {t(`drv.moveSize.${job.moveSize.toLowerCase()}`)}
           </span>
         </div>
         <p className="text-lg font-bold text-primary" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          ${job.price}
+          {formatCurrency(job.price)}
         </p>
       </div>
 
@@ -51,7 +53,7 @@ export const JobCard = ({ job, onAccept }: JobCardProps) => {
 
       {/* Accept */}
       <Button onClick={() => onAccept(job.id)} className="w-full rounded-xl h-11 font-semibold gap-2">
-        Accept Job <ArrowRight className="w-4 h-4" />
+        {t("drv.jobCard.accept")} <ArrowRight className="w-4 h-4" />
       </Button>
     </div>
   );

@@ -11,14 +11,16 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useI18n } from "@/contexts/I18nContext";
 
 const DriverStripeConnect = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
   const handleConnect = async () => {
     if (!user) {
-      toast({ title: "Not signed in", description: "Please sign in to continue.", variant: "destructive" });
+      toast({ title: t("drv.stripe.notSignedInTitle"), description: t("drv.stripe.notSignedInDesc"), variant: "destructive" });
       return;
     }
 
@@ -33,7 +35,7 @@ const DriverStripeConnect = () => {
       const url: string | undefined = data?.url;
       const stripeConnectId: string | undefined = data?.stripe_connect_id ?? data?.accountId;
 
-      if (!url) throw new Error("No onboarding URL returned from Stripe.");
+      if (!url) throw new Error(t("drv.stripe.noUrl"));
 
       if (stripeConnectId) {
         const { error: updateError } = await supabase
@@ -48,8 +50,8 @@ const DriverStripeConnect = () => {
 
       window.location.href = url;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not start Stripe onboarding.";
-      toast({ title: "Stripe Connect failed", description: message, variant: "destructive" });
+      const message = err instanceof Error ? err.message : t("drv.stripe.failedDefault");
+      toast({ title: t("drv.stripe.failedTitle"), description: message, variant: "destructive" });
       setLoading(false);
     }
   };
@@ -60,25 +62,25 @@ const DriverStripeConnect = () => {
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <CreditCard className="h-6 w-6" />
         </div>
-        <CardTitle className="text-2xl">Set up payouts</CardTitle>
+        <CardTitle className="text-2xl">{t("drv.stripe.setupPayouts")}</CardTitle>
         <CardDescription>
-          Connect your Stripe account to receive earnings directly to your bank. It only takes a couple of minutes.
+          {t("drv.stripe.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-          <p>Secure onboarding handled by Stripe. SwiftMuv never sees your banking details.</p>
+          <p>{t("drv.stripe.secureNote")}</p>
         </div>
         <Button onClick={handleConnect} disabled={loading} className="w-full" size="lg">
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Redirecting…
+              {t("drv.stripe.redirecting")}
             </>
           ) : (
             <>
-              Connect with Stripe
+              {t("drv.stripe.connect")}
               <ArrowRight className="h-4 w-4" />
             </>
           )}

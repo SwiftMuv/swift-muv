@@ -39,6 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DriverReviews from "@/components/DriverReviews";
 import AppFeedbackScreen from "@/components/driver/AppFeedbackScreen";
 import LangCurrencySettings from "@/components/LangCurrencySettings";
+import { useI18n } from "@/contexts/I18nContext";
 
 
 type DriverProfile = Tables<"driver_profiles">;
@@ -46,29 +47,30 @@ type DocRow = Tables<"driver_documents">;
 type DocType = Database["public"]["Enums"]["driver_document_type"];
 
 const statusConfig = {
-  approved: { icon: CheckCircle2, label: "Verified", className: "text-[hsl(var(--swift-success))] bg-[hsl(var(--swift-success))]/15" },
-  pending: { icon: Clock, label: "Pending", className: "text-[hsl(var(--swift-warning))] bg-[hsl(var(--swift-warning))]/15" },
-  rejected: { icon: XCircle, label: "Rejected", className: "text-[hsl(var(--swift-danger))] bg-[hsl(var(--swift-danger))]/15" },
-  missing: { icon: ShieldAlert, label: "Not uploaded", className: "text-muted-foreground bg-muted" },
+  approved: { icon: CheckCircle2, labelKey: "drv.profile.statusVerified", className: "text-[hsl(var(--swift-success))] bg-[hsl(var(--swift-success))]/15" },
+  pending: { icon: Clock, labelKey: "drv.profile.statusPending", className: "text-[hsl(var(--swift-warning))] bg-[hsl(var(--swift-warning))]/15" },
+  rejected: { icon: XCircle, labelKey: "drv.profile.statusRejected", className: "text-[hsl(var(--swift-danger))] bg-[hsl(var(--swift-danger))]/15" },
+  missing: { icon: ShieldAlert, labelKey: "drv.profile.statusMissing", className: "text-muted-foreground bg-muted" },
 } as const;
 
 type DocSlot = {
   type: DocType;
-  name: string;
+  nameKey: string;
   icon: typeof FileText;
-  description: string;
+  descriptionKey: string;
 };
 
 const DOC_SLOTS: DocSlot[] = [
-  { type: "license", name: "Driver's License", icon: IdCard, description: "Front & back of valid license" },
-  { type: "insurance", name: "Insurance Documents", icon: ShieldCheck, description: "Commercial vehicle insurance" },
-  { type: "vehicle_registration", name: "Vehicle Registration", icon: FileText, description: "Current registration" },
-  { type: "police_check", name: "Background Check", icon: FileCheck, description: "Police clearance certificate" },
-  { type: "other", name: "Bank Details", icon: Landmark, description: "Void cheque or direct deposit form" },
+  { type: "license", nameKey: "drv.profile.docLicense", icon: IdCard, descriptionKey: "drv.profile.docLicenseDesc" },
+  { type: "insurance", nameKey: "drv.profile.docInsurance", icon: ShieldCheck, descriptionKey: "drv.profile.docInsuranceDesc" },
+  { type: "vehicle_registration", nameKey: "drv.profile.docRegistration", icon: FileText, descriptionKey: "drv.profile.docRegistrationDesc" },
+  { type: "police_check", nameKey: "drv.profile.docPoliceCheck", icon: FileCheck, descriptionKey: "drv.profile.docPoliceCheckDesc" },
+  { type: "other", nameKey: "drv.profile.docBankDetails", icon: Landmark, descriptionKey: "drv.profile.docBankDetailsDesc" },
 ];
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [docs, setDocs] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState(true);

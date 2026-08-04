@@ -25,7 +25,7 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
   const { t } = useI18n();
   const navigate = useNavigate();
 
-  const displayName = driverName?.trim() || "Driver";
+  const displayName = driverName?.trim() || t("drv.header.driverFallback");
   const initials = displayName
     .split(" ")
     .map((s) => s[0])
@@ -62,7 +62,7 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
           <DropdownMenu>
             <DropdownMenuTrigger
               className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40"
-              aria-label="Profile menu"
+              aria-label={t("drv.header.profileMenu")}
             >
               <div className="w-9 h-9 rounded-full bg-secondary overflow-hidden flex items-center justify-center ring-2 ring-primary/30">
                 {avatarUrl ? (
@@ -85,7 +85,7 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/terms")} className="text-sm">
                 <FileText className="w-4 h-4 mr-2" />
-                {t("common.terms") !== "common.terms" ? t("common.terms") : "Terms & Conditions"}
+                {t("common.terms") !== "common.terms" ? t("common.terms") : t("drv.header.termsFallback")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/about")} className="text-sm">
                 <Info className="w-4 h-4 mr-2" />

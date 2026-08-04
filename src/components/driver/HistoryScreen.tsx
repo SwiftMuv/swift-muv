@@ -32,12 +32,12 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-muted-foreground">{job.id.slice(0, 8)}</span>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${moveSizeBadge[job.moveSize]}`}>
-            {job.moveSize}
+            {t(`drv.moveSize.${job.moveSize.toLowerCase()}`)}
           </span>
         </div>
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Calendar className="w-3 h-3" />
-          {job.date}
+          {job.date ? formatDate(job.date, { hour: "numeric", minute: "numeric" }) : "—"}
         </span>
       </div>
 
@@ -46,7 +46,7 @@ const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: Com
           <DollarSign className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">{formatCurrency(job.earnings)}</span>
           {job.tip > 0 && (
-            <span className="text-[10px] text-[hsl(var(--swift-success))] font-medium">+{formatCurrency(job.tip)} tip</span>
+            <span className="text-[10px] text-[hsl(var(--swift-success))] font-medium">{t("drv.history.tip", { amount: formatCurrency(job.tip) })}</span>
           )}
         </div>
         <button
@@ -103,7 +103,7 @@ const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
         pickupAddress: r.bookings?.pickup_address ?? "",
         dropoffAddress: r.bookings?.dropoff_address ?? "",
         moveSize: sizeLabel(r.bookings?.move_size),
-        date: r.completed_at ? new Date(r.completed_at).toLocaleString() : "—",
+        date: r.completed_at ?? "",
         earnings: Number(r.bookings?.total_price ?? 0),
         tip: Number(r.tip_amount ?? 0),
       }));

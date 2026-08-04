@@ -6,6 +6,7 @@ import { Star, Loader2, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface AppReview {
   id: string;
@@ -16,6 +17,7 @@ interface AppReview {
 
 const AppFeedbackScreen = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [stars, setStars] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +38,7 @@ const AppFeedbackScreen = () => {
 
   const submit = async () => {
     if (!user) return;
-    if (stars < 1) return toast.error("Please rate the app");
+    if (stars < 1) return toast.error(t("drv.feedback.rateApp"));
     setSubmitting(true);
     const { error } = await supabase.from("app_reviews").insert({
       driver_id: user.id,
@@ -45,7 +47,7 @@ const AppFeedbackScreen = () => {
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success("Thanks for your feedback!");
+    toast.success(t("drv.feedback.thanks"));
     setStars(5);
     setComment("");
     load();
@@ -57,32 +59,32 @@ const AppFeedbackScreen = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <MessageSquare className="h-5 w-5 text-primary" />
-            App Feedback
+            {t("drv.feedback.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-sm font-medium mb-2">App performance</p>
+            <p className="text-sm font-medium mb-2">{t("drv.feedback.appPerformance")}</p>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} type="button" onClick={() => setStars(n)} aria-label={`${n} stars`}>
+                <button key={n} type="button" onClick={() => setStars(n)} aria-label={t("drv.feedback.starsLabel", { n })}>
                   <Star className={`h-7 w-7 ${n <= stars ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <p className="text-sm font-medium mb-2">What can we improve? / Report a bug</p>
+            <p className="text-sm font-medium mb-2">{t("drv.feedback.improveLabel")}</p>
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Tell us what's working, what's broken, or what you'd love to see..."
+              placeholder={t("drv.feedback.placeholder")}
               maxLength={1000}
               rows={5}
             />
           </div>
           <Button onClick={submit} disabled={submitting} className="w-full">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit feedback"}
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("drv.feedback.submit")}
           </Button>
         </CardContent>
       </Card>
@@ -90,7 +92,7 @@ const AppFeedbackScreen = () => {
       {history.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Your recent feedback</CardTitle>
+            <CardTitle className="text-base">{t("drv.feedback.recent")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {history.map((r) => (

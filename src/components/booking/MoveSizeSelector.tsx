@@ -2,10 +2,10 @@ import { Package, Truck, Home, Building2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 
 const MOVE_SIZES = [
-  { id: "small", label: "Small", desc: "Few items / boxes", icon: Package, basePrice: 89 },
-  { id: "medium", label: "Medium", desc: "Studio / 1BR apt", icon: Truck, basePrice: 199 },
-  { id: "large", label: "Large", desc: "2-3BR apartment", icon: Home, basePrice: 349 },
-  { id: "xlarge", label: "XL Move", desc: "Full house move", icon: Building2, basePrice: 599 },
+  { id: "small", labelKey: "bk.moveSize.small.label", descKey: "bk.moveSize.small.desc", icon: Package, basePrice: 89 },
+  { id: "medium", labelKey: "bk.moveSize.medium.label", descKey: "bk.moveSize.medium.desc", icon: Truck, basePrice: 199 },
+  { id: "large", labelKey: "bk.moveSize.large.label", descKey: "bk.moveSize.large.desc", icon: Home, basePrice: 349 },
+  { id: "xlarge", labelKey: "bk.moveSize.xlarge.label", descKey: "bk.moveSize.xlarge.desc", icon: Building2, basePrice: 599 },
 ] as const;
 
 export type MoveSize = (typeof MOVE_SIZES)[number]["id"];
@@ -16,12 +16,12 @@ interface MoveSizeSelectorProps {
 }
 
 const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   return (
   <div className="space-y-3">
-    <h3 className="text-sm font-semibold text-foreground">Move Size</h3>
+    <h3 className="text-sm font-semibold text-foreground">{t("bk.moveSize.title")}</h3>
     <div className="grid grid-cols-2 gap-3">
-      {MOVE_SIZES.map(({ id, label, desc, icon: Icon, basePrice }) => {
+      {MOVE_SIZES.map(({ id, labelKey, descKey, icon: Icon, basePrice }) => {
         const isActive = selected === id;
         return (
           <button
@@ -39,10 +39,10 @@ const MoveSizeSelector = ({ selected, onSelect }: MoveSizeSelectorProps) => {
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">{label}</p>
-              <p className="text-xs text-muted-foreground">{desc}</p>
+              <p className="text-sm font-semibold text-foreground">{t(labelKey)}</p>
+              <p className="text-xs text-muted-foreground">{t(descKey)}</p>
             </div>
-            <p className="text-sm font-bold text-cyan-500">From {formatCurrency(basePrice)}</p>
+            <p className="text-sm font-bold text-cyan-500">{t("bk.moveSize.from", { amount: formatCurrency(basePrice) })}</p>
           </button>
         );
       })}

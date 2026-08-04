@@ -147,7 +147,7 @@ const CustomerDashboard = () => {
       toast.success((data as any)?.fee ? t("customer.cancelledFee", { fee: formatCurrency(Number((data as any).fee)) }) : t("customer.bookingCancelled"));
       loadBookings();
     } catch (e: any) {
-      toast.error(e.message ?? "Cancel failed");
+      toast.error(e.message ?? t("cust.dashboard.cancelFailed"));
     } finally {
       setCancelling(null);
     }

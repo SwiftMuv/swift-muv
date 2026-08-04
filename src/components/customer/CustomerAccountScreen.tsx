@@ -59,7 +59,7 @@ export const CustomerAccountScreen = () => {
 
         <Link to="/terms">
           <FileText className="w-4 h-4 mr-2" />
-          Terms &amp; Conditions
+          {t("cust.account.termsConditions")}
         </Link>
       </Button>
 

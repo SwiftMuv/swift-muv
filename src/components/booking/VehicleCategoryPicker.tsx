@@ -3,6 +3,7 @@ import { type VehicleCategory } from "@/lib/booking";
 import { useVehicleCategories } from "@/hooks/useVehicleCategories";
 import { getVehicleImage } from "@/lib/vehicleImages";
 import { Check } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Props {
   value: VehicleCategory | null;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
+  const { t } = useI18n();
   const { options, loading } = useVehicleCategories();
 
   if (loading) {
@@ -43,7 +45,7 @@ export const VehicleCategoryPicker = ({ value, onChange }: Props) => {
           >
             {isPremium && (
               <span className="absolute right-2 top-2 z-10 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-foreground shadow-sm">
-                Premium
+                {t("bk.vehiclePicker.premium")}
               </span>
             )}
             {selected && (

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Props {
   open: boolean;
@@ -20,6 +21,7 @@ const QUICK_TIPS = [5, 10, 20];
 
 export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [stars, setStars] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +48,7 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
-    toast.success("Thanks for your rating!");
+    toast.success(t("cust.rating.thanks"));
     setStep("tip");
   };
 
@@ -54,7 +56,7 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
     if (!jobId) return;
     const amount = typeof tip === "number" ? tip : Number(tip);
     if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Please choose or enter a tip amount");
+      toast.error(t("cust.rating.chooseTip"));
       return;
     }
     setTipLoading(true);
@@ -71,7 +73,7 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
       if (!clientSecret || !publishableKey) throw new Error("Stripe is not configured");
       setCheckout({ clientSecret, publishableKey });
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not start tip payment");
+      toast.error(e?.message ?? t("cust.rating.tipFailed"));
     } finally {
       setTipLoading(false);
     }
@@ -87,7 +89,7 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
       <Dialog open={open && !checkout} onOpenChange={(o) => !o && onClose()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{step === "rate" ? "How was your move?" : "Tip your driver"}</DialogTitle>
+            <DialogTitle>{step === "rate" ? t("cust.rating.title") : t("cust.rating.tipTitle")}</DialogTitle>
           </DialogHeader>
 
           {step === "rate" && (
@@ -102,12 +104,12 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
               <Textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Leave a note for your driver (optional)"
+                placeholder={t("cust.rating.notePlaceholder")}
                 maxLength={500}
               />
               <DialogFooter>
                 <Button onClick={submitRating} disabled={submitting} className="w-full">
-                  {submitting ? "Submitting..." : "Submit rating"}
+                  {submitting ? t("cust.rating.submitting") : t("cust.rating.submitRating")}
                 </Button>
               </DialogFooter>
             </>
@@ -116,7 +118,7 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
           {step === "tip" && (
             <div className="space-y-4 py-2">
               <p className="text-sm text-muted-foreground text-center">
-                100% of your tip goes to your driver.
+                {t("cust.rating.allTipGoes")}
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {QUICK_TIPS.map((amt) => (
@@ -131,7 +133,7 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
                 ))}
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Custom amount (CAD)</label>
+                <label className="text-xs text-muted-foreground">{t("cust.rating.customAmount")}</label>
                 <Input
                   type="number"
                   min={1}
@@ -147,10 +149,10 @@ export const RatingModal = ({ open, jobId, driverId, onClose }: Props) => {
               </div>
               <DialogFooter className="flex flex-col sm:flex-row gap-2">
                 <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
-                  Skip
+                  {t("cust.rating.skip")}
                 </Button>
                 <Button onClick={submitTip} disabled={tipLoading || !tip} className="w-full">
-                  {tipLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : `Submit tip${tip ? ` $${tip}` : ""}`}
+                  {tipLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (tip ? t("cust.rating.submitTipAmount", { amount: tip }) : t("cust.rating.submitTip"))}
                 </Button>
               </DialogFooter>
             </div>

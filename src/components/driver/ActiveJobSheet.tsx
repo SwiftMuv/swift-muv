@@ -123,10 +123,10 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
             <div className="flex gap-2">
               <button
                 type="button"
-                aria-label="Call customer"
+                aria-label={t("drv.activeJob.callCustomer")}
                 onClick={() => {
                   if (!customerPhone) {
-                    toast.error("Customer phone unavailable — send a message instead");
+                    toast.error(t("drv.activeJob.phoneUnavailable"));
                     return;
                   }
                   window.location.href = `tel:${customerPhone}`;
@@ -137,10 +137,10 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
               </button>
               <button
                 type="button"
-                aria-label="Message customer"
+                aria-label={t("drv.activeJob.messageCustomer")}
                 onClick={() => {
                   if (!threadJobId) {
-                    toast.error("Chat is not available yet");
+                    toast.error(t("drv.activeJob.chatUnavailable"));
                     return;
                   }
                   setChatOpen(true);
@@ -151,7 +151,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
               </button>
               <button
                 type="button"
-                aria-label="Navigate"
+                aria-label={t("drv.activeJob.navigate")}
                 onClick={() => {
                   const dest =
                     job.status === "in_transit"
@@ -195,7 +195,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
                 setCodeInput(e.target.value);
                 setCodeError(false);
               }}
-              placeholder="_ _ _ _"
+              placeholder={t("drv.activeJob.codePlaceholder")}
               maxLength={4}
               className={`text-center text-2xl tracking-[0.5em] font-mono h-14 rounded-xl ${
                 codeError ? "border-destructive" : ""
@@ -219,7 +219,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
             jobId={threadJobId}
             open={chatOpen}
             onOpenChange={setChatOpen}
-            title={`Chat with ${job.customerName}`}
+            title={t("drv.activeJob.chatWith", { name: job.customerName })}
           />
         )}
       </SheetContent>

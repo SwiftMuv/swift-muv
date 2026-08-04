@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Message {
   id: string;
@@ -20,7 +21,9 @@ interface Props {
   title?: string;
 }
 
-const JobChatSheet = ({ jobId, open, onOpenChange, title = "Chat" }: Props) => {
+const JobChatSheet = ({ jobId, open, onOpenChange, title }: Props) => {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t("bk.chat.title");
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -74,7 +77,7 @@ const JobChatSheet = ({ jobId, open, onOpenChange, title = "Chat" }: Props) => {
     const { error } = await supabase.from("job_messages").insert({ job_id: jobId, sender_id: userId, body });
     setSending(false);
     if (error) {
-      toast.error("Message could not be sent");
+      toast.error(t("bk.chat.sendFailed"));
       return;
     }
     setDraft("");
@@ -84,13 +87,13 @@ const JobChatSheet = ({ jobId, open, onOpenChange, title = "Chat" }: Props) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="flex h-[80vh] flex-col rounded-t-2xl p-0">
         <SheetHeader className="border-b px-4 py-3">
-          <SheetTitle className="text-left text-base">{title}</SheetTitle>
+          <SheetTitle className="text-left text-base">{resolvedTitle}</SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
           {messages.length === 0 && (
             <p className="pt-8 text-center text-sm text-muted-foreground">
-              No messages yet. Say hello 👋
+              {t("bk.chat.empty")}
             </p>
           )}
           {messages.map((m) => {
@@ -123,7 +126,7 @@ const JobChatSheet = ({ jobId, open, onOpenChange, title = "Chat" }: Props) => {
                 void send();
               }
             }}
-            placeholder="Type a message…"
+            placeholder={t("bk.chat.placeholder")}
             maxLength={2000}
           />
           <Button size="icon" onClick={() => void send()} disabled={sending || !draft.trim()}>
