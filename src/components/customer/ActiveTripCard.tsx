@@ -2,10 +2,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Phone, MessageSquare, MoreHorizontal, Star, KeyRound } from "lucide-react";
+import { Phone, MessageSquare, MoreHorizontal, Star, KeyRound, Share2, Copy, LifeBuoy, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getVehicleImage } from "@/lib/vehicleImages";
+import JobChatSheet from "@/components/shared/JobChatSheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface Props {
   bookingId: string;
@@ -72,6 +80,8 @@ const haversineKm = (a: [number, number], b: [number, number]) => {
 const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Props) => {
   const [info, setInfo] = useState<DriverInfo | null>(null);
   const [completionCode, setCompletionCode] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const driverIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -86,10 +96,12 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
         if (active) {
           setInfo(null);
           setCompletionCode(null);
+          setJobId(null);
         }
         return;
       }
       driverIdRef.current = job.driver_id;
+      if (active) setJobId(job.id);
       const [{ data: profile }, { data: code }] = await Promise.all([
         supabase
           .from("driver_profiles")
@@ -231,25 +243,104 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <a
-            href={info.phone ? `sms:${info.phone}` : "#"}
+          <button
+            type="button"
+            onClick={() => {
+              if (!jobId) {
+                toast.error("Chat is not available yet");
+                return;
+              }
+              setChatOpen(true);
+            }}
             className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95"
           >
             <MessageSquare className="h-4 w-4" /> Message
-          </a>
-          <a
-            href={info.phone ? `tel:${info.phone}` : "#"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!info.phone) {
+                toast.error("Driver phone number is unavailable — use Message instead");
+                return;
+              }
+              window.location.href = `tel:${info.phone}`;
+            }}
             className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95"
           >
             <Phone className="h-4 w-4" /> Call
-          </a>
-          <button
-            type="button"
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95"
-          >
-            <MoreHorizontal className="h-4 w-4" /> Options
           </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95">
+              <MoreHorizontal className="h-4 w-4" /> Options
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                onSelect={async () => {
+                  const text = `I'm tracking my SwiftMuv move. Driver: ${info.full_name ?? "assigned"}${
+                    info.license_plate ? ` (${info.license_plate})` : ""
+                  }. Pick-up: ${pickupAddress}${etaMin != null ? ` — ETA ${etaMin} min` : ""}`;
+                  try {
+                    if (navigator.share) {
+                      await navigator.share({ title: "My SwiftMuv trip", text, url: window.location.href });
+                    } else {
+                      await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
+                      toast.success("Trip details copied");
+                    }
+                  } catch {
+                    /* user dismissed share */
+                  }
+                }}
+              >
+                <Share2 className="mr-2 h-4 w-4" /> Share trip status
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (pickupPos) {
+                    window.open(
+                      `https://www.google.com/maps/search/?api=1&query=${pickupPos[0]},${pickupPos[1]}`,
+                      "_blank",
+                      "noopener",
+                    );
+                  } else {
+                    window.open(
+                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pickupAddress)}`,
+                      "_blank",
+                      "noopener",
+                    );
+                  }
+                }}
+              >
+                <MapPin className="mr-2 h-4 w-4" /> Open pick-up in Maps
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={async () => {
+                  await navigator.clipboard.writeText(completionCode ?? pickupAddress);
+                  toast.success(completionCode ? "Completion code copied" : "Pick-up address copied");
+                }}
+              >
+                <Copy className="mr-2 h-4 w-4" /> Copy {completionCode ? "completion code" : "address"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  window.location.href = `mailto:support@swiftmuv.com?subject=${encodeURIComponent(
+                    `Help with my move${jobId ? ` (job ${jobId.slice(0, 8)})` : ""}`,
+                  )}`;
+                }}
+              >
+                <LifeBuoy className="mr-2 h-4 w-4" /> Contact support
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        {jobId && (
+          <JobChatSheet
+            jobId={jobId}
+            open={chatOpen}
+            onOpenChange={setChatOpen}
+            title={info.full_name ? `Chat with ${info.full_name}` : "Chat with your driver"}
+          />
+        )}
 
         {completionCode && (
           <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3">

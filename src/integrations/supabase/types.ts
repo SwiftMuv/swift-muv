@@ -515,6 +515,38 @@ export type Database = {
         }
         Relationships: []
       }
+      job_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          job_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          job_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_messages_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           booking_id: string
@@ -759,6 +791,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_job_thread: {
+        Args: { _job_id: string; _user_id: string }
+        Returns: boolean
+      }
       complete_job_with_code: {
         Args: { _code: string; _job_id: string }
         Returns: boolean
