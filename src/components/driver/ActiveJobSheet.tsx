@@ -121,13 +121,50 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">{job.customerName}</p>
             <div className="flex gap-2">
-              <button className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <button
+                type="button"
+                aria-label="Call customer"
+                onClick={() => {
+                  if (!customerPhone) {
+                    toast.error("Customer phone unavailable — send a message instead");
+                    return;
+                  }
+                  window.location.href = `tel:${customerPhone}`;
+                }}
+                className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center"
+              >
                 <Phone className="w-4 h-4 text-primary" />
               </button>
-              <button className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <button
+                type="button"
+                aria-label="Message customer"
+                onClick={() => {
+                  if (!threadJobId) {
+                    toast.error("Chat is not available yet");
+                    return;
+                  }
+                  setChatOpen(true);
+                }}
+                className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center"
+              >
                 <MessageSquare className="w-4 h-4 text-primary" />
               </button>
-              <button className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <button
+                type="button"
+                aria-label="Navigate"
+                onClick={() => {
+                  const dest =
+                    job.status === "in_transit" || job.status === "loaded"
+                      ? job.dropoffAddress
+                      : job.pickupAddress;
+                  window.open(
+                    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`,
+                    "_blank",
+                    "noopener",
+                  );
+                }}
+                className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center"
+              >
                 <Navigation className="w-4 h-4 text-primary" />
               </button>
             </div>
