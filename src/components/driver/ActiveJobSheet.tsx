@@ -213,6 +213,15 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
           {nextStep.icon}
           {t(nextStep.label)}
         </Button>
+
+        {threadJobId && (
+          <JobChatSheet
+            jobId={threadJobId}
+            open={chatOpen}
+            onOpenChange={setChatOpen}
+            title={`Chat with ${job.customerName}`}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
