@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import DriverTrackingMap from "@/components/tracking/DriverTrackingMap";
 import { StatusTimeline } from "@/components/tracking/StatusTimeline";
 import { useDriverStatusUpdates } from "@/hooks/useDriverStatusUpdates";
+import { useI18n } from "@/contexts/I18nContext";
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const total = searchParams.get("total") || "244.00";
   const moveSize = searchParams.get("size") || "Medium";
@@ -64,12 +66,12 @@ const BookingConfirmation = () => {
           {/* ETA Header */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Estimated arrival</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("bk.confirmation.estimatedArrival")}</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                   {eta} min
                 </span>
-                <span className="text-sm text-muted-foreground">ETA</span>
+                <span className="text-sm text-muted-foreground">{t("bk.confirmation.eta")}</span>
               </div>
             </div>
             <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ${
@@ -81,10 +83,10 @@ const BookingConfirmation = () => {
             }`}>
               <Clock className="h-3.5 w-3.5" />
               <span className="text-xs font-semibold">
-                {currentStatus === "assigned" && "Assigned"}
-                {currentStatus === "en_route" && "En Route"}
-                {currentStatus === "arrived" && "Arrived"}
-                {currentStatus === "completed" && "Completed"}
+                {currentStatus === "assigned" && t("bk.confirmation.status.assigned")}
+                {currentStatus === "en_route" && t("bk.confirmation.status.enRoute")}
+                {currentStatus === "arrived" && t("bk.confirmation.status.arrived")}
+                {currentStatus === "completed" && t("bk.confirmation.status.completed")}
               </span>
             </div>
           </div>
@@ -115,14 +117,14 @@ const BookingConfirmation = () => {
             <div className="flex gap-2">
               <a
                 href="tel:+15125550199"
-                aria-label="Call driver"
+                aria-label={t("bk.confirmation.callDriver")}
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/20"
               >
                 <Phone className="h-4 w-4" />
               </a>
               <a
                 href="sms:+15125550199"
-                aria-label="Text driver"
+                aria-label={t("bk.confirmation.textDriver")}
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors hover:bg-primary/20"
               >
                 <MessageCircle className="h-4 w-4" />
@@ -132,7 +134,7 @@ const BookingConfirmation = () => {
 
           {/* Status Timeline */}
           <div className="rounded-2xl border border-border bg-secondary/20 p-4">
-            <p className="text-sm font-semibold text-foreground mb-3">Live Status</p>
+            <p className="text-sm font-semibold text-foreground mb-3">{t("bk.confirmation.liveStatus")}</p>
             <StatusTimeline statusHistory={statusHistory} currentStatus={currentStatus} />
           </div>
 
@@ -141,7 +143,7 @@ const BookingConfirmation = () => {
             onClick={() => setExpanded(!expanded)}
             className="flex w-full items-center justify-between text-sm"
           >
-            <span className="font-semibold text-foreground">Trip Details</span>
+            <span className="font-semibold text-foreground">{t("bk.confirmation.tripDetails")}</span>
             {expanded ? (
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
@@ -156,7 +158,7 @@ const BookingConfirmation = () => {
                   <MapPin className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Pickup</p>
+                  <p className="text-xs text-muted-foreground">{t("bk.confirmation.pickup")}</p>
                   <p className="font-medium text-foreground">123 Main St, Austin TX</p>
                 </div>
               </div>
@@ -166,18 +168,18 @@ const BookingConfirmation = () => {
                   <MapPin className="h-3.5 w-3.5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Drop-off</p>
+                  <p className="text-xs text-muted-foreground">{t("bk.confirmation.dropoff")}</p>
                   <p className="font-medium text-foreground">456 Oak Ave, Dallas TX</p>
                 </div>
               </div>
               <div className="my-2 border-t border-border" />
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{moveSize} move</span>
+                <span className="text-muted-foreground">{t("bk.confirmation.moveLabel", { size: moveSize })}</span>
                 <span className="font-semibold text-foreground">${total}</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Shield className="h-3.5 w-3.5" />
-                <span>Fully insured · Tracking updates every 10s</span>
+                <span>{t("bk.confirmation.insuredNote")}</span>
               </div>
             </div>
           )}
@@ -188,7 +190,7 @@ const BookingConfirmation = () => {
             onClick={() => navigate("/")}
             className="h-12 w-full rounded-xl text-sm font-semibold"
           >
-            Cancel Booking
+            {t("bk.confirmation.cancelBooking")}
           </Button>
         </div>
       </div>

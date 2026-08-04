@@ -73,7 +73,7 @@ const BookingPage = () => {
       setDistanceError(null);
       return;
     }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setCalculating(true);
       setDistanceError(null);
       try {
@@ -96,7 +96,7 @@ const BookingPage = () => {
         setCalculating(false);
       }
     }, 800);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [pickup, dropoff]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
