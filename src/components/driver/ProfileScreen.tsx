@@ -130,8 +130,8 @@ const ProfileScreen = () => {
       .eq("driver_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (e1) toast.error("Failed to load profile");
-    if (e2) toast.error("Failed to load documents");
+    if (e1) toast.error(t("drv.profile.failedLoadProfile"));
+    if (e2) toast.error(t("drv.profile.failedLoadDocs"));
     if (prof) {
       setProfile(prof);
       setFullName(prof.full_name ?? "");
@@ -198,9 +198,9 @@ const ProfileScreen = () => {
       })
       .eq("user_id", user.id);
 
-    if (error) toast.error("Failed to save profile");
+    if (error) toast.error(t("drv.profile.failedSaveProfile"));
     else {
-      toast.success("Profile updated");
+      toast.success(t("drv.profile.updated"));
       setEditing(false);
       loadAll();
     }
@@ -224,9 +224,9 @@ const ProfileScreen = () => {
       })
       .eq("user_id", user.id);
 
-    if (error) toast.error("Failed to save vehicle details");
+    if (error) toast.error(t("drv.profile.failedSaveVehicle"));
     else {
-      toast.success("Vehicle details updated");
+      toast.success(t("drv.profile.vehicleUpdated"));
       setEditingVehicle(false);
       loadAll();
     }
@@ -240,7 +240,7 @@ const ProfileScreen = () => {
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("driver-avatars").upload(path, file, { upsert: true });
     if (upErr) {
-      toast.error("Avatar upload failed");
+      toast.error(t("drv.profile.avatarUploadFailed"));
       setUploadingAvatar(false);
       return;
     }
@@ -249,9 +249,9 @@ const ProfileScreen = () => {
       .from("driver_profiles")
       .update({ avatar_url: pub.publicUrl, profile_picture_url: pub.publicUrl })
       .eq("user_id", user.id);
-    if (updErr) toast.error("Failed to save avatar");
+    if (updErr) toast.error(t("drv.profile.failedSaveAvatar"));
     else {
-      toast.success("Profile picture updated");
+      toast.success(t("drv.profile.avatarUpdated"));
       loadAll();
     }
     setUploadingAvatar(false);
@@ -265,7 +265,7 @@ const ProfileScreen = () => {
     const path = `${user.id}/${docType}-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("driver-documents").upload(path, file);
     if (upErr) {
-      toast.error("Upload failed");
+      toast.error(t("drv.profile.uploadFailed"));
       setUploadingType(null);
       return;
     }
@@ -275,9 +275,9 @@ const ProfileScreen = () => {
       file_path: path,
       status: "pending",
     });
-    if (insErr) toast.error("Failed to save document");
+    if (insErr) toast.error(t("drv.profile.failedSaveDoc"));
     else {
-      toast.success("Document uploaded");
+      toast.success(t("drv.profile.docUploaded"));
       loadAll();
     }
     setUploadingType(null);
@@ -298,7 +298,7 @@ const ProfileScreen = () => {
       .createSignedUrl(latest.file_path, 60 * 10);
     setPreviewLoading(null);
     if (error || !data?.signedUrl) {
-      toast.error("Could not load document");
+      toast.error(t("drv.profile.couldNotLoadDoc"));
       return;
     }
     setPreviewDoc({
@@ -320,16 +320,16 @@ const ProfileScreen = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground text-sm">Loading profile…</p>
+        <p className="text-muted-foreground text-sm">{t("drv.profile.loading")}</p>
       </div>
     );
   }
 
   const vehicleLabel =
     [profile?.vehicle_year, profile?.vehicle_make, profile?.vehicle_model].filter(Boolean).join(" ") ||
-    "No vehicle set";
+    t("drv.profile.noVehicleSet");
   const vehicleMeta =
-    [profile?.vehicle_color, profile?.license_plate].filter(Boolean).join(" · ") || "Add vehicle details";
+    [profile?.vehicle_color, profile?.license_plate].filter(Boolean).join(" · ") || t("drv.profile.addVehicleDetails");
 
   const avatarUrl = profile?.avatar_url || profile?.profile_picture_url;
 
@@ -365,7 +365,7 @@ const ProfileScreen = () => {
             onClick={() => avatarInputRef.current?.click()}
             disabled={uploadingAvatar}
             className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center border-2 border-background disabled:opacity-50"
-            aria-label="Upload profile picture"
+            aria-label={t("drv.profile.uploadAvatarAria")}
           >
             <Camera className="w-4 h-4 text-primary-foreground" />
           </button>
@@ -376,7 +376,7 @@ const ProfileScreen = () => {
           )}
         </div>
         <h2 className="text-xl font-bold mt-3 text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          {profile?.full_name || "Driver"}
+          {profile?.full_name || t("drv.profile.driverFallback")}
         </h2>
         <div className="flex items-center gap-2 mt-1">
           <Badge
@@ -388,7 +388,7 @@ const ProfileScreen = () => {
             }`}
           >
             <ShieldCheck className="w-3 h-3 mr-1" />
-            {allVerified ? "Pro Verified" : "Verification Pending"}
+            {allVerified ? t("drv.profile.proVerified") : t("drv.profile.verificationPending")}
           </Badge>
           {typeof profile?.rating === "number" && profile.rating > 0 && (
             <Badge variant="secondary" className="text-xs font-semibold">
@@ -403,16 +403,16 @@ const ProfileScreen = () => {
       <div className="flex justify-end">
         {!editing ? (
           <Button variant="outline" size="sm" className="rounded-xl text-xs bg-orange-500 hover:bg-orange-600 border-orange-500 text-white hover:text-white" onClick={() => setEditing(true)}>
-            Edit Profile
+            {t("drv.profile.editProfile")}
           </Button>
         ) : (
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" className="rounded-xl text-xs" onClick={() => setEditing(false)}>
-              Cancel
+              {t("drv.profile.cancel")}
             </Button>
             <Button size="sm" className="rounded-xl text-xs" onClick={handleSave} disabled={saving}>
               <Save className="w-3.5 h-3.5 mr-1" />
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("drv.profile.saving") : t("drv.profile.save")}
             </Button>
           </div>
         )}
@@ -421,20 +421,20 @@ const ProfileScreen = () => {
       {/* Personal Info */}
       <section className="rounded-xl bg-card border overflow-hidden">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-4 pt-3 pb-2">
-          Personal Info
+          {t("drv.profile.personalInfo")}
         </h3>
         {editing ? (
           <div className="px-4 pb-3 space-y-3">
-            <Input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            <Input placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <Input placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Input placeholder={t("drv.profile.fullNamePlaceholder")} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <Input placeholder={t("drv.profile.phonePlaceholder")} value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input placeholder={t("drv.profile.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
         ) : (
           <div className="divide-y divide-border">
             {[
-              { icon: Phone, label: profile?.phone || "No phone set" },
-              { icon: Mail, label: user?.email || "No email" },
-              { icon: User, label: profile?.address || "No address set" },
+              { icon: Phone, label: profile?.phone || t("drv.profile.noPhoneSet") },
+              { icon: Mail, label: user?.email || t("drv.profile.noEmail") },
+              { icon: User, label: profile?.address || t("drv.profile.noAddressSet") },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
