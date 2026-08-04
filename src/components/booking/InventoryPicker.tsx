@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CarFront, Loader2, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/contexts/I18nContext";
 import { Button } from "@/components/ui/button";
 import type { SelectedItem } from "@/lib/movingEngine";
 import CargoVanImg from "@/assets/vehicles/cargo-van.png";
@@ -25,12 +26,12 @@ interface CategoryDef {
 
 const SUV_KEY = "__suv__";
 
-const CATEGORIES: CategoryDef[] = [
-  { key: SUV_KEY, label: "Extra Large Car / SUV", imageSrc: SuvImg },
-  { key: "Van", label: "Cargo Van", imageSrc: CargoVanImg },
-  { key: "Pickup", label: "Pickup", imageSrc: PickupImg },
-  { key: "Box Truck", label: "Box Truck", imageSrc: BoxTruckImg },
-  { key: "Other Inventory", label: "Moving Truck", imageSrc: MovingTruckImg },
+const CATEGORIES: { key: string; labelKey: string; imageSrc: string }[] = [
+  { key: SUV_KEY, labelKey: "bk.inventory.category.suv", imageSrc: SuvImg },
+  { key: "Van", labelKey: "bk.inventory.category.van", imageSrc: CargoVanImg },
+  { key: "Pickup", labelKey: "bk.inventory.category.pickup", imageSrc: PickupImg },
+  { key: "Box Truck", labelKey: "bk.inventory.category.boxTruck", imageSrc: BoxTruckImg },
+  { key: "Other Inventory", labelKey: "bk.inventory.category.other", imageSrc: MovingTruckImg },
 ];
 
 interface Props {
@@ -41,6 +42,7 @@ interface Props {
 }
 
 export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuvChange }: Props) => {
+  const { t } = useI18n();
   const [items, setItems] = useState<MovingItemRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuv
   if (loading) {
     return (
       <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading inventory…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("bk.inventory.loading")}
       </div>
     );
   }
@@ -102,6 +104,7 @@ export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuv
   const current = activeCategory && activeCategory !== SUV_KEY
     ? CATEGORIES.find((c) => c.key === activeCategory)
     : null;
+  const currentLabel = current ? t(current.labelKey) : "";
   const currentRows = current ? itemsByCat[current.key] ?? [] : [];
 
   return (
@@ -131,7 +134,7 @@ export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuv
             >
               {isSuv && (
                 <span className="absolute left-1.5 top-1.5 z-10 rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-accent-foreground shadow">
-                  Bags
+                  {t("bk.inventory.suvBadge")}
                 </span>
               )}
               {count > 0 && (
@@ -142,13 +145,13 @@ export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuv
               <div className="flex h-24 w-full items-center justify-center">
                 <img
                   src={cat.imageSrc}
-                  alt={cat.label}
+                  alt={t(cat.labelKey)}
                   className="max-h-full max-w-full object-contain"
                   loading="lazy"
                 />
               </div>
               <span className="mt-1 text-[11px] font-semibold leading-tight text-white">
-                {cat.label}
+                {t(cat.labelKey)}
               </span>
             </button>
           );
@@ -157,9 +160,9 @@ export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuv
 
       {suvSelected && (
         <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 text-xs text-foreground">
-          <p className="font-semibold">Extra Large Car / SUV selected</p>
+          <p className="font-semibold">{t("bk.inventory.suvSelectedTitle")}</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Bags & luggage only · flat $50 local (+$1.20/km for intercity). Inventory items are ignored when SUV is on.
+            {t("bk.inventory.suvSelectedDesc")}
           </p>
         </div>
       )}
@@ -169,15 +172,15 @@ export const InventoryPicker = ({ selected, onChange, suvSelected = false, onSuv
         <div className="rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between border-b border-slate-700 pb-2">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-white">
-              {current.label} items
+              {currentLabel} {t("bk.inventory.itemsSuffix")}
             </h4>
             <span className="text-[10px] text-slate-400">
-              Specify quantities
+              {t("bk.inventory.specifyQuantities")}
             </span>
           </div>
           {currentRows.length === 0 ? (
             <p className="py-3 text-center text-xs text-muted-foreground">
-              No items in this category.
+              {t("bk.inventory.noItems")}
             </p>
           ) : (
             <div className="space-y-2">

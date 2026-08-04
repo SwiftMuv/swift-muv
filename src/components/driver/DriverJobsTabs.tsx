@@ -69,17 +69,17 @@ export const DriverJobsTabs = ({ loading, available, activeJob, onAccept, onUpda
                     </span>
                     {closest && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">
-                        <Sparkles className="w-3 h-3" /> Closest
+                        <Sparkles className="w-3 h-3" /> {t("drv.jobsTabs.closest")}
                       </span>
                     )}
                     {j.distanceKm != null && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-foreground/70">
-                        <Navigation className="w-3 h-3" /> {j.distanceKm.toFixed(1)} km
+                        <Navigation className="w-3 h-3" /> {t("drv.jobsTabs.kmShort", { km: j.distanceKm.toFixed(1) })}
                       </span>
                     )}
                     {j.etaMinutes != null && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-foreground/70">
-                        <Clock className="w-3 h-3" /> {j.etaMinutes} min
+                        <Clock className="w-3 h-3" /> {t("drv.jobsTabs.minShort", { min: j.etaMinutes })}
                       </span>
                     )}
                   </div>

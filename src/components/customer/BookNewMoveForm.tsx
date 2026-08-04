@@ -75,7 +75,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       setDistanceError(null);
       return;
     }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setCalculating(true);
       setDistanceError(null);
       try {
@@ -86,19 +86,19 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
         if (error) throw error;
         if (data?.fallback || data?.error) {
           setDistance(null);
-          setDistanceError(data.details ?? "We could not resolve that route. Please choose a full address from the suggestions.");
+          setDistanceError(data.details ?? t("cust.booking.routeUnresolved"));
           return;
         }
         if (data?.km) setDistance(data);
       } catch (e) {
         console.warn("Distance calc failed", e);
         setDistance(null);
-        setDistanceError("We could not calculate that route. Please check both addresses and try again.");
+        setDistanceError(t("cust.booking.routeCalcFailed"));
       } finally {
         setCalculating(false);
       }
     }, 800);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [pickup, dropoff]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
@@ -164,7 +164,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       });
 
       if (checkoutError || !payload?.clientSecret || !payload.publishableKey) {
-        toast.error("Could not start checkout: " + (payload?.error ?? checkoutError?.message ?? "unknown"));
+        toast.error(t("cust.booking.couldNotStartCheckout", { reason: payload?.error ?? checkoutError?.message ?? "unknown" }));
         setSubmitting(false);
         return;
       }
@@ -174,7 +174,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       setCheckoutOpen(true);
       setSubmitting(false);
     } catch (e) {
-      toast.error("Unexpected error: " + (e instanceof Error ? e.message : String(e)));
+      toast.error(t("cust.booking.unexpectedError", { reason: e instanceof Error ? e.message : String(e) }));
       setSubmitting(false);
     }
   };
@@ -246,8 +246,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><CalendarDays className="h-4 w-4" /></div>
               <div>
-                <h3 className="font-semibold">When do you need it?</h3>
-                <p className="text-[11px] text-muted-foreground">Now or schedule a future date</p>
+                <h3 className="font-semibold">{t("cust.booking.whenNeed")}</h3>
+                <p className="text-[11px] text-muted-foreground">{t("cust.booking.nowOrSchedule")}</p>
               </div>
             </div>
           </div>
@@ -262,7 +262,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
                   : "border-border bg-card text-foreground hover:border-primary/40",
               )}
             >
-              Now / ASAP
+              {t("cust.booking.nowAsap")}
             </button>
             <button
               type="button"
@@ -274,7 +274,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
                   : "border-border bg-card text-foreground hover:border-primary/40",
               )}
             >
-              Schedule for later
+              {t("cust.booking.scheduleLater")}
             </button>
           </div>
           {scheduleMode === "later" && (
@@ -289,7 +289,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
                     )}
                   >
                     <CalendarDays className="mr-2 h-4 w-4" />
-                    {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Pick a date"}
+                    {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : t("cust.booking.pickDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -356,7 +356,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           {selectedItems.length > 1 && (
             <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/10 p-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Item details (floor & access)
+                {t("cust.booking.itemDetails")}
               </p>
               {selectedItems.map((it) => {
                 const floor = it.floor_level ?? 0;
@@ -371,7 +371,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
                     </p>
                     <div className="flex items-center gap-1.5">
                       <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                      <label className="text-[11px] text-muted-foreground">Floor</label>
+                      <label className="text-[11px] text-muted-foreground">{t("cust.booking.floor")}</label>
                       <Input
                         type="number"
                         min={0}
@@ -387,7 +387,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={cn("text-[11px] font-medium", hasElev ? "text-primary" : "text-muted-foreground")}>
-                        {hasElev ? "Elevator" : "Stairs"}
+                        {hasElev ? t("cust.booking.elevator") : t("cust.booking.stairs")}
                       </span>
                       <Switch
                         checked={hasElev}
@@ -409,8 +409,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><ArrowUpDown className="h-4 w-4" /></div>
               <div>
-                <h3 className="font-semibold">Floor & access</h3>
-                <p className="text-[11px] text-muted-foreground">Optional — add if it applies</p>
+                <h3 className="font-semibold">{t("cust.booking.floorAccess")}</h3>
+                <p className="text-[11px] text-muted-foreground">{t("cust.booking.floorAccessOptional")}</p>
               </div>
             </div>
             <Switch checked={floorAccessEnabled} onCheckedChange={setFloorAccessEnabled} />
@@ -418,7 +418,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
           {floorAccessEnabled && (
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Floor #</label>
+                <label className="text-xs text-muted-foreground">{t("cust.booking.floorNumber")}</label>
                 <Input
                   type="number"
                   min={0}
@@ -431,7 +431,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
               </div>
               <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5">
                 <span className={cn("text-xs font-medium", globalHasElevator ? "text-primary" : "text-muted-foreground")}>
-                  {globalHasElevator ? "Elevator" : "Stairs"}
+                  {globalHasElevator ? t("cust.booking.elevator") : t("cust.booking.stairs")}
                 </span>
                 <Switch checked={globalHasElevator} onCheckedChange={setGlobalHasElevator} />
               </div>

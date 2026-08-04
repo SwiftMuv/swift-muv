@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Props {
   bookingId: string;
@@ -78,6 +79,7 @@ const haversineKm = (a: [number, number], b: [number, number]) => {
 };
 
 const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Props) => {
+  const { t } = useI18n();
   const [info, setInfo] = useState<DriverInfo | null>(null);
   const [completionCode, setCompletionCode] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -152,7 +154,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
 
   const photo = info.profile_picture_url || info.avatar_url || undefined;
   const carImg = info.vehicle_photo_url || getVehicleImage(info.vehicle_category);
-  const initials = (info.full_name ?? "Driver")
+  const initials = (info.full_name ?? t("cust.trip.driver"))
     .split(" ")
     .map((s) => s[0])
     .slice(0, 2)
@@ -187,13 +189,13 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
           </MapContainer>
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-white/50">
-            Waiting for driver location…
+            {t("cust.trip.waitingLocation")}
           </div>
         )}
 
         {miles != null && (
           <div className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-black shadow-lg">
-            {miles.toFixed(1)} miles away
+            {t("cust.trip.milesAway", { miles: miles.toFixed(1) })}
           </div>
         )}
       </div>
@@ -204,9 +206,9 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
           className="text-xl font-bold"
           style={{ fontFamily: "'Space Grotesk', sans-serif" }}
         >
-          {etaMin != null ? `Pick-up in ${etaMin} min` : "Driver on the way"}
+          {etaMin != null ? t("cust.trip.pickupInMin", { min: etaMin }) : t("cust.trip.driverOnWay")}
         </h3>
-        <p className="mt-0.5 text-sm text-white/60">Meet at your pick-up spot</p>
+        <p className="mt-0.5 text-sm text-white/60">{t("cust.trip.meetAtSpot")}</p>
         <p className="mt-1 text-xs text-white/40 truncate">{pickupAddress}</p>
       </div>
 
@@ -218,7 +220,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
             <AvatarFallback className="bg-white/10 text-white">{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold">{info.full_name ?? "Your driver"}</p>
+            <p className="truncate text-base font-semibold">{info.full_name ?? t("cust.trip.yourDriver")}</p>
             <div className="flex items-center gap-1 text-sm text-white/60">
               <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
               {(info.rating ?? 5).toFixed(1)}
@@ -247,51 +249,54 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
             type="button"
             onClick={() => {
               if (!jobId) {
-                toast.error("Chat is not available yet");
+                toast.error(t("cust.trip.chatUnavailable"));
                 return;
               }
               setChatOpen(true);
             }}
             className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95"
           >
-            <MessageSquare className="h-4 w-4" /> Message
+            <MessageSquare className="h-4 w-4" /> {t("cust.trip.message")}
           </button>
           <button
             type="button"
             onClick={() => {
               if (!info.phone) {
-                toast.error("Driver phone number is unavailable — use Message instead");
+                toast.error(t("cust.trip.phoneUnavailable"));
                 return;
               }
               window.location.href = `tel:${info.phone}`;
             }}
             className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95"
           >
-            <Phone className="h-4 w-4" /> Call
+            <Phone className="h-4 w-4" /> {t("cust.trip.call")}
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95">
-              <MoreHorizontal className="h-4 w-4" /> Options
+              <MoreHorizontal className="h-4 w-4" /> {t("cust.trip.options")}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem
                 onSelect={async () => {
-                  const text = `I'm tracking my SwiftMuv move. Driver: ${info.full_name ?? "assigned"}${
-                    info.license_plate ? ` (${info.license_plate})` : ""
-                  }. Pick-up: ${pickupAddress}${etaMin != null ? ` — ETA ${etaMin} min` : ""}`;
+                  const text = t("cust.trip.shareTrackingText", {
+                    driver: info.full_name ?? t("cust.trip.assigned"),
+                    plate: info.license_plate ? ` (${info.license_plate})` : "",
+                    pickup: pickupAddress,
+                    eta: etaMin != null ? t("cust.trip.etaSuffix", { min: etaMin }) : "",
+                  });
                   try {
                     if (navigator.share) {
                       await navigator.share({ title: "My SwiftMuv trip", text, url: window.location.href });
                     } else {
                       await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
-                      toast.success("Trip details copied");
+                      toast.success(t("cust.trip.tripDetailsCopied"));
                     }
                   } catch {
                     /* user dismissed share */
                   }
                 }}
               >
-                <Share2 className="mr-2 h-4 w-4" /> Share trip status
+                <Share2 className="mr-2 h-4 w-4" /> {t("cust.trip.shareTripStatus")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
@@ -310,24 +315,23 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
                   }
                 }}
               >
-                <MapPin className="mr-2 h-4 w-4" /> Open pick-up in Maps
+                <MapPin className="mr-2 h-4 w-4" /> {t("cust.trip.openPickupMaps")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={async () => {
                   await navigator.clipboard.writeText(completionCode ?? pickupAddress);
-                  toast.success(completionCode ? "Completion code copied" : "Pick-up address copied");
+                  toast.success(completionCode ? t("cust.trip.completionCodeCopied") : t("cust.trip.addressCopied"));
                 }}
               >
-                <Copy className="mr-2 h-4 w-4" /> Copy {completionCode ? "completion code" : "address"}
+                <Copy className="mr-2 h-4 w-4" /> {completionCode ? t("cust.trip.copyCompletionCode") : t("cust.trip.copyAddress")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
-                  window.location.href = `mailto:support@swiftmuv.com?subject=${encodeURIComponent(
-                    `Help with my move${jobId ? ` (job ${jobId.slice(0, 8)})` : ""}`,
-                  )}`;
+                  const subject = t("cust.trip.supportSubject", { job: jobId ? ` (job ${jobId.slice(0, 8)})` : "" });
+                  window.location.href = `mailto:support@swiftmuv.com?subject=${encodeURIComponent(subject)}`;
                 }}
               >
-                <LifeBuoy className="mr-2 h-4 w-4" /> Contact support
+                <LifeBuoy className="mr-2 h-4 w-4" /> {t("cust.trip.contactSupport")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -338,7 +342,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
             jobId={jobId}
             open={chatOpen}
             onOpenChange={setChatOpen}
-            title={info.full_name ? `Chat with ${info.full_name}` : "Chat with your driver"}
+            title={info.full_name ? t("cust.trip.chatWith", { name: info.full_name }) : t("cust.trip.chatWithDriver")}
           />
         )}
 
@@ -346,8 +350,8 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
           <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3">
             <KeyRound className="h-5 w-5 shrink-0 text-white/70" />
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wider text-white/50">Completion code</p>
-              <p className="text-xs text-white/70">Share with your driver only when the move is done.</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/50">{t("cust.trip.completionCode")}</p>
+              <p className="text-xs text-white/70">{t("cust.trip.shareCodeNote")}</p>
             </div>
             <p className="font-mono text-xl font-bold tracking-[0.3em]">{completionCode}</p>
           </div>

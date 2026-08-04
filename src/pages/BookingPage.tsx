@@ -73,7 +73,7 @@ const BookingPage = () => {
       setDistanceError(null);
       return;
     }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setCalculating(true);
       setDistanceError(null);
       try {
@@ -84,19 +84,19 @@ const BookingPage = () => {
         if (error) throw error;
         if (data?.fallback || data?.error) {
           setDistance(null);
-          setDistanceError(data.details ?? "We could not resolve that route. Please choose a full address from the suggestions.");
+          setDistanceError(data.details ?? t("bk.page.routeUnresolved"));
           return;
         }
         if (data?.km) setDistance(data);
       } catch (e) {
         console.warn("Distance calc failed", e);
         setDistance(null);
-        setDistanceError("We could not calculate that route. Please check both addresses and try again.");
+        setDistanceError(t("bk.page.routeFailed"));
       } finally {
         setCalculating(false);
       }
     }, 800);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [pickup, dropoff]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
@@ -150,7 +150,7 @@ const BookingPage = () => {
         .single();
 
       if (error || !inserted) {
-        toast.error("Booking failed: " + (error?.message ?? "unknown"));
+        toast.error(t("bk.page.bookingFailed", { message: error?.message ?? "unknown" }));
         setBooking(false);
         return;
       }
@@ -168,7 +168,7 @@ const BookingPage = () => {
       });
 
       if (checkoutError || !payload?.clientSecret || !payload.publishableKey) {
-        toast.error("Could not start checkout: " + (payload?.error ?? checkoutError?.message ?? "unknown"));
+        toast.error(t("bk.page.checkoutFailed", { message: payload?.error ?? checkoutError?.message ?? "unknown" }));
         setBooking(false);
         return;
       }
@@ -178,7 +178,7 @@ const BookingPage = () => {
       setCheckoutOpen(true);
       setBooking(false);
     } catch (e) {
-      toast.error("Could not start checkout: " + (e instanceof Error ? e.message : String(e)));
+      toast.error(t("bk.page.checkoutFailed", { message: e instanceof Error ? e.message : String(e) }));
       setBooking(false);
     }
   };
@@ -207,9 +207,9 @@ const BookingPage = () => {
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              When do you need it?
+              {t("bk.page.whenNeeded")}
             </label>
-            <span className="text-[10px] text-muted-foreground">Optional</span>
+            <span className="text-[10px] text-muted-foreground">{t("bk.page.optional")}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -222,7 +222,7 @@ const BookingPage = () => {
                   : "border-border bg-card text-foreground hover:border-primary/40",
               )}
             >
-              Now / ASAP
+              {t("bk.page.nowAsap")}
             </button>
             <button
               type="button"
@@ -234,7 +234,7 @@ const BookingPage = () => {
                   : "border-border bg-card text-foreground hover:border-primary/40",
               )}
             >
-              Schedule for later
+              {t("bk.page.scheduleLater")}
             </button>
           </div>
           {scheduleMode === "later" && (
@@ -249,7 +249,7 @@ const BookingPage = () => {
                     )}
                   >
                     <CalendarDays className="mr-2 h-4 w-4" />
-                    {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : "Pick a date"}
+                    {scheduledAt ? format(scheduledAt, "EEE, MMM d, yyyy") : t("bk.page.pickDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -279,9 +279,9 @@ const BookingPage = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Building access
+                {t("bk.page.buildingAccess")}
               </label>
-              <p className="text-[11px] text-muted-foreground">Optional — add if it applies</p>
+              <p className="text-[11px] text-muted-foreground">{t("bk.page.optionalAddIfApplies")}</p>
             </div>
             <Switch checked={floorAccessEnabled} onCheckedChange={setFloorAccessEnabled} />
           </div>
@@ -292,14 +292,14 @@ const BookingPage = () => {
                   checked={globalHasElevator}
                   onCheckedChange={(v) => setGlobalHasElevator(v === true)}
                 />
-                <span className="text-xs font-medium text-foreground">Elevator</span>
+                <span className="text-xs font-medium text-foreground">{t("bk.page.elevator")}</span>
               </label>
               <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5 cursor-pointer">
                 <Checkbox
                   checked={!globalHasElevator}
                   onCheckedChange={(v) => setGlobalHasElevator(!(v === true))}
                 />
-                <span className="text-xs font-medium text-foreground">Stairs</span>
+                <span className="text-xs font-medium text-foreground">{t("bk.page.stairs")}</span>
               </label>
             </div>
           )}
@@ -308,7 +308,7 @@ const BookingPage = () => {
         {distance && (
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("booking.trip")}</p>
-            <p className="text-sm font-semibold">{distanceKm} km · {moveType}</p>
+            <p className="text-sm font-semibold">{t("bk.page.routeSummary", { km: distanceKm, moveType })}</p>
           </div>
         )}
         {distanceError && (
@@ -323,7 +323,7 @@ const BookingPage = () => {
             <div className="flex items-center gap-3">
               <CarFront className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-semibold">Extra Large Car / SUV</p>
+                <p className="font-semibold">{t("bk.page.suvTitle")}</p>
                 <p className="text-[11px] text-muted-foreground">
                   {t("booking.flatSuv", { flat: formatCurrency(50), extra: moveType !== "local" ? t("booking.perKmExtra", { rate: formatCurrency(2) }) : "" })}
                 </p>
@@ -341,7 +341,7 @@ const BookingPage = () => {
           {selectedItems.length > 1 && (
             <div className="mt-3 space-y-2 rounded-xl border border-border bg-card p-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Item access (elevator or stairs)
+                {t("bk.page.itemAccessTitle")}
               </p>
               {selectedItems.map((it) => {
                 const hasElev = it.has_elevator ?? true;
@@ -361,21 +361,21 @@ const BookingPage = () => {
                           checked={hasElev}
                           onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: v === true })}
                         />
-                        <span className="text-[11px] font-medium text-foreground">Elevator</span>
+                        <span className="text-[11px] font-medium text-foreground">{t("bk.page.elevator")}</span>
                       </label>
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <Checkbox
                           checked={!hasElev}
                           onCheckedChange={(v) => updateItemMeta(it.id, { has_elevator: !(v === true) })}
                         />
-                        <span className="text-[11px] font-medium text-foreground">Stairs</span>
+                        <span className="text-[11px] font-medium text-foreground">{t("bk.page.stairs")}</span>
                       </label>
                     </div>
                   </div>
                 );
               })}
               <p className="text-[11px] text-muted-foreground">
-                Check Stairs when no elevator is available for that item.
+                {t("bk.page.itemAccessFooter")}
               </p>
             </div>
           )}

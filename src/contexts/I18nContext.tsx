@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { customerDict } from "@/i18n/customer";
+import { driverDict } from "@/i18n/driver";
+import { bookingDict } from "@/i18n/booking";
+import { authDict } from "@/i18n/auth";
+
+
 
 type I18nState = {
   lang: string;
@@ -86,6 +92,16 @@ Object.assign(TRANSLATIONS.es, { "nav.home": "Inicio", "nav.bookings": "Reservas
 Object.assign(TRANSLATIONS.pt, { "nav.home": "Início", "nav.bookings": "Reservas", "nav.activities": "Atividades", "nav.account": "Conta", "nav.wallet": "Carteira", "booking.bookNow": "Reservar · {amount}", "booking.estimatedTotal": "Total estimado", "common.cancel": "Cancelar", "common.rebook": "Reservar novamente", "driver.todayEarnings": "Ganhos de hoje", "wallet.availableBalance": "Saldo disponível", "history.totalEarned": "Total ganho" });
 Object.assign(TRANSLATIONS.de, { "nav.home": "Start", "nav.bookings": "Buchungen", "nav.activities": "Aktivitäten", "nav.account": "Konto", "nav.wallet": "Wallet", "booking.bookNow": "Jetzt buchen · {amount}", "booking.estimatedTotal": "Geschätzte Summe", "common.cancel": "Abbrechen", "common.rebook": "Erneut buchen", "driver.todayEarnings": "Heutige Einnahmen", "wallet.availableBalance": "Verfügbares Guthaben", "history.totalEarned": "Gesamt verdient" });
 Object.assign(TRANSLATIONS.it, { "nav.home": "Home", "nav.bookings": "Prenotazioni", "nav.activities": "Attività", "nav.account": "Account", "nav.wallet": "Portafoglio", "booking.bookNow": "Prenota · {amount}", "booking.estimatedTotal": "Totale stimato", "common.cancel": "Annulla", "common.rebook": "Prenota di nuovo", "driver.todayEarnings": "Guadagni di oggi", "wallet.availableBalance": "Saldo disponibile", "history.totalEarned": "Totale guadagnato" });
+
+// Merge feature-area dictionaries. Languages without their own entries fall back to English.
+const ALL_LANGS = LANGUAGES.map((l) => l.code);
+for (const dict of [customerDict, driverDict, bookingDict, authDict]) {
+  const en = dict.en ?? {};
+  for (const code of ALL_LANGS) {
+    TRANSLATIONS[code] = { ...TRANSLATIONS[code], ...en, ...(dict[code] ?? {}) };
+  }
+}
+
 
 const localeFor = (lang: string) => LANGUAGES.find((l) => l.code === lang)?.locale ?? "en-CA";
 const cleanLang = (value: string | null | undefined) => (value && SUPPORTED_LANG_CODES.has(value) ? value : "en");

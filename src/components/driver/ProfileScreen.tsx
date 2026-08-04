@@ -39,6 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DriverReviews from "@/components/DriverReviews";
 import AppFeedbackScreen from "@/components/driver/AppFeedbackScreen";
 import LangCurrencySettings from "@/components/LangCurrencySettings";
+import { useI18n } from "@/contexts/I18nContext";
 
 
 type DriverProfile = Tables<"driver_profiles">;
@@ -46,29 +47,30 @@ type DocRow = Tables<"driver_documents">;
 type DocType = Database["public"]["Enums"]["driver_document_type"];
 
 const statusConfig = {
-  approved: { icon: CheckCircle2, label: "Verified", className: "text-[hsl(var(--swift-success))] bg-[hsl(var(--swift-success))]/15" },
-  pending: { icon: Clock, label: "Pending", className: "text-[hsl(var(--swift-warning))] bg-[hsl(var(--swift-warning))]/15" },
-  rejected: { icon: XCircle, label: "Rejected", className: "text-[hsl(var(--swift-danger))] bg-[hsl(var(--swift-danger))]/15" },
-  missing: { icon: ShieldAlert, label: "Not uploaded", className: "text-muted-foreground bg-muted" },
+  approved: { icon: CheckCircle2, labelKey: "drv.profile.statusVerified", className: "text-[hsl(var(--swift-success))] bg-[hsl(var(--swift-success))]/15" },
+  pending: { icon: Clock, labelKey: "drv.profile.statusPending", className: "text-[hsl(var(--swift-warning))] bg-[hsl(var(--swift-warning))]/15" },
+  rejected: { icon: XCircle, labelKey: "drv.profile.statusRejected", className: "text-[hsl(var(--swift-danger))] bg-[hsl(var(--swift-danger))]/15" },
+  missing: { icon: ShieldAlert, labelKey: "drv.profile.statusMissing", className: "text-muted-foreground bg-muted" },
 } as const;
 
 type DocSlot = {
   type: DocType;
-  name: string;
+  nameKey: string;
   icon: typeof FileText;
-  description: string;
+  descriptionKey: string;
 };
 
 const DOC_SLOTS: DocSlot[] = [
-  { type: "license", name: "Driver's License", icon: IdCard, description: "Front & back of valid license" },
-  { type: "insurance", name: "Insurance Documents", icon: ShieldCheck, description: "Commercial vehicle insurance" },
-  { type: "vehicle_registration", name: "Vehicle Registration", icon: FileText, description: "Current registration" },
-  { type: "police_check", name: "Background Check", icon: FileCheck, description: "Police clearance certificate" },
-  { type: "other", name: "Bank Details", icon: Landmark, description: "Void cheque or direct deposit form" },
+  { type: "license", nameKey: "drv.profile.docLicense", icon: IdCard, descriptionKey: "drv.profile.docLicenseDesc" },
+  { type: "insurance", nameKey: "drv.profile.docInsurance", icon: ShieldCheck, descriptionKey: "drv.profile.docInsuranceDesc" },
+  { type: "vehicle_registration", nameKey: "drv.profile.docRegistration", icon: FileText, descriptionKey: "drv.profile.docRegistrationDesc" },
+  { type: "police_check", nameKey: "drv.profile.docPoliceCheck", icon: FileCheck, descriptionKey: "drv.profile.docPoliceCheckDesc" },
+  { type: "other", nameKey: "drv.profile.docBankDetails", icon: Landmark, descriptionKey: "drv.profile.docBankDetailsDesc" },
 ];
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [docs, setDocs] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,8 +130,8 @@ const ProfileScreen = () => {
       .eq("driver_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (e1) toast.error("Failed to load profile");
-    if (e2) toast.error("Failed to load documents");
+    if (e1) toast.error(t("drv.profile.failedLoadProfile"));
+    if (e2) toast.error(t("drv.profile.failedLoadDocs"));
     if (prof) {
       setProfile(prof);
       setFullName(prof.full_name ?? "");
@@ -196,9 +198,9 @@ const ProfileScreen = () => {
       })
       .eq("user_id", user.id);
 
-    if (error) toast.error("Failed to save profile");
+    if (error) toast.error(t("drv.profile.failedSaveProfile"));
     else {
-      toast.success("Profile updated");
+      toast.success(t("drv.profile.updated"));
       setEditing(false);
       loadAll();
     }
@@ -222,9 +224,9 @@ const ProfileScreen = () => {
       })
       .eq("user_id", user.id);
 
-    if (error) toast.error("Failed to save vehicle details");
+    if (error) toast.error(t("drv.profile.failedSaveVehicle"));
     else {
-      toast.success("Vehicle details updated");
+      toast.success(t("drv.profile.vehicleUpdated"));
       setEditingVehicle(false);
       loadAll();
     }
@@ -238,7 +240,7 @@ const ProfileScreen = () => {
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("driver-avatars").upload(path, file, { upsert: true });
     if (upErr) {
-      toast.error("Avatar upload failed");
+      toast.error(t("drv.profile.avatarUploadFailed"));
       setUploadingAvatar(false);
       return;
     }
@@ -247,9 +249,9 @@ const ProfileScreen = () => {
       .from("driver_profiles")
       .update({ avatar_url: pub.publicUrl, profile_picture_url: pub.publicUrl })
       .eq("user_id", user.id);
-    if (updErr) toast.error("Failed to save avatar");
+    if (updErr) toast.error(t("drv.profile.failedSaveAvatar"));
     else {
-      toast.success("Profile picture updated");
+      toast.success(t("drv.profile.avatarUpdated"));
       loadAll();
     }
     setUploadingAvatar(false);
@@ -263,7 +265,7 @@ const ProfileScreen = () => {
     const path = `${user.id}/${docType}-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("driver-documents").upload(path, file);
     if (upErr) {
-      toast.error("Upload failed");
+      toast.error(t("drv.profile.uploadFailed"));
       setUploadingType(null);
       return;
     }
@@ -273,9 +275,9 @@ const ProfileScreen = () => {
       file_path: path,
       status: "pending",
     });
-    if (insErr) toast.error("Failed to save document");
+    if (insErr) toast.error(t("drv.profile.failedSaveDoc"));
     else {
-      toast.success("Document uploaded");
+      toast.success(t("drv.profile.docUploaded"));
       loadAll();
     }
     setUploadingType(null);
@@ -296,11 +298,11 @@ const ProfileScreen = () => {
       .createSignedUrl(latest.file_path, 60 * 10);
     setPreviewLoading(null);
     if (error || !data?.signedUrl) {
-      toast.error("Could not load document");
+      toast.error(t("drv.profile.couldNotLoadDoc"));
       return;
     }
     setPreviewDoc({
-      name: slot.name,
+      name: t(slot.nameKey),
       url: data.signedUrl,
       isPdf: latest.file_path.toLowerCase().endsWith(".pdf"),
     });
@@ -318,16 +320,16 @@ const ProfileScreen = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground text-sm">Loading profile…</p>
+        <p className="text-muted-foreground text-sm">{t("drv.profile.loading")}</p>
       </div>
     );
   }
 
   const vehicleLabel =
     [profile?.vehicle_year, profile?.vehicle_make, profile?.vehicle_model].filter(Boolean).join(" ") ||
-    "No vehicle set";
+    t("drv.profile.noVehicleSet");
   const vehicleMeta =
-    [profile?.vehicle_color, profile?.license_plate].filter(Boolean).join(" · ") || "Add vehicle details";
+    [profile?.vehicle_color, profile?.license_plate].filter(Boolean).join(" · ") || t("drv.profile.addVehicleDetails");
 
   const avatarUrl = profile?.avatar_url || profile?.profile_picture_url;
 
@@ -363,7 +365,7 @@ const ProfileScreen = () => {
             onClick={() => avatarInputRef.current?.click()}
             disabled={uploadingAvatar}
             className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center border-2 border-background disabled:opacity-50"
-            aria-label="Upload profile picture"
+            aria-label={t("drv.profile.uploadAvatarAria")}
           >
             <Camera className="w-4 h-4 text-primary-foreground" />
           </button>
@@ -374,7 +376,7 @@ const ProfileScreen = () => {
           )}
         </div>
         <h2 className="text-xl font-bold mt-3 text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          {profile?.full_name || "Driver"}
+          {profile?.full_name || t("drv.profile.driverFallback")}
         </h2>
         <div className="flex items-center gap-2 mt-1">
           <Badge
@@ -386,7 +388,7 @@ const ProfileScreen = () => {
             }`}
           >
             <ShieldCheck className="w-3 h-3 mr-1" />
-            {allVerified ? "Pro Verified" : "Verification Pending"}
+            {allVerified ? t("drv.profile.proVerified") : t("drv.profile.verificationPending")}
           </Badge>
           {typeof profile?.rating === "number" && profile.rating > 0 && (
             <Badge variant="secondary" className="text-xs font-semibold">
@@ -401,16 +403,16 @@ const ProfileScreen = () => {
       <div className="flex justify-end">
         {!editing ? (
           <Button variant="outline" size="sm" className="rounded-xl text-xs bg-orange-500 hover:bg-orange-600 border-orange-500 text-white hover:text-white" onClick={() => setEditing(true)}>
-            Edit Profile
+            {t("drv.profile.editProfile")}
           </Button>
         ) : (
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" className="rounded-xl text-xs" onClick={() => setEditing(false)}>
-              Cancel
+              {t("drv.profile.cancel")}
             </Button>
             <Button size="sm" className="rounded-xl text-xs" onClick={handleSave} disabled={saving}>
               <Save className="w-3.5 h-3.5 mr-1" />
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("drv.profile.saving") : t("drv.profile.save")}
             </Button>
           </div>
         )}
@@ -419,20 +421,20 @@ const ProfileScreen = () => {
       {/* Personal Info */}
       <section className="rounded-xl bg-card border overflow-hidden">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-4 pt-3 pb-2">
-          Personal Info
+          {t("drv.profile.personalInfo")}
         </h3>
         {editing ? (
           <div className="px-4 pb-3 space-y-3">
-            <Input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            <Input placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <Input placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Input placeholder={t("drv.profile.fullNamePlaceholder")} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <Input placeholder={t("drv.profile.phonePlaceholder")} value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input placeholder={t("drv.profile.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
         ) : (
           <div className="divide-y divide-border">
             {[
-              { icon: Phone, label: profile?.phone || "No phone set" },
-              { icon: Mail, label: user?.email || "No email" },
-              { icon: User, label: profile?.address || "No address set" },
+              { icon: Phone, label: profile?.phone || t("drv.profile.noPhoneSet") },
+              { icon: Mail, label: user?.email || t("drv.profile.noEmail") },
+              { icon: User, label: profile?.address || t("drv.profile.noAddressSet") },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3">
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
@@ -450,7 +452,7 @@ const ProfileScreen = () => {
       <section className="rounded-xl bg-card border overflow-hidden">
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Vehicle
+            {t("drv.profile.vehicle")}
           </h3>
           {editing ? null : editingVehicle ? (
             <div className="flex gap-2">
@@ -471,7 +473,7 @@ const ProfileScreen = () => {
                   setVehicleCategory((profile?.vehicle_category as VehicleCategory) ?? "");
                 }}
               >
-                Cancel
+                {t("drv.profile.cancel")}
               </Button>
               <Button
                 size="sm"
@@ -480,7 +482,7 @@ const ProfileScreen = () => {
                 disabled={savingVehicle}
               >
                 <Save className="w-3 h-3 mr-1" />
-                {savingVehicle ? "Saving…" : "Save"}
+                {savingVehicle ? t("drv.profile.saving") : t("drv.profile.save")}
               </Button>
             </div>
           ) : (
@@ -490,16 +492,16 @@ const ProfileScreen = () => {
               className="rounded-lg h-7 text-xs bg-orange-500 hover:bg-orange-600 border-orange-500 text-white hover:text-white"
               onClick={() => setEditingVehicle(true)}
             >
-              {profile?.vehicle_make || profile?.vehicle_category ? "Edit" : "Add details"}
+              {profile?.vehicle_make || profile?.vehicle_category ? t("drv.profile.editDetails") : t("drv.profile.addDetails")}
             </Button>
           )}
         </div>
         {editing || editingVehicle ? (
           <div className="px-4 pb-3 space-y-3">
             <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle category</label>
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("drv.profile.vehicleCategory")}</label>
               <Select value={vehicleCategory || undefined} onValueChange={(v) => setVehicleCategory(v as VehicleCategory)}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
+                <SelectTrigger className="mt-1"><SelectValue placeholder={t("drv.profile.selectVehicleType")} /></SelectTrigger>
                 <SelectContent>
                   {VEHICLE_OPTIONS.map((o) => (
                     <SelectItem key={o.id} value={o.id}>{o.name} — {o.description}</SelectItem>
@@ -508,17 +510,17 @@ const ProfileScreen = () => {
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Input placeholder="Make" value={vehicleMake} onChange={(e) => setVehicleMake(e.target.value)} />
-              <Input placeholder="Model" value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} />
+              <Input placeholder={t("drv.profile.makePlaceholder")} value={vehicleMake} onChange={(e) => setVehicleMake(e.target.value)} />
+              <Input placeholder={t("drv.profile.modelPlaceholder")} value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} />
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <Input placeholder="Year" value={vehicleYear} onChange={(e) => setVehicleYear(e.target.value)} />
-              <Input placeholder="Color" value={vehicleColor} onChange={(e) => setVehicleColor(e.target.value)} />
-              <Input placeholder="Plate" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} />
+              <Input placeholder={t("drv.profile.yearPlaceholder")} value={vehicleYear} onChange={(e) => setVehicleYear(e.target.value)} />
+              <Input placeholder={t("drv.profile.colorPlaceholder")} value={vehicleColor} onChange={(e) => setVehicleColor(e.target.value)} />
+              <Input placeholder={t("drv.profile.platePlaceholder")} value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Input placeholder="Capacity (lbs)" value={cargoCapacity} onChange={(e) => setCargoCapacity(e.target.value)} />
-              <Input placeholder="Space (cu ft)" value={cargoSpace} onChange={(e) => setCargoSpace(e.target.value)} />
+              <Input placeholder={t("drv.profile.capacityPlaceholder")} value={cargoCapacity} onChange={(e) => setCargoCapacity(e.target.value)} />
+              <Input placeholder={t("drv.profile.spacePlaceholder")} value={cargoSpace} onChange={(e) => setCargoSpace(e.target.value)} />
             </div>
           </div>
         ) : (
@@ -538,7 +540,7 @@ const ProfileScreen = () => {
               </Badge>
             ) : (
               <div className="rounded-lg bg-[hsl(var(--swift-warning))]/15 text-[hsl(var(--swift-warning))] text-xs px-3 py-2">
-                Pick a vehicle category in edit mode — jobs are filtered by category.
+                {t("drv.profile.pickCategoryWarning")}
               </div>
             )}
             {(profile?.cargo_capacity_lbs || profile?.cargo_space_cuft) && (
@@ -548,7 +550,7 @@ const ProfileScreen = () => {
                     <p className="text-xs font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {profile.cargo_capacity_lbs.toLocaleString()} lbs
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Capacity</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("drv.profile.capacity")}</p>
                   </div>
                 )}
                 {profile?.cargo_space_cuft && (
@@ -556,7 +558,7 @@ const ProfileScreen = () => {
                     <p className="text-xs font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {profile.cargo_space_cuft} cu ft
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Cargo Space</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("drv.profile.cargoSpace")}</p>
                   </div>
                 )}
               </div>
@@ -568,9 +570,9 @@ const ProfileScreen = () => {
       {/* Documents */}
       <section className="rounded-xl bg-card border overflow-hidden">
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Documents & Verification</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("drv.profile.documentsVerification")}</h3>
           <span className="text-xs text-muted-foreground">
-            {verifiedCount}/{DOC_SLOTS.length} verified
+            {t("drv.profile.verifiedCount", { count: verifiedCount, total: DOC_SLOTS.length })}
           </span>
         </div>
         <div className="divide-y divide-border">
@@ -578,12 +580,13 @@ const ProfileScreen = () => {
             const status = docStatusFor(slot.type);
             const config = statusConfig[status];
             const StatusIcon = config.icon;
+            const slotName = t(slot.nameKey);
             const SlotIcon = slot.icon;
             const isUploading = uploadingType === slot.type;
             const hasDoc = status !== "missing";
             const isLoadingPreview = previewLoading === slot.type;
             return (
-              <div key={slot.name} className="flex items-center gap-2 px-4 py-3">
+              <div key={slot.type} className="flex items-center gap-2 px-4 py-3">
                 {(() => {
                   const thumb = thumbs[slot.type];
                   if (thumb && !thumb.isPdf) {
@@ -592,9 +595,9 @@ const ProfileScreen = () => {
                         type="button"
                         onClick={() => handlePreview(slot)}
                         className="w-9 h-9 rounded-xl overflow-hidden shrink-0 ring-1 ring-border hover:ring-primary transition"
-                        aria-label={`Preview ${slot.name}`}
+                        aria-label={t("drv.profile.previewAria", { name: slotName })}
                       >
-                        <img src={thumb.url} alt={slot.name} className="w-full h-full object-cover" />
+                        <img src={thumb.url} alt={slotName} className="w-full h-full object-cover" />
                       </button>
                     );
                   }
@@ -604,7 +607,7 @@ const ProfileScreen = () => {
                         type="button"
                         onClick={() => handlePreview(slot)}
                         className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 hover:bg-primary/20 transition"
-                        aria-label={`Preview ${slot.name}`}
+                        aria-label={t("drv.profile.previewAria", { name: slotName })}
                       >
                         <FileText className="w-4 h-4 text-primary" />
                       </button>
@@ -617,12 +620,12 @@ const ProfileScreen = () => {
                   );
                 })()}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{slot.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{slot.description}</p>
+                  <p className="text-sm font-medium truncate">{slotName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{t(slot.descriptionKey)}</p>
                 </div>
                 <Badge variant="outline" className={`text-[10px] ${config.className} border-0 shrink-0`}>
                   <StatusIcon className="w-3 h-3 mr-1" />
-                  {config.label}
+                  {t(config.labelKey)}
                 </Badge>
                 {hasDoc && (
                   <Button
@@ -631,7 +634,7 @@ const ProfileScreen = () => {
                     className="rounded-lg h-8 px-2 shrink-0"
                     onClick={() => handlePreview(slot)}
                     disabled={isLoadingPreview}
-                    aria-label={`Preview ${slot.name}`}
+                    aria-label={t("drv.profile.previewAria", { name: slotName })}
                   >
                     <Eye className="w-3.5 h-3.5" />
                   </Button>
@@ -642,7 +645,7 @@ const ProfileScreen = () => {
                   className="rounded-lg h-8 px-2 shrink-0 bg-green-300 hover:bg-green-400 text-green-900"
                   onClick={() => triggerDocUpload(slot.type)}
                   disabled={isUploading}
-                  aria-label={`Upload ${slot.name}`}
+                  aria-label={t("drv.profile.uploadAria", { name: slotName })}
                 >
                   <Upload className="w-3.5 h-3.5" />
                 </Button>
@@ -654,7 +657,7 @@ const ProfileScreen = () => {
       {/* Customer reviews */}
       {user && (
         <section className="space-y-3">
-          <DriverReviews driverId={user.id} title="What customers are saying" />
+          <DriverReviews driverId={user.id} title={t("drv.profile.customerReviewsTitle")} />
         </section>
       )}
 
@@ -678,7 +681,7 @@ const ProfileScreen = () => {
         }}
       >
         <LogOut className="w-4 h-4 mr-2" />
-        Sign Out
+        {t("drv.profile.signOut")}
       </Button>
 
       <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
@@ -703,7 +706,7 @@ const ProfileScreen = () => {
                 rel="noreferrer"
                 className="text-xs text-primary underline"
               >
-                Open in new tab
+                {t("drv.profile.openInNewTab")}
               </a>
             </div>
           )}

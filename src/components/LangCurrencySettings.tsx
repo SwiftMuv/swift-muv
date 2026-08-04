@@ -15,7 +15,7 @@ interface Props {
 
 /** Global language + currency preferences. Lives on the Account page only. */
 export const LangCurrencySettings = ({ className }: Props) => {
-  const { lang, currency, setLang, setCurrency } = useI18n();
+  const { t, lang, currency, setLang, setCurrency } = useI18n();
 
   return (
     <Card className={className}>
@@ -23,10 +23,10 @@ export const LangCurrencySettings = ({ className }: Props) => {
         <div className="flex items-center gap-3 p-4 border-b">
           <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground">Language</p>
+            <p className="text-xs text-muted-foreground">{t("bk.langSettings.language")}</p>
           </div>
           <Select value={lang} onValueChange={setLang}>
-            <SelectTrigger className="w-[150px] h-9 text-sm" aria-label="Language">
+            <SelectTrigger className="w-[150px] h-9 text-sm" aria-label={t("bk.langSettings.language")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="max-h-[50vh] z-[60]">
@@ -42,10 +42,10 @@ export const LangCurrencySettings = ({ className }: Props) => {
         <div className="flex items-center gap-3 p-4">
           <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground">Currency</p>
+            <p className="text-xs text-muted-foreground">{t("bk.langSettings.currency")}</p>
           </div>
           <Select value={currency} onValueChange={setCurrency}>
-            <SelectTrigger className="w-[150px] h-9 text-sm" aria-label="Currency">
+            <SelectTrigger className="w-[150px] h-9 text-sm" aria-label={t("bk.langSettings.currency")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="max-h-[50vh] z-[60]">

@@ -25,10 +25,10 @@ const XL_RATE = LARGE_RATE * 1.3;        // 3.38
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export const TIERS: TierDef[] = [
-  { id: "suv",    label: "SUV",         sub: "Bags & small loads",   icon: Car,       baseFee: round2(SUV_BASE),   perKm: round2(SUV_RATE) },
-  { id: "large",  label: "Large",       sub: "Pickup / Box Truck",   icon: Truck,     baseFee: round2(LARGE_BASE), perKm: round2(LARGE_RATE) },
-  { id: "xlarge", label: "Extra Large", sub: "Moving Truck",         icon: Container, baseFee: round2(XL_BASE),    perKm: round2(XL_RATE) },
+export const TIERS: { id: VehicleTier; labelKey: string; subKey: string; icon: typeof Car; baseFee: number; perKm: number }[] = [
+  { id: "suv",    labelKey: "bk.pricing.tier.suv.label",    subKey: "bk.pricing.tier.suv.sub",    icon: Car,       baseFee: round2(SUV_BASE),   perKm: round2(SUV_RATE) },
+  { id: "large",  labelKey: "bk.pricing.tier.large.label",  subKey: "bk.pricing.tier.large.sub",  icon: Truck,     baseFee: round2(LARGE_BASE), perKm: round2(LARGE_RATE) },
+  { id: "xlarge", labelKey: "bk.pricing.tier.xlarge.label", subKey: "bk.pricing.tier.xlarge.sub", icon: Container, baseFee: round2(XL_BASE),    perKm: round2(XL_RATE) },
 ];
 
 
@@ -38,7 +38,7 @@ interface Props {
 }
 
 export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) => {
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const fmt = (n: number) => formatCurrency(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [tier, setTier] = useState<VehicleTier>("suv");
   const [localKm, setLocalKm] = useState<string>("");
@@ -64,9 +64,9 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
     <div className="space-y-4 rounded-2xl border-2 border-[#0F172A] bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-4 shadow-lg">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF5722]">SwiftMuv</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF5722]">{t("bk.pricing.brand")}</p>
           <h3 className="text-base font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Price Calculator
+            {t("bk.pricing.title")}
           </h3>
         </div>
       </div>
@@ -90,9 +90,9 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
             >
               <Icon className={cn("h-5 w-5", active ? "text-[#FF5722]" : "text-slate-300")} />
               <span className={cn("text-[11px] font-bold leading-tight", active ? "text-white" : "text-slate-200")}>
-                {tt.label}
+                {t(tt.labelKey)}
               </span>
-              <span className="text-[9px] leading-tight text-slate-400">{tt.sub}</span>
+              <span className="text-[9px] leading-tight text-slate-400">{t(tt.subKey)}</span>
             </button>
           );
         })}
@@ -102,7 +102,7 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
       {typeof externalKm !== "number" || externalKm <= 0 ? (
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
-            Distance (km)
+            {t("bk.pricing.distanceLabel")}
           </label>
           <Input
             type="number"
@@ -111,32 +111,32 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
             step="0.1"
             value={localKm}
             onChange={(e) => setLocalKm(e.target.value)}
-            placeholder="e.g. 12.5"
+            placeholder={t("bk.pricing.distancePlaceholder")}
             className="border-slate-700 bg-slate-900 text-white placeholder:text-slate-500 focus-visible:ring-[#FF5722]"
           />
         </div>
       ) : (
         <div className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-300">
-          Distance: <span className="font-bold text-white">{km.toFixed(2)} km</span>
+          {t("bk.pricing.distanceValue", { km: km.toFixed(2) })}
         </div>
       )}
 
       {/* Breakdown */}
       <div className="space-y-1.5 rounded-xl border border-slate-700 bg-slate-900/60 p-3 text-sm">
         <div className="flex justify-between text-slate-300">
-          <span>Base fee</span>
+          <span>{t("bk.pricing.baseFee")}</span>
           <span className="font-semibold text-white">{fmt(baseFee)}</span>
         </div>
         <div className="flex justify-between text-slate-300">
-          <span>Distance ({km.toFixed(2)} km × {fmt(perKm)}/km)</span>
+          <span>{t("bk.pricing.distanceRow", { km: km.toFixed(2), rate: fmt(perKm) })}</span>
           <span className="font-semibold text-white">{fmt(distanceFee)}</span>
         </div>
         <div className="mt-1 flex items-center justify-between border-t border-slate-700 pt-2 text-base">
-          <span className="font-bold text-white">Total</span>
+          <span className="font-bold text-white">{t("bk.pricing.total")}</span>
           <span className="font-bold text-[#FF5722]">{fmt(total)}</span>
         </div>
         <p className="pt-1 text-center text-[10px] font-medium text-slate-400">
-          Base Fee: {fmt(baseFee)} | Rate per km: {fmt(perKm)}
+          {t("bk.pricing.footer", { base: fmt(baseFee), rate: fmt(perKm) })}
         </p>
       </div>
     </div>

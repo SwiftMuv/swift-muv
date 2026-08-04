@@ -3,6 +3,7 @@ import { Car, IdCard, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getVehicleImage } from "@/lib/vehicleImages";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Props {
   bookingId: string;
@@ -20,6 +21,7 @@ interface DriverInfo {
 }
 
 const DriverInfoForBooking = ({ bookingId }: Props) => {
+  const { t } = useI18n();
   const [info, setInfo] = useState<DriverInfo | null>(null);
 
   const [completionCode, setCompletionCode] = useState<string | null>(null);
@@ -71,7 +73,7 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
 
   const photo = info.profile_picture_url || info.avatar_url || undefined;
   const carImg = info.vehicle_photo_url || getVehicleImage(info.vehicle_category);
-  const initials = (info.full_name ?? "Driver")
+  const initials = (info.full_name ?? t("cust.driverInfo.driver"))
     .split(" ")
     .map((s) => s[0])
     .slice(0, 2)
@@ -88,7 +90,7 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
         </Avatar>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">
-            {info.full_name ?? "Your driver"}
+            {info.full_name ?? t("cust.driverInfo.yourDriver")}
           </p>
           {vehicleLabel && (
             <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
@@ -115,10 +117,10 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
           <KeyRound className="w-5 h-5 text-cyan-500 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Completion code
+              {t("cust.driverInfo.completionCode")}
             </p>
             <p className="text-xs text-foreground">
-              Share this with your driver only when the move is done.
+              {t("cust.driverInfo.shareCodeNote")}
             </p>
           </div>
           <p className="font-mono text-xl font-bold tracking-[0.4em] text-cyan-500">

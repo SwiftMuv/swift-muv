@@ -142,7 +142,7 @@ const looksIncomplete = (v: string) => v.trim().length > 0 && v.trim().length < 
 
 const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
-  const { formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const { ready: mapsReady } = useGoogleMaps();
 
   const [step, setStep] = useState<"where" | "vehicle" | "schedule">("where");
@@ -450,7 +450,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         <button
           onClick={goBack}
           className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.6)] active:scale-95 transition"
-          aria-label="Back"
+          aria-label={t("cust.booking.back")}
         >
           <ArrowLeft className="h-5 w-5 text-white" strokeWidth={2.5} />
         </button>
@@ -493,7 +493,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
             window.addEventListener("mouseup", up);
           }}
           className="flex w-full shrink-0 cursor-grab justify-center pt-3 pb-2 active:cursor-grabbing touch-none select-none"
-          aria-label="Drag sheet"
+          aria-label={t("cust.booking.dragSheet")}
         >
           <span className="block h-1 w-10 rounded-full bg-neutral-700" />
         </div>
@@ -503,7 +503,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           {step === "where" && (
             <div className="space-y-5 pt-1">
               <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-white">
-                Where are you moving?
+                {t("cust.booking.whereMoving")}
               </h1>
 
               {/* Address stack — Uber's dot/line/square pattern */}
@@ -524,7 +524,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       <PlacesAutocomplete
                         value={pickup}
                         onChange={setPickup}
-                        placeholder="Pickup location"
+                        placeholder={t("cust.booking.pickupLocation")}
                         className={cn(fieldClass, pickupInvalid && invalidFieldClass)}
                       />
                     </div>
@@ -532,7 +532,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       <PlacesAutocomplete
                         value={dropoff}
                         onChange={setDropoff}
-                        placeholder="Where to?"
+                        placeholder={t("cust.booking.whereTo")}
                         className={cn(fieldClass, dropoffInvalid && invalidFieldClass)}
                       />
                     </div>
@@ -541,7 +541,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                     <button
                       onClick={() => { setPickup(""); setDropoff(""); setDistance(null); }}
                       className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-                      aria-label="Clear"
+                      aria-label={t("cust.booking.clear")}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -552,13 +552,13 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               {(pickupInvalid || dropoffInvalid) && !distanceError && (
                 <p className="flex items-center gap-1.5 text-[13px] font-medium text-red-400" role="alert">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  Enter a full street address for {pickupInvalid ? "pickup" : "drop-off"}.
+                  {t("cust.booking.enterFullAddress", { field: pickupInvalid ? t("cust.booking.fieldPickup") : t("cust.booking.fieldDropoff") })}
                 </p>
               )}
 
               {calculating && (
                 <p className="flex items-center gap-2 text-[13px] text-neutral-400">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding your route…
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("cust.booking.findingRoute")}
                 </p>
               )}
               {distanceError && (
@@ -572,14 +572,14 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between px-1">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-                      Recent places
+                      {t("cust.booking.recentPlaces")}
                     </p>
                     <button
                       type="button"
                       onClick={clearRecents}
                       className="rounded-md px-1 text-[11px] font-semibold text-neutral-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                     >
-                      Clear
+                      {t("cust.booking.clearBtn")}
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -592,7 +592,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                           type="button"
                           onClick={() => setPickup(r)}
                           className="max-w-[180px] truncate px-3 py-2 text-[12px] font-semibold text-white hover:bg-neutral-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset"
-                          title={`Use as pickup: ${r}`}
+                          title={t("cust.booking.useAsPickup", { place: r })}
                         >
                           <MapPin className="mr-1.5 inline h-3 w-3 text-neutral-400" />
                           {r}
@@ -601,9 +601,9 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                           type="button"
                           onClick={() => setDropoff(r)}
                           className="border-l border-neutral-700 px-2.5 py-2 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset"
-                          title={`Use as drop-off: ${r}`}
+                          title={t("cust.booking.useAsDropoff", { place: r })}
                         >
-                          To
+                          {t("cust.booking.to")}
                         </button>
                       </div>
                     ))}
@@ -614,12 +614,12 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               {/* Recent / hint list — pure Uber list rows */}
               <div className="space-y-1 pt-1">
                 <p className="px-1 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-                  Tips
+                  {t("cust.booking.tips")}
                 </p>
                 {[
-                  "Pick a full address from suggestions for accurate pricing",
-                  "Schedule up to 30 days in advance",
-                  "Add extra crew for heavy items",
+                  t("cust.booking.tip1"),
+                  t("cust.booking.tip2"),
+                  t("cust.booking.tip3"),
                 ].map((h) => (
                   <div key={h} className="flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-neutral-900">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800">
@@ -637,7 +637,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           {step === "vehicle" && (
             <div className="space-y-3 pt-1">
               <h2 className="text-[22px] font-extrabold tracking-tight text-white">
-                Choose a vehicle
+                {t("cust.booking.chooseVehicle")}
               </h2>
 
               <div className="divide-y divide-neutral-800">
@@ -693,7 +693,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   disabled={!routeReady}
                   className="mt-2 h-14 w-full rounded-2xl bg-white text-[16px] font-bold text-black shadow-lg hover:bg-neutral-200 active:scale-[0.99] transition disabled:bg-neutral-800 disabled:text-neutral-500"
                 >
-                  Choose {selectedTile.name}
+                  {t("cust.booking.chooseVehicleBtn", { name: selectedTile.name })}
                 </Button>
               </div>
             </div>
@@ -702,7 +702,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           {step === "schedule" && (
             <div className="space-y-4 pt-1">
               <h2 className="text-[22px] font-extrabold tracking-tight text-white">
-                Review and confirm
+                {t("cust.booking.reviewConfirm")}
               </h2>
 
               {/* Trip summary */}
@@ -723,7 +723,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               {/* When */}
               <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                  When
+                  {t("cust.booking.when")}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {(["asap", "later"] as const).map((mode) => (
@@ -738,7 +738,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                           : "bg-neutral-900 text-neutral-300 hover:bg-neutral-800",
                       )}
                     >
-                      {mode === "asap" ? "Now" : "Schedule"}
+                      {mode === "asap" ? t("cust.booking.now") : t("cust.booking.schedule")}
                     </button>
                   ))}
                 </div>
@@ -754,7 +754,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                           )}
                         >
                           <CalendarDays className="mr-2 h-4 w-4" />
-                          {scheduledAt ? format(scheduledAt, "EEE, MMM d") : "Pick a date"}
+                          {scheduledAt ? format(scheduledAt, "EEE, MMM d") : t("cust.booking.pickDate")}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -787,9 +787,9 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       <Users className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-[14px] font-bold text-white">Extra crew</p>
+                      <p className="text-[14px] font-bold text-white">{t("cust.booking.extraCrew")}</p>
                       <p className="text-[12px] text-neutral-400">
-                        {formatCurrency(CREW_MEMBER_RATE_CAD)} per person
+                        {t("cust.booking.perPerson", { amount: formatCurrency(CREW_MEMBER_RATE_CAD) })}
                       </p>
                     </div>
                   </div>
@@ -797,7 +797,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 </div>
                 {crewEnabled && (
                   <div className="mt-3 flex items-center justify-between rounded-xl bg-neutral-900 px-3 py-2.5">
-                    <span className="text-[14px] font-semibold text-white">Crew members</span>
+                    <span className="text-[14px] font-semibold text-white">{t("booking.crewMembers")}</span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setCrewCount((c) => Math.max(1, c - 1))}
@@ -827,7 +827,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 className="h-14 w-full rounded-2xl bg-white text-[16px] font-bold text-black shadow-lg hover:bg-neutral-200 active:scale-[0.99] transition disabled:bg-neutral-800 disabled:text-neutral-500"
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {submitting ? "Preparing…" : `Confirm · ${formatCurrency(quote.finalPrice)}`}
+                {submitting ? t("cust.booking.preparingDots") : t("cust.booking.confirmAmount", { amount: formatCurrency(quote.finalPrice) })}
               </Button>
             </div>
           )}
@@ -848,19 +848,22 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   );
 };
 
-const PaymentRow = () => (
-  <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-neutral-900 px-4 py-3 text-left transition hover:bg-neutral-800">
-    <div className="flex items-center gap-3">
-      <div className="flex h-9 w-14 items-center justify-center rounded-md bg-white text-[10px] font-bold text-black">
-        CARD
+const PaymentRow = () => {
+  const { t } = useI18n();
+  return (
+    <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-neutral-900 px-4 py-3 text-left transition hover:bg-neutral-800">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-14 items-center justify-center rounded-md bg-white text-[10px] font-bold text-black">
+          CARD
+        </div>
+        <div>
+          <p className="text-[13px] font-bold text-white">{t("cust.booking.paymentCard")}</p>
+          <p className="text-[11px] text-neutral-400">{t("cust.booking.chargedAfter")}</p>
+        </div>
       </div>
-      <div>
-        <p className="text-[13px] font-bold text-white">Personal · Card</p>
-        <p className="text-[11px] text-neutral-400">Charged after confirmation</p>
-      </div>
-    </div>
-    <ChevronRight className="h-4 w-4 text-neutral-500" />
-  </button>
-);
+      <ChevronRight className="h-4 w-4 text-neutral-500" />
+    </button>
+  );
+};
 
 export default UberBookingScreen;

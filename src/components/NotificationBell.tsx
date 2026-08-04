@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Notification {
   id: string;
@@ -20,6 +21,7 @@ interface Notification {
 
 export const NotificationBell = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [items, setItems] = useState<Notification[]>([]);
 
   const load = useCallback(async () => {
@@ -68,7 +70,7 @@ export const NotificationBell = () => {
       <DropdownMenuTrigger asChild>
         <button
           className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0"
-          aria-label="Notifications"
+          aria-label={t("bk.notif.aria")}
         >
           <Bell className="w-4 h-4 text-foreground" />
           {unread > 0 && (
@@ -80,15 +82,15 @@ export const NotificationBell = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 max-h-[70vh] overflow-y-auto p-0">
         <div className="flex items-center justify-between px-3 py-2 border-b sticky top-0 bg-popover">
-          <p className="text-sm font-semibold">Notifications</p>
+          <p className="text-sm font-semibold">{t("bk.notif.title")}</p>
           {unread > 0 && (
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={markAllRead}>
-              <Check className="w-3 h-3 mr-1" /> Mark all read
+              <Check className="w-3 h-3 mr-1" /> {t("bk.notif.markAllRead")}
             </Button>
           )}
         </div>
         {items.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-8 px-4">No notifications yet</p>
+          <p className="text-xs text-muted-foreground text-center py-8 px-4">{t("bk.notif.empty")}</p>
         ) : (
           <ul className="divide-y divide-border">
             {items.map((n) => (

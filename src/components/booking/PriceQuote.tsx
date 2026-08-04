@@ -40,7 +40,7 @@ const PriceQuote = ({ moveSize, hasPickup, hasDropoff, onBook, isBooking = false
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted-foreground">{sizeData?.label} move</span>
+          <span className="text-muted-foreground">{t("bk.priceQuote.moveLabel", { size: sizeData ? t(sizeData.labelKey) : "" })}</span>
           <span className="font-medium text-foreground">{formatCurrency(basePrice)}</span>
         </div>
         <div className="flex justify-between">
@@ -59,8 +59,8 @@ const PriceQuote = ({ moveSize, hasPickup, hasDropoff, onBook, isBooking = false
       </div>
 
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> ~45 min ETA</span>
-        <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Insured</span>
+        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {t("bk.priceQuote.eta")}</span>
+        <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> {t("bk.priceQuote.insured")}</span>
       </div>
 
       <Button onClick={onBook} disabled={isBooking} className="h-12 w-full rounded-xl text-sm font-semibold">
