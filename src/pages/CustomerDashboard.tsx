@@ -214,7 +214,14 @@ const CustomerDashboard = () => {
                   <CardContent className="space-y-2 text-sm">
                     <p><span className="text-muted-foreground">{t("common.from")}</span> {b.pickup_address}</p>
                     <p><span className="text-muted-foreground">{t("common.to")}</span> {b.dropoff_address}</p>
-                    {isActive && b.status !== "pending" && <DriverInfoForBooking bookingId={b.id} />}
+                    {isActive && b.status !== "pending" && (
+                      <ActiveTripCard
+                        bookingId={b.id}
+                        pickupAddress={b.pickup_address}
+                        pickupLat={b.pickup_lat}
+                        pickupLng={b.pickup_lng}
+                      />
+                    )}
                     {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
                     {canCancel && (
                       <Button
