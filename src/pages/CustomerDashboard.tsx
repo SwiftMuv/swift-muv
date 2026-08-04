@@ -23,7 +23,7 @@ import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
 import ActiveTripCard from "@/components/customer/ActiveTripCard";
 import NotificationBell from "@/components/NotificationBell";
-import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
+
 import { useI18n } from "@/contexts/I18nContext";
 import TermsAgreementModal from "@/components/TermsAgreementModal";
 import logo from "@/assets/swiftmuv-logo.png";
@@ -172,9 +172,9 @@ const CustomerDashboard = () => {
             <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col items-center gap-1 min-w-0">
-            <LangCurrencyMenu />
             <h1 className="text-lg font-bold text-foreground truncate">{titles[activeTab]}</h1>
           </div>
+
           <div className="shrink-0">
             <NotificationBell />
           </div>

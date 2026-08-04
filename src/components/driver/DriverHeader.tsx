@@ -9,7 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/swiftmuv-logo.png";
-import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
+
 import { useI18n } from "@/contexts/I18nContext";
 
 interface DriverHeaderProps {
@@ -49,13 +49,13 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
           </div>
         </div>
 
-        {/* Center: Lang/Currency above name */}
+        {/* Center: Driver name */}
         <div className="absolute left-1/2 -translate-x-1/2 max-w-[60%] flex flex-col items-center gap-1">
-          <LangCurrencyMenu />
           <p className="truncate text-center text-lg sm:text-xl font-bold text-foreground max-w-full">
             {displayName}
           </p>
         </div>
+
 
         {/* Right: Profile dropdown */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

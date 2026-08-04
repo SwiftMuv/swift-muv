@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
+import LangCurrencySettings from "@/components/LangCurrencySettings";
+
 
 export const CustomerAccountScreen = () => {
   const { user, signOut } = useAuth();
@@ -51,7 +53,10 @@ export const CustomerAccountScreen = () => {
         </CardContent>
       </Card>
 
+      <LangCurrencySettings />
+
       <Button asChild variant="outline" className="w-full">
+
         <Link to="/terms">
           <FileText className="w-4 h-4 mr-2" />
           Terms &amp; Conditions
