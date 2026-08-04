@@ -32,6 +32,8 @@ interface Booking {
   id: string;
   pickup_address: string;
   dropoff_address: string;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
   total_price: number;
   status: string;
   created_at: string;
