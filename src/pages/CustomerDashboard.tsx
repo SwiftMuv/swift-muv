@@ -56,7 +56,7 @@ const CustomerDashboard = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("bookings")
-      .select("id, pickup_address, dropoff_address, total_price, status, created_at")
+      .select("id, pickup_address, dropoff_address, pickup_lat, pickup_lng, total_price, status, created_at")
       .eq("customer_id", user.id)
       .order("created_at", { ascending: false });
     if (!error && data) setBookings(data as Booking[]);
