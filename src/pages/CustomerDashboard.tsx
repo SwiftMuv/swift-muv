@@ -172,9 +172,9 @@ const CustomerDashboard = () => {
             <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col items-center gap-1 min-w-0">
-            <LangCurrencyMenu />
             <h1 className="text-lg font-bold text-foreground truncate">{titles[activeTab]}</h1>
           </div>
+
           <div className="shrink-0">
             <NotificationBell />
           </div>
