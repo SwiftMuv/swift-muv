@@ -68,22 +68,25 @@ const VEHICLE_TILES: VehicleTile[] = [
 
 // Uber-style near-monochrome map — grayscale roads, muted land, subtle water.
 const UBER_MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
+  { elementType: "geometry", stylers: [{ color: "#0d0d0d" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#9aa0a6" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#0d0d0d" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#2a2a2a" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#e8ede4" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#f0f0f0" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#e6e6e6" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#dcdcdc" }] },
-  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#132015" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2e2e2e" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#b0b4b8" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#373737" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#4a4a4a" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#5c5c5c" }] },
+  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#242424" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9d6dd" }] },
-  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#7a8a92" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#06131c" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#3d5866" }] },
 ];
+
 
 const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
   if (name.startsWith("Cargo")) return "small";
@@ -151,7 +154,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       disableDefaultUI: true,
       gestureHandling: "greedy",
       clickableIcons: false,
-      backgroundColor: "#f5f5f5",
+      backgroundColor: "#0d0d0d",
       styles: UBER_MAP_STYLES,
     });
   }, [mapsReady]);
