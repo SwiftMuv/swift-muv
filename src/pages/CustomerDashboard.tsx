@@ -21,7 +21,7 @@ import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
 import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
 import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
-import DriverInfoForBooking from "@/components/customer/DriverInfoForBooking";
+import ActiveTripCard from "@/components/customer/ActiveTripCard";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
 import { useI18n } from "@/contexts/I18nContext";
