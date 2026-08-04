@@ -1,6 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { customerDict } from "@/i18n/customer";
+import { driverDict } from "@/i18n/driver";
+import { bookingDict } from "@/i18n/booking";
+
 
 type I18nState = {
   lang: string;
