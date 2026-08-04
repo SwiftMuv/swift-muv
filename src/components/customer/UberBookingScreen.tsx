@@ -68,10 +68,10 @@ const VEHICLE_TILES: VehicleTile[] = [
 
 // Uber-style near-monochrome map — grayscale roads, muted land, subtle water.
 const UBER_MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#0d0d0d" }] },
+  { elementType: "geometry", stylers: [{ color: "#000000" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#9aa0a6" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#0d0d0d" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#000000" }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#2a2a2a" }] },
   { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
@@ -154,7 +154,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       disableDefaultUI: true,
       gestureHandling: "greedy",
       clickableIcons: false,
-      backgroundColor: "#0d0d0d",
+      backgroundColor: "#000000",
       styles: UBER_MAP_STYLES,
     });
   }, [mapsReady]);

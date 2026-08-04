@@ -21,7 +21,7 @@ import CustomerHomeScreen from "@/components/customer/CustomerHomeScreen";
 import CustomerAccountScreen from "@/components/customer/CustomerAccountScreen";
 import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
-import DriverInfoForBooking from "@/components/customer/DriverInfoForBooking";
+import ActiveTripCard from "@/components/customer/ActiveTripCard";
 import NotificationBell from "@/components/NotificationBell";
 import { LangCurrencyMenu } from "@/components/LangCurrencyMenu";
 import { useI18n } from "@/contexts/I18nContext";
@@ -32,6 +32,8 @@ interface Booking {
   id: string;
   pickup_address: string;
   dropoff_address: string;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
   total_price: number;
   status: string;
   created_at: string;
@@ -56,7 +58,7 @@ const CustomerDashboard = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("bookings")
-      .select("id, pickup_address, dropoff_address, total_price, status, created_at")
+      .select("id, pickup_address, dropoff_address, pickup_lat, pickup_lng, total_price, status, created_at")
       .eq("customer_id", user.id)
       .order("created_at", { ascending: false });
     if (!error && data) setBookings(data as Booking[]);
@@ -212,7 +214,14 @@ const CustomerDashboard = () => {
                   <CardContent className="space-y-2 text-sm">
                     <p><span className="text-muted-foreground">{t("common.from")}</span> {b.pickup_address}</p>
                     <p><span className="text-muted-foreground">{t("common.to")}</span> {b.dropoff_address}</p>
-                    {isActive && b.status !== "pending" && <DriverInfoForBooking bookingId={b.id} />}
+                    {isActive && b.status !== "pending" && (
+                      <ActiveTripCard
+                        bookingId={b.id}
+                        pickupAddress={b.pickup_address}
+                        pickupLat={b.pickup_lat}
+                        pickupLng={b.pickup_lng}
+                      />
+                    )}
                     {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
                     {canCancel && (
                       <Button
