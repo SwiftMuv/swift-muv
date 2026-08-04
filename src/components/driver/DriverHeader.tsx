@@ -44,8 +44,8 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
       <div className="relative flex items-center justify-between gap-2 w-full">
         {/* Left: Circular logo */}
         <div className="flex items-center min-w-0 shrink-0">
-          <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-primary/30 bg-card shrink-0">
-            <img src={logo} alt="SwiftMuv" className="w-full h-full object-cover" />
+          <div className="w-11 h-11 overflow-visible shrink-0">
+            <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
           </div>
         </div>
 
