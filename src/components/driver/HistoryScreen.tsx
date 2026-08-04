@@ -24,7 +24,7 @@ const sizeLabel = (s?: string): CompletedJob["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
 
 const HistoryCard = ({ job, onRebook }: { job: CompletedJob; onRebook: (job: CompletedJob) => void }) => {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, formatDate } = useI18n();
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="rounded-2xl bg-card border p-4 space-y-3">
