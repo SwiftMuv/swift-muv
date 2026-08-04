@@ -1,17 +1,20 @@
 /// <reference types="google.maps" />
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
   CalendarDays,
   ChevronRight,
   Clock,
   Loader2,
+  MapPin,
   Minus,
   Plus,
   Search,
   Users,
   X,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
