@@ -18,6 +18,7 @@ import {
 import type { Database } from "@/integrations/supabase/types";
 import swiftmuvLogo from "@/assets/swiftmuv-logo.png";
 import { useI18n } from "@/contexts/I18nContext";
+import { authRedirectUrl } from "@/lib/authRedirect";
 
 type DocType = Database["public"]["Enums"]["driver_document_type"];
 
