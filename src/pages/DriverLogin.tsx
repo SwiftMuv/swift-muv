@@ -18,6 +18,7 @@ import {
 import type { Database } from "@/integrations/supabase/types";
 import swiftmuvLogo from "@/assets/swiftmuv-logo.png";
 import { useI18n } from "@/contexts/I18nContext";
+import { authRedirectUrl } from "@/lib/authRedirect";
 
 type DocType = Database["public"]["Enums"]["driver_document_type"];
 
@@ -74,7 +75,7 @@ const DriverLogin = () => {
   const handleForgotPassword = async () => {
     if (!email) return toast.error(t("auth.customer.enterEmailFirst"));
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: authRedirectUrl("/reset-password"),
     });
     if (error) toast.error(error.message);
     else toast.success(t("auth.resetLinkSent"));
