@@ -14,7 +14,7 @@ import {
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
-const LOGO_URL = 'https://swift-muv.lovable.app/__l5e/assets-v1/30b4c1a9-152d-40b4-b3ca-25f97211d477/swiftmuv-logo.png'
+const LOGO_URL = 'https://swift-muv.lovable.app/__l5e/assets-v1/cf51cce1-c716-41b0-b481-0c5f681b7108/swiftmuv-logo-nl2.png'
 
 interface MagicLinkEmailProps {
   siteName: string
