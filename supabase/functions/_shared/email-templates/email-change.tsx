@@ -103,3 +103,22 @@ const button = {
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: 'hsl(220, 10%, 55%)', margin: '32px 0 0' }
+const logoStyle = {
+  margin: '0 0 8px',
+  display: 'block',
+  width: '160px',
+  maxWidth: '100%',
+  height: 'auto',
+  border: '0',
+  outline: 'none',
+  textDecoration: 'none',
+  lineHeight: '100%',
+}
+const wordmark = {
+  fontFamily: '"Space Grotesk", -apple-system, Helvetica, Arial, sans-serif',
+  fontSize: '12px',
+  fontWeight: 'bold' as const,
+  letterSpacing: '0.4px',
+  color: 'hsl(220, 10%, 45%)',
+  margin: '0 0 24px',
+}
