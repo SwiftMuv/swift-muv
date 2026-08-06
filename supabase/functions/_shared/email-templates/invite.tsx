@@ -21,7 +21,7 @@ interface InviteEmailProps {
   confirmationUrl: string
 }
 
-const LOGO_URL = 'https://swift-muv.lovable.app/swiftmuv-logo.png'
+const LOGO_URL = 'https://swift-muv.lovable.app/__l5e/assets-v1/30b4c1a9-152d-40b4-b3ca-25f97211d477/swiftmuv-logo.png'
 
 export const InviteEmail = ({
   siteName,
