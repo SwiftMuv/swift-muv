@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       options: {
         data: { role, full_name: fullName, ...extra },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: authRedirectUrl("/"),
       },
     });
     return { error: error ? new Error(error.message) : null };
