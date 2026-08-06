@@ -80,6 +80,14 @@ export default InviteEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: '"DM Sans", -apple-system, Helvetica, Arial, sans-serif' }
 const container = { padding: '24px 28px', maxWidth: '560px' }
+const wordmark = {
+  fontFamily: '"Space Grotesk", -apple-system, Helvetica, Arial, sans-serif',
+  fontSize: '12px',
+  fontWeight: 'bold' as const,
+  letterSpacing: '0.4px',
+  color: 'hsl(220, 10%, 45%)',
+  margin: '0 0 24px',
+}
 const h1 = {
   fontFamily: '"Space Grotesk", -apple-system, Helvetica, Arial, sans-serif',
   fontSize: '24px',
