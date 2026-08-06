@@ -40,6 +40,14 @@ export const EmailChangeEmail = ({
     <Preview>Confirm your email change for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Img
+          src={LOGO_URL}
+          alt="SwiftMuv"
+          width="160"
+          height="44"
+          style={logoStyle}
+        />
+        <Text style={wordmark}>SwiftMuv — Moving forward. Effortlessly.</Text>
         <Heading style={h1}>Confirm your email change</Heading>
         <Text style={text}>
           You requested to change your email address for {siteName} from{' '}
