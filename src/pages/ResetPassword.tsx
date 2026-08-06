@@ -207,45 +207,9 @@ const ResetPassword = () => {
     navigate(redirectTo, { replace: true });
   };
 
-  const PwInput = ({
-    id,
-    label,
-    value,
-    onChange,
-    show,
-    setShow,
-  }: {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    show: boolean;
-    setShow: (fn: (s: boolean) => boolean) => void;
-  }) => (
-    <div className="space-y-2">
-      <Label htmlFor={id} className="text-white">{label}</Label>
-      <div className="relative">
-        <Input
-          id={id}
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="••••••••"
-          required
-          minLength={6}
-          className="pr-10"
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
-        >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-    </div>
-  );
+  const pwLabels = { showLabel: t("auth.showPassword"), hideLabel: t("auth.hidePassword") };
+
+
 
   if (linkState === "invalid") {
     return (
