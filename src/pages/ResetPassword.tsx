@@ -271,10 +271,10 @@ const ResetPassword = () => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isRecovery && (
-            <PwInput id="old-password" label={t("auth.resetPassword.oldPassword")} value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
+            <PwInput {...pwLabels} id="old-password" label={t("auth.resetPassword.oldPassword")} value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
           )}
-          <PwInput id="new-password" label={t("auth.resetPassword.newPassword")} value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
-          <PwInput id="repeat-password" label={t("auth.resetPassword.repeatNewPassword")} value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
+          <PwInput {...pwLabels} id="new-password" label={t("auth.resetPassword.newPassword")} value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
+          <PwInput {...pwLabels} id="repeat-password" label={t("auth.resetPassword.repeatNewPassword")} value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading || !ready}>
             {loading ? t("auth.resetPassword.updating") : t("auth.resetPassword.updatePassword")}
           </Button>
