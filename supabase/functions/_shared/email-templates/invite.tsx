@@ -9,6 +9,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
   Text,
@@ -20,6 +21,8 @@ interface InviteEmailProps {
   confirmationUrl: string
 }
 
+const LOGO_URL = 'https://swift-muv.lovable.app/swiftmuv-logo.png'
+
 export const InviteEmail = ({
   siteName,
   siteUrl,
@@ -30,6 +33,28 @@ export const InviteEmail = ({
     <Preview>You've been invited to join {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Img
+          src={LOGO_URL}
+          alt="SwiftMuv"
+          width="160"
+          height="44"
+          style={{
+            margin: '0 0 8px',
+            display: 'block',
+            width: '160px',
+            maxWidth: '100%',
+            height: 'auto',
+            border: '0',
+            outline: 'none',
+            textDecoration: 'none',
+            lineHeight: '100%',
+            fontFamily: '"Space Grotesk", -apple-system, Helvetica, Arial, sans-serif',
+            fontSize: '20px',
+            fontWeight: 'bold' as const,
+            color: 'hsl(220, 25%, 10%)',
+          }}
+        />
+        <Text style={wordmark}>SwiftMuv — Moving forward. Effortlessly.</Text>
         <Heading style={h1}>You've been invited</Heading>
         <Text style={text}>
           You've been invited to join{' '}
