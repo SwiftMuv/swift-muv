@@ -10,6 +10,51 @@ import { useI18n } from "@/contexts/I18nContext";
 
 type LinkState = "validating" | "valid" | "invalid";
 
+const PwInput = ({
+  id,
+  label,
+  value,
+  onChange,
+  show,
+  setShow,
+  showLabel,
+  hideLabel,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  setShow: (fn: (s: boolean) => boolean) => void;
+  showLabel: string;
+  hideLabel: string;
+}) => (
+  <div className="space-y-2">
+    <Label htmlFor={id} className="text-white">{label}</Label>
+    <div className="relative">
+      <Input
+        id={id}
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="••••••••"
+        required
+        minLength={6}
+        autoComplete="new-password"
+        className="pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        aria-label={show ? hideLabel : showLabel}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  </div>
+);
+
 const ResetPassword = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
