@@ -1,12 +1,11 @@
 // Pricing engine (updated).
 //
 // Per-vehicle pricing — the bigger the vehicle, the higher the price.
-//   - SUV ("Extra Large Car / SUV", bags only):
-//       local      → flat $50 CAD
-//       intercity  → $50 + (km × $2.00)
-//       inter-prov → $50 + (km × $2.00)
-//   - All other vehicles: each tier compounds +40% base fee and +30% per-km
-//     rate from the previous (smaller) tier, starting from $20 base / $2/km.
+//   - SUV ("Extra Large Car / SUV", bags only): flat $50 CAD covering the
+//     first 3 km, then $20/km for every extra km.
+//   - All other vehicles: base fee scales +40% per vehicle tier (from $20),
+//     plus the standard distance rate of $20/km.
+//   - Quebec sales tax (14.975%) is applied to the subtotal.
 //   - Optional crew helpers add $15 CAD per person on every vehicle.
 
 export interface SelectedItem {
@@ -37,17 +36,49 @@ export type VehicleSelection = "auto" | "suv";
 
 export const CREW_MEMBER_RATE_CAD = 15;
 export const BASE_FEE_CAD = 20;
-export const PER_KM_RATE_CAD = 2.0;
+/** Official SwiftMuv standard distance rate (CAD per km). */
+export const PER_KM_RATE_CAD = 20.0;
 export const SUV_FLAT_LOCAL_CAD = 50;
-export const SUV_PER_KM_CAD = 2.0;
+/** SUV flat fee covers the first 3 km. */
+export const SUV_INCLUDED_KM = 3;
+export const SUV_PER_KM_CAD = PER_KM_RATE_CAD;
+/** Quebec combined sales tax (GST 5% + QST 9.975%). */
+export const QC_TAX_RATE = 0.14975;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Admin-adjustable pricing overrides (loaded from app_config at runtime). */
+export interface PricingOverrides {
+  suvFlatLocal?: number;
+  suvIncludedKm?: number;
+  perKmRate?: number;
+  baseFee?: number;
+  crewMemberRate?: number;
+  taxRate?: number;
+}
+
+const activeOverrides: PricingOverrides = {};
+
+export function setPricingOverrides(o: PricingOverrides) {
+  Object.assign(activeOverrides, o);
+}
+
+export function getPricingRates() {
+  return {
+    suvFlatLocal: activeOverrides.suvFlatLocal ?? SUV_FLAT_LOCAL_CAD,
+    suvIncludedKm: activeOverrides.suvIncludedKm ?? SUV_INCLUDED_KM,
+    perKmRate: activeOverrides.perKmRate ?? PER_KM_RATE_CAD,
+    baseFee: activeOverrides.baseFee ?? BASE_FEE_CAD,
+    crewMemberRate: activeOverrides.crewMemberRate ?? CREW_MEMBER_RATE_CAD,
+    taxRate: activeOverrides.taxRate ?? QC_TAX_RATE,
+  };
+}
+
 // Compounded scale for non-SUV fleet: +40% base, +30% per-km per tier.
 const BASE_STEP = 1.4;
-const RATE_STEP = 1.3;
 const tierBase = (level: number) => round2(BASE_FEE_CAD * Math.pow(BASE_STEP, level));
-const tierRate = (level: number) => round2(PER_KM_RATE_CAD * Math.pow(RATE_STEP, level));
+/** Distance rate is the same standard rate for every non-SUV vehicle. */
+const tierRate = (_level: number) => round2(PER_KM_RATE_CAD);
 
 /**
  * Heavy-item surcharge (per unit). Items above 50 lb attract an extra fee
@@ -123,6 +154,7 @@ export function calculateMovePrice({
 
   const isSuv = vehicleSelection === "suv";
   const km = Math.max(0, distanceKm);
+  const rates = getPricingRates();
 
   let baseFee = 0;
   let distanceFee = 0;
@@ -130,19 +162,22 @@ export function calculateMovePrice({
   const breakdown: Record<string, unknown> = {};
 
   if (isSuv) {
-    baseFee = SUV_FLAT_LOCAL_CAD;
-    distanceFee = moveType === "local" ? 0 : km * SUV_PER_KM_CAD;
-    servicePrice = baseFee + distanceFee;
+    baseFee = rates.suvFlatLocal;
+    const extraKm = Math.max(0, km - rates.suvIncludedKm);
+    distanceFee = round2(extraKm * rates.perKmRate);
+    servicePrice = round2(baseFee + distanceFee);
     Object.assign(breakdown, {
       flatRate: baseFee,
       distanceKm: km,
-      ratePerKm: moveType === "local" ? 0 : SUV_PER_KM_CAD,
+      includedKm: rates.suvIncludedKm,
+      extraKm: round2(extraKm),
+      ratePerKm: rates.perKmRate,
       serviceCost: servicePrice,
     });
   } else {
     // Use per-vehicle base + per-km rate so bigger vehicles cost more.
-    baseFee = vehicle.baseFee;
-    const ratePerKm = vehicle.perKmRate;
+    baseFee = round2((vehicle.baseFee / BASE_FEE_CAD) * rates.baseFee);
+    const ratePerKm = rates.perKmRate;
     distanceFee = km * ratePerKm;
     servicePrice = baseFee + distanceFee;
     Object.assign(breakdown, {
@@ -155,7 +190,7 @@ export function calculateMovePrice({
   }
 
   const safeCrew = Math.max(0, Math.floor(crewCount));
-  const crewMemberFee = CREW_MEMBER_RATE_CAD;
+  const crewMemberFee = rates.crewMemberRate;
   const crewCost = safeCrew * crewMemberFee;
 
   // Heavy item surcharge — applies per unit for items over 50 lb.
@@ -165,7 +200,10 @@ export function calculateMovePrice({
   });
   heavyItemFee = round2(heavyItemFee);
 
-  const finalPrice = servicePrice + crewCost + heavyItemFee;
+  const subtotal = round2(servicePrice + crewCost + heavyItemFee);
+  const taxRate = rates.taxRate;
+  const taxAmount = round2(subtotal * taxRate);
+  const finalPrice = round2(subtotal + taxAmount);
 
   return {
     recommendedVehicle: vehicle.name,
@@ -178,8 +216,11 @@ export function calculateMovePrice({
     baseFee,
     heavyItemFee,
     distanceFee: Math.round(distanceFee * 100) / 100,
-    servicePrice: Math.round(servicePrice * 100) / 100,
-    finalPrice: Math.round(finalPrice * 100) / 100,
+    servicePrice: round2(servicePrice),
+    subtotal,
+    taxRate,
+    taxAmount,
+    finalPrice,
     breakdown,
   };
 }

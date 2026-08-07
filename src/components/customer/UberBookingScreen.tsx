@@ -62,7 +62,7 @@ interface VehicleTile {
 }
 
 const VEHICLE_TILES: VehicleTile[] = [
-  { name: "SwiftGo SUV", capacity: "Bags · flat items", eta: "3 min away", image: SuvImg, isSuv: true },
+  { name: "SUV", capacity: "Bags · flat items", eta: "3 min away", image: SuvImg, isSuv: true },
   { name: "Cargo Van", capacity: "1–2 rooms · 2,000 lb", eta: "5 min away", image: CargoVanImg },
   { name: "12ft Pickup", capacity: "Studio · 3,000 lb", eta: "6 min away", image: PickupImg },
   { name: "16ft Truck", capacity: "1 bedroom · 4,500 lb", eta: "8 min away", image: BoxTruckImg },
@@ -163,6 +163,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [snap, setSnap] = useState<Snap>("half");
   const [recents, setRecents] = useState<string[]>(() => loadRecents());
+  const [pickupPicked, setPickupPicked] = useState(false);
+  const [dropoffPicked, setDropoffPicked] = useState(false);
 
   const pickupInvalid = looksIncomplete(pickup);
   const dropoffInvalid = looksIncomplete(dropoff);
@@ -211,7 +213,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   // Distance calc
   useEffect(() => {
-    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
+    if (!pickupPicked || !dropoffPicked || pickup.trim().length < 5 || dropoff.trim().length < 5) {
       setDistance(null);
       setDistanceError(null);
       return;
@@ -245,7 +247,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       }
     }, 700);
     return () => clearTimeout(timer);
-  }, [pickup, dropoff]);
+  }, [pickup, dropoff, pickupPicked, dropoffPicked]);
 
   // Custom Uber-style dot markers via SVG
   const makeDotIcon = (fill: string, ring = "#ffffff"): google.maps.Symbol => ({
@@ -523,7 +525,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                     <div className="pb-1">
                       <PlacesAutocomplete
                         value={pickup}
-                        onChange={setPickup}
+                        onChange={(v) => { setPickup(v); setPickupPicked(false); }}
+                        onSelect={() => setPickupPicked(true)}
                         placeholder={t("cust.booking.pickupLocation")}
                         className={cn(fieldClass, pickupInvalid && invalidFieldClass)}
                       />
@@ -531,7 +534,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                     <div className="pt-1">
                       <PlacesAutocomplete
                         value={dropoff}
-                        onChange={setDropoff}
+                        onChange={(v) => { setDropoff(v); setDropoffPicked(false); }}
+                        onSelect={() => setDropoffPicked(true)}
                         placeholder={t("cust.booking.whereTo")}
                         className={cn(fieldClass, dropoffInvalid && invalidFieldClass)}
                       />
@@ -539,7 +543,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   </div>
                   {(pickup || dropoff) && (
                     <button
-                      onClick={() => { setPickup(""); setDropoff(""); setDistance(null); }}
+                      onClick={() => { setPickup(""); setDropoff(""); setDistance(null); setPickupPicked(false); setDropoffPicked(false); }}
                       className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                       aria-label={t("cust.booking.clear")}
                     >
@@ -590,7 +594,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       >
                         <button
                           type="button"
-                          onClick={() => setPickup(r)}
+                          onClick={() => { setPickup(r); setPickupPicked(true); }}
                           className="max-w-[180px] truncate px-3 py-2 text-[12px] font-semibold text-white hover:bg-neutral-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset"
                           title={t("cust.booking.useAsPickup", { place: r })}
                         >
@@ -599,7 +603,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setDropoff(r)}
+                          onClick={() => { setDropoff(r); setDropoffPicked(true); }}
                           className="border-l border-neutral-700 px-2.5 py-2 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset"
                           title={t("cust.booking.useAsDropoff", { place: r })}
                         >
@@ -687,7 +691,23 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               </div>
 
               <div className="pt-3">
-                <PaymentRow />
+                {/* Price breakdown */}
+              <div className="space-y-1.5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-[14px]">
+                <div className="flex justify-between text-neutral-400">
+                  <span>{t("booking.subtotal")}</span>
+                  <span className="font-semibold text-white">{formatCurrency(quote.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                  <span>{t("booking.tax")}</span>
+                  <span className="font-semibold text-white">{formatCurrency(quote.taxAmount)}</span>
+                </div>
+                <div className="mt-1 flex justify-between border-t border-neutral-800 pt-2 text-[16px] font-bold text-white">
+                  <span>{t("booking.totalCad")}</span>
+                  <span>{formatCurrency(quote.finalPrice)}</span>
+                </div>
+              </div>
+
+              <PaymentRow />
                 <Button
                   onClick={() => setStep("schedule")}
                   disabled={!routeReady}

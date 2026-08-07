@@ -10,6 +10,51 @@ import { useI18n } from "@/contexts/I18nContext";
 
 type LinkState = "validating" | "valid" | "invalid";
 
+const PwInput = ({
+  id,
+  label,
+  value,
+  onChange,
+  show,
+  setShow,
+  showLabel,
+  hideLabel,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  setShow: (fn: (s: boolean) => boolean) => void;
+  showLabel: string;
+  hideLabel: string;
+}) => (
+  <div className="space-y-2">
+    <Label htmlFor={id} className="text-white">{label}</Label>
+    <div className="relative">
+      <Input
+        id={id}
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="••••••••"
+        required
+        minLength={6}
+        autoComplete="new-password"
+        className="pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        aria-label={show ? hideLabel : showLabel}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  </div>
+);
+
 const ResetPassword = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -162,45 +207,9 @@ const ResetPassword = () => {
     navigate(redirectTo, { replace: true });
   };
 
-  const PwInput = ({
-    id,
-    label,
-    value,
-    onChange,
-    show,
-    setShow,
-  }: {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    show: boolean;
-    setShow: (fn: (s: boolean) => boolean) => void;
-  }) => (
-    <div className="space-y-2">
-      <Label htmlFor={id} className="text-white">{label}</Label>
-      <div className="relative">
-        <Input
-          id={id}
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="••••••••"
-          required
-          minLength={6}
-          className="pr-10"
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
-        >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-    </div>
-  );
+  const pwLabels = { showLabel: t("auth.showPassword"), hideLabel: t("auth.hidePassword") };
+
+
 
   if (linkState === "invalid") {
     return (
@@ -262,10 +271,10 @@ const ResetPassword = () => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isRecovery && (
-            <PwInput id="old-password" label={t("auth.resetPassword.oldPassword")} value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
+            <PwInput {...pwLabels} id="old-password" label={t("auth.resetPassword.oldPassword")} value={oldPassword} onChange={setOldPassword} show={showOld} setShow={setShowOld} />
           )}
-          <PwInput id="new-password" label={t("auth.resetPassword.newPassword")} value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
-          <PwInput id="repeat-password" label={t("auth.resetPassword.repeatNewPassword")} value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
+          <PwInput {...pwLabels} id="new-password" label={t("auth.resetPassword.newPassword")} value={password} onChange={setPassword} show={showNew} setShow={setShowNew} />
+          <PwInput {...pwLabels} id="repeat-password" label={t("auth.resetPassword.repeatNewPassword")} value={confirmPassword} onChange={setConfirmPassword} show={showRepeat} setShow={setShowRepeat} />
           <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={loading || !ready}>
             {loading ? t("auth.resetPassword.updating") : t("auth.resetPassword.updatePassword")}
           </Button>

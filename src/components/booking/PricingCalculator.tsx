@@ -17,11 +17,12 @@ interface TierDef {
 
 // SUV baseline. Large = +40% base, +30% rate. XL = +40%/+30% from Large.
 const SUV_BASE = 20;
-const SUV_RATE = 2;
+const SUV_RATE = 20;                     // standard $20 CAD / km
 const LARGE_BASE = SUV_BASE * 1.4;       // 28
-const LARGE_RATE = SUV_RATE * 1.3;       // 2.6
+const LARGE_RATE = SUV_RATE;
 const XL_BASE = LARGE_BASE * 1.4;        // 39.20
-const XL_RATE = LARGE_RATE * 1.3;        // 3.38
+const XL_RATE = SUV_RATE;
+const QC_TAX_RATE = 0.14975;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -53,7 +54,9 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
   const baseFee = tierDef.baseFee;
   const perKm = tierDef.perKm;
   const distanceFee = round2(perKm * km);
-  const total = round2(baseFee + distanceFee);
+  const subtotal = round2(baseFee + distanceFee);
+  const taxAmount = round2(subtotal * QC_TAX_RATE);
+  const total = round2(subtotal + taxAmount);
 
   useEffect(() => {
     onChange?.({ tier, baseFee, perKm, distanceKm: km, total });
@@ -130,6 +133,14 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
         <div className="flex justify-between text-slate-300">
           <span>{t("bk.pricing.distanceRow", { km: km.toFixed(2), rate: fmt(perKm) })}</span>
           <span className="font-semibold text-white">{fmt(distanceFee)}</span>
+        </div>
+        <div className="mt-1 flex justify-between border-t border-slate-700 pt-2 text-slate-300">
+          <span>{t("booking.subtotal")}</span>
+          <span className="font-semibold text-white">{fmt(subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-slate-300">
+          <span>{t("booking.tax")}</span>
+          <span className="font-semibold text-white">{fmt(taxAmount)}</span>
         </div>
         <div className="mt-1 flex items-center justify-between border-t border-slate-700 pt-2 text-base">
           <span className="font-bold text-white">{t("bk.pricing.total")}</span>

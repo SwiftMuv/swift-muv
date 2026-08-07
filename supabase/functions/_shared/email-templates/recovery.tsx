@@ -19,7 +19,7 @@ interface RecoveryEmailProps {
   confirmationUrl: string
 }
 
-const LOGO_URL = 'https://swift-muv.lovable.app/swiftmuv-logo.png'
+const LOGO_URL = 'https://swift-muv.lovable.app/__l5e/assets-v1/cf51cce1-c716-41b0-b481-0c5f681b7108/swiftmuv-logo-nl2.png'
 
 export const RecoveryEmail = ({
   siteName,
