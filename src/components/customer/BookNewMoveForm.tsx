@@ -228,13 +228,23 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div>
               <Label className="text-xs text-muted-foreground"><MapPin className="inline h-3 w-3 mr-1" />{t("booking.pickup")}</Label>
               <div className="mt-1">
-                <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder={t("booking.pickupPlaceholder")} />
+                <PlacesAutocomplete
+                  value={pickup}
+                  onChange={(v) => { setPickup(v); setPickupPicked(false); }}
+                  onSelect={() => setPickupPicked(true)}
+                  placeholder={t("booking.pickupPlaceholder")}
+                />
               </div>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground"><Navigation className="inline h-3 w-3 mr-1" />{t("booking.dropoff")}</Label>
               <div className="mt-1">
-                <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.dropoffPlaceholder")} />
+                <PlacesAutocomplete
+                  value={dropoff}
+                  onChange={(v) => { setDropoff(v); setDropoffPicked(false); }}
+                  onSelect={() => setDropoffPicked(true)}
+                  placeholder={t("booking.dropoffPlaceholder")}
+                />
               </div>
             </div>
           </div>
