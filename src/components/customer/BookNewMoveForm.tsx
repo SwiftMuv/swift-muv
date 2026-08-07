@@ -533,8 +533,16 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
               <span>{formatCurrency(quote.crewCost)}</span>
             </div>
           )}
+          <div className="mt-2 flex justify-between border-t border-border pt-2">
+            <span className="text-muted-foreground">{t("booking.subtotal")}</span>
+            <span className="font-medium">{formatCurrency(quote.subtotal)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t("booking.tax")}</span>
+            <span className="font-medium">{formatCurrency(quote.taxAmount)}</span>
+          </div>
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
-            <span className="text-cyan-500">{t("common.total")}</span><span className="text-cyan-500">{formatCurrency(quote.finalPrice)}</span>
+            <span className="text-cyan-500">{t("booking.totalCad")}</span><span className="text-cyan-500">{formatCurrency(quote.finalPrice)}</span>
           </div>
         </CardContent>
       </Card>

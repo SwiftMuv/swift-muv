@@ -687,7 +687,23 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               </div>
 
               <div className="pt-3">
-                <PaymentRow />
+                {/* Price breakdown */}
+              <div className="space-y-1.5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-[14px]">
+                <div className="flex justify-between text-neutral-400">
+                  <span>{t("booking.subtotal")}</span>
+                  <span className="font-semibold text-white">{formatCurrency(quote.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                  <span>{t("booking.tax")}</span>
+                  <span className="font-semibold text-white">{formatCurrency(quote.taxAmount)}</span>
+                </div>
+                <div className="mt-1 flex justify-between border-t border-neutral-800 pt-2 text-[16px] font-bold text-white">
+                  <span>{t("booking.totalCad")}</span>
+                  <span>{formatCurrency(quote.finalPrice)}</span>
+                </div>
+              </div>
+
+              <PaymentRow />
                 <Button
                   onClick={() => setStep("schedule")}
                   disabled={!routeReady}
