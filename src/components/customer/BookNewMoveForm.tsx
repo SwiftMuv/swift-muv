@@ -72,7 +72,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   };
 
   useEffect(() => {
-    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
+    if (!pickupPicked || !dropoffPicked || pickup.trim().length < 5 || dropoff.trim().length < 5) {
       setDistance(null);
       setDistanceError(null);
       return;
@@ -101,7 +101,7 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [pickup, dropoff]);
+  }, [pickup, dropoff, pickupPicked, dropoffPicked]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
