@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthBootGate from "@/components/AuthBootGate";
 import IdleLogout from "@/components/IdleLogout";
 import EntryRedirect from "@/components/EntryRedirect";
+import AppBootstrap from "@/components/AppBootstrap";
 import CustomerLogin from "./pages/CustomerLogin.tsx";
 import DriverLogin from "./pages/DriverLogin.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
@@ -33,6 +34,7 @@ const App = () => (
         <AuthProvider>
           <I18nProvider>
           <AuthBootGate>
+          <AppBootstrap />
           <IdleLogout />
           <Routes>
             <Route path="/" element={<EntryRedirect />} />

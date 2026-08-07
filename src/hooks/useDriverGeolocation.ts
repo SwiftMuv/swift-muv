@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureLocationPermission } from "@/lib/locationPermission";
 
 /**
  * While `enabled` is true, continuously watch the device's GPS and
@@ -13,6 +14,10 @@ export function useDriverGeolocation(userId: string | undefined, enabled: boolea
   useEffect(() => {
     if (!userId || !enabled) return;
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
+
+    let cancelled = false;
+    let watchId: number | null = null;
+    let interval: number | null = null;
 
     const push = async (lat: number, lng: number) => {
       lastCoords.current = { lat, lng };
@@ -43,28 +48,35 @@ export function useDriverGeolocation(userId: string | undefined, enabled: boolea
       console.warn("Geolocation error:", err.message);
     };
 
-    // Initial fast fix
-    navigator.geolocation.getCurrentPosition(onPos, onErr, {
-      enableHighAccuracy: true,
-      timeout: 10_000,
-      maximumAge: 0,
-    });
+    // Ask for permission first (native Android prompts here), then start tracking.
+    (async () => {
+      const state = await ensureLocationPermission();
+      if (cancelled || state === "denied" || state === "unavailable") return;
 
-    // Continuous watch
-    const watchId = navigator.geolocation.watchPosition(onPos, onErr, {
-      enableHighAccuracy: true,
-      maximumAge: 5_000,
-      timeout: 20_000,
-    });
+      // Initial fast fix
+      navigator.geolocation.getCurrentPosition(onPos, onErr, {
+        enableHighAccuracy: true,
+        timeout: 10_000,
+        maximumAge: 0,
+      });
 
-    // Periodic heartbeat in case watchPosition is quiet (driver stationary)
-    const interval = window.setInterval(() => {
-      if (lastCoords.current) push(lastCoords.current.lat, lastCoords.current.lng);
-    }, 30_000);
+      // Continuous watch
+      watchId = navigator.geolocation.watchPosition(onPos, onErr, {
+        enableHighAccuracy: true,
+        maximumAge: 5_000,
+        timeout: 20_000,
+      });
+
+      // Periodic heartbeat in case watchPosition is quiet (driver stationary)
+      interval = window.setInterval(() => {
+        if (lastCoords.current) push(lastCoords.current.lat, lastCoords.current.lng);
+      }, 30_000);
+    })();
 
     return () => {
-      navigator.geolocation.clearWatch(watchId);
-      window.clearInterval(interval);
+      cancelled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (interval !== null) window.clearInterval(interval);
     };
   }, [userId, enabled]);
 }
