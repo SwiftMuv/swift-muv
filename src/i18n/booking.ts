@@ -2,6 +2,9 @@
 // Shape: { en: { key: value }, fr: { key: value } }
 export const bookingDict: Record<string, Record<string, string>> = {
   en: {
+    "booking.subtotal": "Subtotal",
+    "booking.tax": "Tax (QST + GST 14.975%)",
+    "booking.totalCad": "Total (CAD)",
     "bk.inventory.loading": "Loading inventory…",
     "bk.inventory.suvBadge": "Bags",
     "bk.inventory.suvSelectedTitle": "Extra Large Car / SUV selected",
@@ -103,6 +106,9 @@ export const bookingDict: Record<string, Record<string, string>> = {
     "bk.confirmation.cancelBooking": "Cancel Booking",
   },
   fr: {
+    "booking.subtotal": "Sous-total",
+    "booking.tax": "Taxes (TPS + TVQ 14,975 %)",
+    "booking.totalCad": "Total (CAD)",
     "bk.inventory.loading": "Chargement de l’inventaire…",
     "bk.inventory.suvBadge": "Bagages",
     "bk.inventory.suvSelectedTitle": "Extra Large Car / SUV sélectionné",
