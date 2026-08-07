@@ -47,6 +47,8 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const { t, formatCurrency } = useI18n();
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
+  const [pickupPicked, setPickupPicked] = useState(false);
+  const [dropoffPicked, setDropoffPicked] = useState(false);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [distance, setDistance] = useState<DistanceResult | null>(null);
   const [distanceError, setDistanceError] = useState<string | null>(null);
