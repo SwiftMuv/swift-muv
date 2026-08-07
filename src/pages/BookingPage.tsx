@@ -412,6 +412,22 @@ const BookingPage = () => {
           )}
         </div>
 
+        {/* Price breakdown */}
+        <div className="space-y-1.5 rounded-xl border border-border bg-card p-4 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t("booking.subtotal")}</span>
+            <span className="font-medium">{formatCurrency(quote.subtotal)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t("booking.tax")}</span>
+            <span className="font-medium">{formatCurrency(quote.taxAmount)}</span>
+          </div>
+          <div className="mt-1 flex justify-between border-t border-border pt-2 text-base font-bold">
+            <span className="text-cyan-500">{t("booking.totalCad")}</span>
+            <span className="text-cyan-500">{formatCurrency(quote.finalPrice)}</span>
+          </div>
+        </div>
+
         <Button
           onClick={handleBook}
           disabled={booking || (itemCount === 0 && !suvSelected) || distanceKm === 0 || calculating}
