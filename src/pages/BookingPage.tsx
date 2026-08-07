@@ -200,9 +200,19 @@ const BookingPage = () => {
 
         <div className="space-y-3">
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
-          <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder={t("booking.enterPickup")} />
+          <PlacesAutocomplete
+            value={pickup}
+            onChange={(v) => { setPickup(v); setPickupPicked(false); }}
+            onSelect={() => setPickupPicked(true)}
+            placeholder={t("booking.enterPickup")}
+          />
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.dropoff")}</label>
-          <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.enterDropoff")} />
+          <PlacesAutocomplete
+            value={dropoff}
+            onChange={(v) => { setDropoff(v); setDropoffPicked(false); }}
+            onSelect={() => setDropoffPicked(true)}
+            placeholder={t("booking.enterDropoff")}
+          />
         </div>
 
         {/* Move date — ASAP / Schedule for later */}
