@@ -45,6 +45,8 @@ const BookingPage = () => {
   const { t, formatCurrency } = useI18n();
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
+  const [pickupPicked, setPickupPicked] = useState(false);
+  const [dropoffPicked, setDropoffPicked] = useState(false);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [distance, setDistance] = useState<DistanceResult | null>(null);
   const [distanceError, setDistanceError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ const BookingPage = () => {
   };
 
   useEffect(() => {
-    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
+    if (!pickupPicked || !dropoffPicked || pickup.trim().length < 5 || dropoff.trim().length < 5) {
       setDistance(null);
       setDistanceError(null);
       return;
@@ -97,7 +99,7 @@ const BookingPage = () => {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [pickup, dropoff]);
+  }, [pickup, dropoff, pickupPicked, dropoffPicked]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
@@ -198,9 +200,19 @@ const BookingPage = () => {
 
         <div className="space-y-3">
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
-          <PlacesAutocomplete value={pickup} onChange={setPickup} placeholder={t("booking.enterPickup")} />
+          <PlacesAutocomplete
+            value={pickup}
+            onChange={(v) => { setPickup(v); setPickupPicked(false); }}
+            onSelect={() => setPickupPicked(true)}
+            placeholder={t("booking.enterPickup")}
+          />
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.dropoff")}</label>
-          <PlacesAutocomplete value={dropoff} onChange={setDropoff} placeholder={t("booking.enterDropoff")} />
+          <PlacesAutocomplete
+            value={dropoff}
+            onChange={(v) => { setDropoff(v); setDropoffPicked(false); }}
+            onSelect={() => setDropoffPicked(true)}
+            placeholder={t("booking.enterDropoff")}
+          />
         </div>
 
         {/* Move date — ASAP / Schedule for later */}
