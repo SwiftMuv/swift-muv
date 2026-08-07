@@ -12,6 +12,7 @@ import {
   TrendingUp, UserCheck, Truck, RefreshCw,
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import AdminPricingSettings from "@/components/admin/AdminPricingSettings";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
@@ -295,6 +296,7 @@ const AdminDashboard = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="profiles">Profiles</TabsTrigger>
+            <TabsTrigger value="pricing">Pricing</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
 
@@ -524,6 +526,10 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="pricing">
+            <AdminPricingSettings />
           </TabsContent>
 
           <TabsContent value="manage">
