@@ -3,6 +3,8 @@ import { Car, Truck, Container } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
+import { getPricingRates } from "@/lib/movingEngine";
+import { usePricingVersion } from "@/lib/pricingConfig";
 
 export type VehicleTier = "suv" | "large" | "xlarge";
 
@@ -50,18 +52,22 @@ export const PricingCalculator = ({ distanceKm: externalKm, onChange }: Props) =
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
   }, [externalKm, localKm]);
 
+  const pricingVersion = usePricingVersion();
+  const rates = useMemo(() => getPricingRates(), [pricingVersion]);
+
   const tierDef = TIERS.find((t) => t.id === tier)!;
-  const baseFee = tierDef.baseFee;
-  const perKm = tierDef.perKm;
+  // Scale the static tier ladder by the admin-configured base fee / rates.
+  const baseFee = round2((tierDef.baseFee / SUV_BASE) * rates.baseFee);
+  const perKm = round2(rates.perKmRate);
   const distanceFee = round2(perKm * km);
   const subtotal = round2(baseFee + distanceFee);
-  const taxAmount = round2(subtotal * QC_TAX_RATE);
+  const taxAmount = round2(subtotal * rates.taxRate);
   const total = round2(subtotal + taxAmount);
 
   useEffect(() => {
     onChange?.({ tier, baseFee, perKm, distanceKm: km, total });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tier, km]);
+  }, [tier, km, pricingVersion]);
 
   return (
     <div className="space-y-4 rounded-2xl border-2 border-[#0F172A] bg-gradient-to-br from-[#0F172A] to-[#1E293B] p-4 shadow-lg">

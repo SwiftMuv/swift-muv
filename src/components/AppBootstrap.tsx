@@ -11,6 +11,10 @@ const AppBootstrap = () => {
   useEffect(() => {
     ensureLocationPermission().catch(() => {});
     loadPricingConfig().catch(() => {});
+    // Pick up admin pricing changes when the app regains focus.
+    const refresh = () => loadPricingConfig().catch(() => {});
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
   }, []);
   return null;
 };
