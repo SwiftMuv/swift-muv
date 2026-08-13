@@ -150,8 +150,8 @@ const looksIncomplete = (v: string) => v.trim().length > 0 && v.trim().length < 
 const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
   const { t, formatCurrency } = useI18n();
-  const { ready: mapsReady, error: mapsError } = useGoogleMaps();
   const nativeAndroid = isNativeAndroid();
+  const { ready: mapsReady, error: mapsError } = useGoogleMaps(!nativeAndroid);
   const [nativeMapReady, setNativeMapReady] = useState(false);
   const [nativeMapError, setNativeMapError] = useState<string | null>(null);
 

@@ -58,9 +58,9 @@ export function loadGoogleMaps(): Promise<typeof google> {
   return loaderPromise;
 }
 
-export function useGoogleMaps() {
+export function useGoogleMaps(enabled = true) {
   const [ready, setReady] = useState<boolean>(
-    typeof window !== "undefined" && !!window.google?.maps,
+    enabled && typeof window !== "undefined" && !!window.google?.maps,
   );
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -69,12 +69,12 @@ export function useGoogleMaps() {
       setError("Google Maps rejected this app origin or API key");
     };
     window.addEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
-    if (!ready) {
+    if (enabled && !ready) {
       loadGoogleMaps()
         .then(() => setReady(true))
         .catch((e) => setError(e instanceof Error ? e.message : String(e)));
     }
     return () => window.removeEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
-  }, [ready]);
+  }, [enabled, ready]);
   return { ready, error };
 }

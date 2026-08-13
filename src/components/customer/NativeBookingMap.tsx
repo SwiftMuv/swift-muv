@@ -25,7 +25,12 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
   const mapRef = useRef<GoogleMap | null>(null);
   const markerIdsRef = useRef<string[]>([]);
   const polylineIdsRef = useRef<string[]>([]);
+  const onReadyRef = useRef(onReady);
+  const onErrorRef = useRef(onError);
   const [created, setCreated] = useState(false);
+
+  onReadyRef.current = onReady;
+  onErrorRef.current = onError;
 
   useEffect(() => {
     if (!isNativeAndroid() || !elementRef.current) return;
@@ -52,11 +57,11 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
         }
         mapRef.current = map;
         setCreated(true);
-        onReady();
+        onReadyRef.current();
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
-        onError(`Native Google Map failed: ${message}`);
+        onErrorRef.current(`Native Google Map failed: ${message}`);
       });
 
     return () => {
@@ -68,7 +73,7 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
       mapRef.current = null;
       if (map) void map.destroy();
     };
-  }, [onError, onReady, styles]);
+  }, [styles]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -126,16 +131,16 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
 
     void updateRoute().catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      onError(`Native map route failed: ${message}`);
+      onErrorRef.current(`Native map route failed: ${message}`);
     });
-  }, [created, dropoff, onError, pickup]);
+  }, [created, dropoff, pickup]);
 
   return (
     <capacitor-google-map
       ref={(element) => {
         elementRef.current = element;
       }}
-      class="absolute inset-0 block h-full w-full"
+      className="absolute inset-0 block h-full w-full"
     />
   );
 };
