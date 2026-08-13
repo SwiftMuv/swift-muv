@@ -22,6 +22,7 @@ import {
   type SelectedItem,
   type VehicleSelection,
 } from "@/lib/movingEngine";
+import { usePricingVersion } from "@/lib/pricingConfig";
 
 interface Props { onBooked?: () => void; }
 
@@ -108,9 +109,10 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
   const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
   const vehicleSelection: VehicleSelection = suvSelected ? "suv" : "auto";
 
+  const pricingVersion = usePricingVersion();
   const quote = useMemo(
     () => calculateMovePrice({ items: selectedItems, moveType, distanceKm, crewCount: effectiveCrew, vehicleSelection }),
-    [selectedItems, moveType, distanceKm, effectiveCrew, vehicleSelection],
+    [selectedItems, moveType, distanceKm, effectiveCrew, vehicleSelection, pricingVersion],
   );
 
   const itemCount = selectedItems.reduce((s, i) => s + i.quantity, 0);

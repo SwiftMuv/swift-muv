@@ -37,6 +37,7 @@ import {
   type SelectedItem,
   type VehicleSelection,
 } from "@/lib/movingEngine";
+import { usePricingVersion } from "@/lib/pricingConfig";
 import SuvImg from "@/assets/vehicles/suv.png";
 import CargoVanImg from "@/assets/vehicles/cargo-van.png";
 import PickupImg from "@/assets/vehicles/pickup.png";
@@ -106,8 +107,13 @@ const priceForTile = (tile: VehicleTile, distanceKm: number, moveType: MoveType)
   const idx = VEHICLE_TILES.findIndex((t) => t.name === tile.name);
   const vehicle = VEHICLE_FLEET[idx];
   if (!vehicle) return 0;
-  const base = vehicle.baseFee + vehicle.perKmRate * Math.max(0, distanceKm);
-  return Math.round(base * 100) / 100;
+  const q = calculateMovePrice({
+    items: [{ id: -1, item_name: vehicle.name, cubic_feet: vehicle.maxVolumeCuFt * 0.7, weight_lbs: vehicle.maxWeightLbs * 0.7, quantity: 1 }],
+    moveType,
+    distanceKm,
+    vehicleSelection: "auto",
+  });
+  return q.finalPrice;
 };
 
 interface Props {
@@ -338,9 +344,10 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     }];
   }, [selectedTile]);
 
+  const pricingVersion = usePricingVersion();
   const quote = useMemo(
     () => calculateMovePrice({ items, moveType, distanceKm, crewCount: effectiveCrew, vehicleSelection }),
-    [items, moveType, distanceKm, effectiveCrew, vehicleSelection],
+    [items, moveType, distanceKm, effectiveCrew, vehicleSelection, pricingVersion],
   );
 
   const routeReady = distanceKm > 0 && !calculating && !distanceError;
