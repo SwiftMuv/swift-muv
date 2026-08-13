@@ -102,6 +102,12 @@
   }
 }
 
+html.native-map-active,
+html.native-map-active body,
+body.native-map-active #root {
+  background: transparent !important;
+}
+
 @layer base {
   * {
     @apply border-border;

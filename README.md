@@ -22,5 +22,22 @@ npm run build
 npx cap sync android
 ```
 
+The installed Android app now uses the native **Maps SDK for Android** for the
+background map. Create a separate Android-restricted key, enable **Maps SDK for
+Android**, and restrict it to package `com.swiftmuv.app.v2` plus your release
+certificate SHA-1. Add it to your user Gradle properties (never commit it):
+
+```properties
+SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY=your_android_maps_key
+```
+
+The file is `~/.gradle/gradle.properties`. The browser key above remains needed
+for Places autocomplete inside the WebView. Then rebuild and sync:
+
+```bash
+npm run build
+npx cap sync android
+```
+
 Uninstall the previous app from the device before running the new Android build
 to ensure stale assets are not retained.

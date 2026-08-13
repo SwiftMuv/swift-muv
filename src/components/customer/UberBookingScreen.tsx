@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { isNativeAndroid, NativeBookingMap } from "@/components/customer/NativeBookingMap";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
@@ -149,7 +150,10 @@ const looksIncomplete = (v: string) => v.trim().length > 0 && v.trim().length < 
 const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
   const { t, formatCurrency } = useI18n();
-  const { ready: mapsReady, error: mapsError } = useGoogleMaps();
+  const nativeAndroid = isNativeAndroid();
+  const { ready: mapsReady, error: mapsError } = useGoogleMaps(!nativeAndroid);
+  const [nativeMapReady, setNativeMapReady] = useState(false);
+  const [nativeMapError, setNativeMapError] = useState<string | null>(null);
 
   const [step, setStep] = useState<"where" | "vehicle" | "schedule">("where");
   const [pickup, setPickup] = useState("");
@@ -205,7 +209,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   // Init map
   useEffect(() => {
-    if (!mapsReady || !mapDivRef.current || mapRef.current) return;
+    if (nativeAndroid || !mapsReady || !mapDivRef.current || mapRef.current) return;
     mapRef.current = new google.maps.Map(mapDivRef.current, {
       center: { lat: 45.5017, lng: -73.5673 },
       zoom: 13,
@@ -215,7 +219,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       backgroundColor: "#000000",
       styles: UBER_MAP_STYLES,
     });
-  }, [mapsReady]);
+  }, [mapsReady, nativeAndroid]);
 
   // Distance calc
   useEffect(() => {
@@ -267,7 +271,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   // Update markers + route
   useEffect(() => {
-    if (!mapRef.current || !mapsReady) return;
+    if (nativeAndroid || !mapRef.current || !mapsReady) return;
     const map = mapRef.current;
     const p = distance?.pickup;
     const d = distance?.dropoff;
@@ -323,7 +327,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       map.setCenter({ lat: p.lat, lng: p.lng });
       map.setZoom(14);
     }
-  }, [distance, mapsReady]);
+  }, [distance, mapsReady, nativeAndroid]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
@@ -445,20 +449,30 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 z-30 bg-black font-sans text-white">
+    <div className={cn("fixed inset-0 z-30 font-sans text-white", nativeAndroid ? "bg-transparent" : "bg-black")}>
       {/* Full-screen map */}
-      <div ref={mapDivRef} className="absolute inset-0" />
-      {!mapsReady && !mapsError && (
+      {nativeAndroid ? (
+        <NativeBookingMap
+          pickup={distance?.pickup}
+          dropoff={distance?.dropoff}
+          styles={UBER_MAP_STYLES}
+          onReady={() => setNativeMapReady(true)}
+          onError={setNativeMapError}
+        />
+      ) : (
+        <div ref={mapDivRef} className="absolute inset-0" />
+      )}
+      {!(nativeAndroid ? nativeMapReady : mapsReady) && !(nativeAndroid ? nativeMapError : mapsError) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <Loader2 className="h-6 w-6 animate-spin text-white" />
         </div>
       )}
-      {mapsError && (
+      {(nativeAndroid ? nativeMapError : mapsError) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black px-8 text-center">
           <div className="max-w-sm space-y-2">
             <AlertCircle className="mx-auto h-7 w-7 text-red-400" />
             <p className="text-sm font-semibold text-white">Map unavailable</p>
-            <p className="text-xs text-neutral-400">{mapsError}</p>
+            <p className="text-xs text-neutral-400">{nativeAndroid ? nativeMapError : mapsError}</p>
           </div>
         </div>
       )}
