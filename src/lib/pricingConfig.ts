@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { setPricingOverrides, type PricingOverrides } from "@/lib/movingEngine";
 
@@ -55,4 +56,51 @@ export async function savePricingConfig(values: Partial<Record<PricingKey, numbe
   const { error } = await supabase.from("app_config").upsert(rows, { onConflict: "key" });
   if (error) throw error;
   await loadPricingConfig();
+  bumpVersion();
+}
+
+/* ---- Live pricing updates -------------------------------------------- */
+
+let version = 0;
+const listeners = new Set<() => void>();
+let realtimeBound = false;
+
+function bumpVersion() {
+  version += 1;
+  listeners.forEach((l) => l());
+}
+
+function bindRealtime() {
+  if (realtimeBound) return;
+  realtimeBound = true;
+  supabase
+    .channel("app_config_pricing")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "app_config" },
+      () => {
+        loadPricingConfig()
+          .then(bumpVersion)
+          .catch(() => {});
+      },
+    )
+    .subscribe();
+}
+
+/**
+ * Re-renders the calling component whenever admin pricing changes
+ * (locally saved or updated by another admin in real time).
+ */
+export function usePricingVersion(): number {
+  const [v, setV] = useState(version);
+  useEffect(() => {
+    bindRealtime();
+    const listener = () => setV(version);
+    listeners.add(listener);
+    listener();
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+  return v;
 }
