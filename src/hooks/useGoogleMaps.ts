@@ -13,6 +13,7 @@ let loaderPromise: Promise<typeof google> | null = null;
 declare global {
   interface Window {
     __lovableGoogleMapsInit?: () => void;
+    gm_authFailure?: () => void;
     google: typeof google;
   }
 }
@@ -24,7 +25,14 @@ export function loadGoogleMaps(): Promise<typeof google> {
   if (!BROWSER_KEY) return Promise.reject(new Error("Google Maps browser key missing"));
 
   loaderPromise = new Promise((resolve, reject) => {
-    window.__lovableGoogleMapsInit = () => resolve(window.google);
+    window.__lovableGoogleMapsInit = () => {
+      if (window.google?.maps?.importLibrary) resolve(window.google);
+      else reject(new Error("Google Maps did not initialize"));
+    };
+    window.gm_authFailure = () => {
+      loaderPromise = null;
+      reject(new Error("Google Maps rejected this app origin or API key"));
+    };
     const s = document.createElement("script");
     const params = new URLSearchParams({
       key: BROWSER_KEY,
@@ -36,7 +44,10 @@ export function loadGoogleMaps(): Promise<typeof google> {
     if (TRACKING_ID) params.set("channel", TRACKING_ID);
     s.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     s.async = true;
-    s.onerror = () => reject(new Error("Failed to load Google Maps"));
+    s.onerror = () => {
+      loaderPromise = null;
+      reject(new Error("Failed to load Google Maps"));
+    };
     document.head.appendChild(s);
   });
   return loaderPromise;

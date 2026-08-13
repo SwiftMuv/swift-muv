@@ -149,7 +149,7 @@ const looksIncomplete = (v: string) => v.trim().length > 0 && v.trim().length < 
 const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
   const { t, formatCurrency } = useI18n();
-  const { ready: mapsReady } = useGoogleMaps();
+  const { ready: mapsReady, error: mapsError } = useGoogleMaps();
 
   const [step, setStep] = useState<"where" | "vehicle" | "schedule">("where");
   const [pickup, setPickup] = useState("");
@@ -448,9 +448,18 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     <div className="fixed inset-0 z-30 bg-black font-sans text-white">
       {/* Full-screen map */}
       <div ref={mapDivRef} className="absolute inset-0" />
-      {!mapsReady && (
+      {!mapsReady && !mapsError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <Loader2 className="h-6 w-6 animate-spin text-white" />
+        </div>
+      )}
+      {mapsError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black px-8 text-center">
+          <div className="max-w-sm space-y-2">
+            <AlertCircle className="mx-auto h-7 w-7 text-red-400" />
+            <p className="text-sm font-semibold text-white">Map unavailable</p>
+            <p className="text-xs text-neutral-400">{mapsError}</p>
+          </div>
         </div>
       )}
 
