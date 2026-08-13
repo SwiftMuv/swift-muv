@@ -9,6 +9,7 @@ const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_
   | undefined;
 
 let loaderPromise: Promise<typeof google> | null = null;
+const AUTH_FAILURE_EVENT = "swiftmuv:google-maps-auth-failure";
 
 declare global {
   interface Window {
@@ -31,6 +32,7 @@ export function loadGoogleMaps(): Promise<typeof google> {
     };
     window.gm_authFailure = () => {
       loaderPromise = null;
+      window.dispatchEvent(new Event(AUTH_FAILURE_EVENT));
       reject(new Error("Google Maps rejected this app origin or API key"));
     };
     const s = document.createElement("script");
@@ -59,10 +61,16 @@ export function useGoogleMaps() {
   );
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    const handleAuthFailure = () => {
+      setReady(false);
+      setError("Google Maps rejected this app origin or API key");
+    };
+    window.addEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
     if (ready) return;
     loadGoogleMaps()
       .then(() => setReady(true))
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    return () => window.removeEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
   }, [ready]);
   return { ready, error };
 }
