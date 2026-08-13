@@ -66,10 +66,11 @@ export function useGoogleMaps() {
       setError("Google Maps rejected this app origin or API key");
     };
     window.addEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
-    if (ready) return;
-    loadGoogleMaps()
-      .then(() => setReady(true))
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    if (!ready) {
+      loadGoogleMaps()
+        .then(() => setReady(true))
+        .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    }
     return () => window.removeEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
   }, [ready]);
   return { ready, error };
