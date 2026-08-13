@@ -45,6 +45,7 @@ export async function loadPricingConfig() {
     if (typeof v === "number") overrides[KEY_TO_OVERRIDE[k]] = v;
   });
   setPricingOverrides(overrides);
+  bumpVersion();
   return cfg;
 }
 
@@ -79,9 +80,7 @@ function bindRealtime() {
       "postgres_changes",
       { event: "*", schema: "public", table: "app_config" },
       () => {
-        loadPricingConfig()
-          .then(bumpVersion)
-          .catch(() => {});
+        loadPricingConfig().catch(() => {});
       },
     )
     .subscribe();
