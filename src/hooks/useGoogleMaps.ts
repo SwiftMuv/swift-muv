@@ -9,10 +9,12 @@ const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_
   | undefined;
 
 let loaderPromise: Promise<typeof google> | null = null;
+const AUTH_FAILURE_EVENT = "swiftmuv:google-maps-auth-failure";
 
 declare global {
   interface Window {
     __lovableGoogleMapsInit?: () => void;
+    gm_authFailure?: () => void;
     google: typeof google;
   }
 }
@@ -24,7 +26,15 @@ export function loadGoogleMaps(): Promise<typeof google> {
   if (!BROWSER_KEY) return Promise.reject(new Error("Google Maps browser key missing"));
 
   loaderPromise = new Promise((resolve, reject) => {
-    window.__lovableGoogleMapsInit = () => resolve(window.google);
+    window.__lovableGoogleMapsInit = () => {
+      if (window.google?.maps?.importLibrary) resolve(window.google);
+      else reject(new Error("Google Maps did not initialize"));
+    };
+    window.gm_authFailure = () => {
+      loaderPromise = null;
+      window.dispatchEvent(new Event(AUTH_FAILURE_EVENT));
+      reject(new Error("Google Maps rejected this app origin or API key"));
+    };
     const s = document.createElement("script");
     const params = new URLSearchParams({
       key: BROWSER_KEY,
@@ -36,7 +46,10 @@ export function loadGoogleMaps(): Promise<typeof google> {
     if (TRACKING_ID) params.set("channel", TRACKING_ID);
     s.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     s.async = true;
-    s.onerror = () => reject(new Error("Failed to load Google Maps"));
+    s.onerror = () => {
+      loaderPromise = null;
+      reject(new Error("Failed to load Google Maps"));
+    };
     document.head.appendChild(s);
   });
   return loaderPromise;
@@ -48,10 +61,17 @@ export function useGoogleMaps() {
   );
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    if (ready) return;
-    loadGoogleMaps()
-      .then(() => setReady(true))
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    const handleAuthFailure = () => {
+      setReady(false);
+      setError("Google Maps rejected this app origin or API key");
+    };
+    window.addEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
+    if (!ready) {
+      loadGoogleMaps()
+        .then(() => setReady(true))
+        .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    }
+    return () => window.removeEventListener(AUTH_FAILURE_EVENT, handleAuthFailure);
   }, [ready]);
   return { ready, error };
 }
