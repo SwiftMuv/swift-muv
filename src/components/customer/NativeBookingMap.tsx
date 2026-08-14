@@ -36,6 +36,13 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
     if (!isNativeAndroid() || !elementRef.current) return;
 
     let active = true;
+    const transparentAncestors: HTMLElement[] = [];
+    let ancestor = elementRef.current.parentElement;
+    while (ancestor) {
+      ancestor.classList.add("native-map-host");
+      transparentAncestors.push(ancestor);
+      ancestor = ancestor.parentElement;
+    }
     document.documentElement.classList.add("native-map-active");
     document.body.classList.add("native-map-active");
 
@@ -69,6 +76,7 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
       setCreated(false);
       document.documentElement.classList.remove("native-map-active");
       document.body.classList.remove("native-map-active");
+      transparentAncestors.forEach((element) => element.classList.remove("native-map-host"));
       const map = mapRef.current;
       mapRef.current = null;
       if (map) void map.destroy();
