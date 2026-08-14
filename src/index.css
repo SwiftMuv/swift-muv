@@ -104,7 +104,12 @@
 
 html.native-map-active,
 html.native-map-active body,
-body.native-map-active #root {
+body.native-map-active #root,
+.native-map-host {
+  background: transparent !important;
+}
+
+body.native-map-active capacitor-google-map {
   background: transparent !important;
 }
 
