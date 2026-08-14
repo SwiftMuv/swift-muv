@@ -36,8 +36,10 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
     if (!isNativeAndroid() || !elementRef.current) return;
 
     let active = true;
+    let startupTimer: number | undefined;
+    const mapElement = elementRef.current;
     const transparentAncestors: HTMLElement[] = [];
-    let ancestor = elementRef.current.parentElement;
+    let ancestor = mapElement.parentElement;
     while (ancestor) {
       ancestor.classList.add("native-map-host");
       transparentAncestors.push(ancestor);
@@ -46,33 +48,50 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
     document.documentElement.classList.add("native-map-active");
     document.body.classList.add("native-map-active");
 
-    GoogleMap.create({
-      id: MAP_ID,
-      element: elementRef.current,
-      apiKey: "",
-      forceCreate: true,
-      config: {
-        center: { lat: 45.5017, lng: -73.5673 },
-        zoom: 13,
-        styles,
-      },
-    })
-      .then((map) => {
-        if (!active) {
-          void map.destroy();
-          return;
+    const createMap = async () => {
+      // Wait for the fixed map element to receive its final viewport bounds.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const bounds = mapElement.getBoundingClientRect();
+      if (bounds.width < 1 || bounds.height < 1) {
+        throw new Error("map container has no size");
+      }
+
+      startupTimer = window.setTimeout(() => {
+        if (active && !mapRef.current) {
+          onErrorRef.current("Native map startup timed out. Verify the Android Maps SDK key and its package/SHA-1 restrictions.");
         }
-        mapRef.current = map;
-        setCreated(true);
-        onReadyRef.current();
-      })
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        onErrorRef.current(`Native Google Map failed: ${message}`);
+      }, 12000);
+
+      const map = await GoogleMap.create({
+        id: MAP_ID,
+        element: mapElement,
+        apiKey: "native-manifest-key",
+        forceCreate: true,
+        config: {
+          center: { lat: 45.5017, lng: -73.5673 },
+          zoom: 13,
+          styles,
+        },
       });
+      if (!active) {
+        await map.destroy();
+        return;
+      }
+      if (startupTimer) window.clearTimeout(startupTimer);
+      mapRef.current = map;
+      setCreated(true);
+      onReadyRef.current();
+    };
+
+    void createMap().catch((error: unknown) => {
+      if (startupTimer) window.clearTimeout(startupTimer);
+      const message = error instanceof Error ? error.message : String(error);
+      onErrorRef.current(`Native Google Map failed: ${message}`);
+    });
 
     return () => {
       active = false;
+      if (startupTimer) window.clearTimeout(startupTimer);
       setCreated(false);
       document.documentElement.classList.remove("native-map-active");
       document.body.classList.remove("native-map-active");
