@@ -103,13 +103,15 @@ const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "
   return "xlarge";
 };
 
+const fleetForTile = (tile: VehicleTile) =>
+  VEHICLE_FLEET.find((v) => v.name === tile.fleetName);
+
 const priceForTile = (tile: VehicleTile, distanceKm: number, moveType: MoveType): number => {
   if (tile.isSuv) {
     const q = calculateMovePrice({ items: [], moveType, distanceKm, vehicleSelection: "suv" });
     return q.finalPrice;
   }
-  const idx = VEHICLE_TILES.findIndex((t) => t.name === tile.name);
-  const vehicle = VEHICLE_FLEET[idx];
+  const vehicle = fleetForTile(tile);
   if (!vehicle) return 0;
   const q = calculateMovePrice({
     items: [{ id: -1, item_name: vehicle.name, cubic_feet: vehicle.maxVolumeCuFt * 0.7, weight_lbs: vehicle.maxWeightLbs * 0.7, quantity: 1 }],
@@ -119,6 +121,7 @@ const priceForTile = (tile: VehicleTile, distanceKm: number, moveType: MoveType)
   });
   return q.finalPrice;
 };
+
 
 interface Props {
   onBooked?: () => void;
