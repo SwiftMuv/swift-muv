@@ -8,6 +8,7 @@ import { DriverJobsTabs } from "@/components/driver/DriverJobsTabs";
 import { BottomNav } from "@/components/driver/BottomNav";
 import NotificationBell from "@/components/NotificationBell";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
+import IncomingJobModal from "@/components/driver/IncomingJobModal";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
@@ -407,6 +408,8 @@ const DriverDashboard = () => {
       </main>
 
       <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
+
+      <IncomingJobModal job={incoming} onAccept={handleAcceptJob} onReject={handleRejectJob} />
 
       {/* Floating notification button */}
       <div className="fixed right-4 bottom-24 z-40">
