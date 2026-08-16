@@ -61,15 +61,18 @@ interface VehicleTile {
   eta: string;
   image: string;
   isSuv?: boolean;
+  /** Matching entry in VEHICLE_FLEET (used for pricing). */
+  fleetName?: string;
 }
 
 const VEHICLE_TILES: VehicleTile[] = [
   { name: "SUV", capacity: "Bags · flat items", eta: "3 min away", image: SuvImg, isSuv: true },
-  { name: "Cargo Van", capacity: "1–2 rooms · 2,000 lb", eta: "5 min away", image: CargoVanImg },
-  { name: "12ft Pickup", capacity: "Studio · 3,000 lb", eta: "6 min away", image: PickupImg },
-  { name: "16ft Truck", capacity: "1 bedroom · 4,500 lb", eta: "8 min away", image: BoxTruckImg },
-  { name: "26ft Truck", capacity: "3+ bedrooms · 10,000 lb", eta: "12 min away", image: MovingTruckImg },
+  { name: "Pickup", capacity: "Studio · 3,000 lb", eta: "6 min away", image: PickupImg, fleetName: "12ft Cube Van" },
+  { name: "Van", capacity: "1–2 rooms · 2,000 lb", eta: "5 min away", image: CargoVanImg, fleetName: "Cargo Van" },
+  { name: "16ft Truck", capacity: "1 bedroom · 4,500 lb", eta: "8 min away", image: BoxTruckImg, fleetName: "16ft Truck" },
+  { name: "26ft Truck", capacity: "3+ bedrooms · 10,000 lb", eta: "12 min away", image: MovingTruckImg, fleetName: "26ft Truck" },
 ];
+
 
 // Uber-style near-monochrome map — grayscale roads, muted land, subtle water.
 const UBER_MAP_STYLES: google.maps.MapTypeStyle[] = [
@@ -100,13 +103,15 @@ const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "
   return "xlarge";
 };
 
+const fleetForTile = (tile: VehicleTile) =>
+  VEHICLE_FLEET.find((v) => v.name === tile.fleetName);
+
 const priceForTile = (tile: VehicleTile, distanceKm: number, moveType: MoveType): number => {
   if (tile.isSuv) {
     const q = calculateMovePrice({ items: [], moveType, distanceKm, vehicleSelection: "suv" });
     return q.finalPrice;
   }
-  const idx = VEHICLE_TILES.findIndex((t) => t.name === tile.name);
-  const vehicle = VEHICLE_FLEET[idx];
+  const vehicle = fleetForTile(tile);
   if (!vehicle) return 0;
   const q = calculateMovePrice({
     items: [{ id: -1, item_name: vehicle.name, cubic_feet: vehicle.maxVolumeCuFt * 0.7, weight_lbs: vehicle.maxWeightLbs * 0.7, quantity: 1 }],
@@ -116,6 +121,7 @@ const priceForTile = (tile: VehicleTile, distanceKm: number, moveType: MoveType)
   });
   return q.finalPrice;
 };
+
 
 interface Props {
   onBooked?: () => void;
@@ -336,11 +342,11 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   const items: SelectedItem[] = useMemo(() => {
     if (selectedTile.isSuv) return [];
-    const idx = VEHICLE_TILES.findIndex((v) => v.name === selectedTile.name);
-    const vehicle = VEHICLE_FLEET[idx];
+    const vehicle = fleetForTile(selectedTile);
     if (!vehicle) return [];
     return [{
       id: -1,
+
       item_name: selectedTile.name,
       cubic_feet: vehicle.maxVolumeCuFt * 0.7,
       weight_lbs: vehicle.maxWeightLbs * 0.7,
@@ -724,18 +730,41 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 {/* Price breakdown */}
               <div className="space-y-1.5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-[14px]">
                 <div className="flex justify-between text-neutral-400">
-                  <span>{t("booking.subtotal")}</span>
-                  <span className="font-semibold text-white">{formatCurrency(quote.subtotal)}</span>
+                  <span>
+                    {formatCurrency(quote.flatRate)} flat rate · under {quote.flatIncludedKm} km
+                  </span>
+                  <span className="font-semibold text-white">{formatCurrency(quote.flatRate)}</span>
                 </div>
-                <div className="flex justify-between text-neutral-400">
-                  <span>{t("booking.tax")}</span>
-                  <span className="font-semibold text-white">{formatCurrency(quote.taxAmount)}</span>
-                </div>
+                <p className="text-[12px] leading-snug text-neutral-500">
+                  {formatCurrency(quote.flatRate)} flat rate for trips under {quote.flatIncludedKm} km — includes service fee &amp; tax.
+                  Extra distance is billed at {formatCurrency(quote.excessRatePerKm)}/km.
+                </p>
+                {quote.excessKm > 0 && (
+                  <div className="flex justify-between text-neutral-400">
+                    <span>
+                      Extra distance ({quote.excessKm} km × {formatCurrency(quote.excessRatePerKm)})
+                    </span>
+                    <span className="font-semibold text-white">{formatCurrency(quote.excessFee)}</span>
+                  </div>
+                )}
+                {quote.crewCost > 0 && (
+                  <div className="flex justify-between text-neutral-400">
+                    <span>{t("booking.subtotal")}</span>
+                    <span className="font-semibold text-white">{formatCurrency(quote.subtotal)}</span>
+                  </div>
+                )}
+                {quote.taxAmount > 0 && (
+                  <div className="flex justify-between text-neutral-400">
+                    <span>{t("booking.tax")}</span>
+                    <span className="font-semibold text-white">{formatCurrency(quote.taxAmount)}</span>
+                  </div>
+                )}
                 <div className="mt-1 flex justify-between border-t border-neutral-800 pt-2 text-[16px] font-bold text-white">
                   <span>{t("booking.totalCad")}</span>
                   <span>{formatCurrency(quote.finalPrice)}</span>
                 </div>
               </div>
+
 
               <PaymentRow />
                 <Button

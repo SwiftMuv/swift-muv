@@ -17,8 +17,11 @@ type Field = {
 };
 
 const FIELDS: Field[] = [
-  { key: "suv_flat_local_cad", label: "SUV flat fee", hint: "Covers the first included kilometres", step: "1", suffix: "CAD", fallback: 50 },
-  { key: "suv_included_km", label: "SUV included distance", hint: "Kilometres covered by the flat fee", step: "0.5", suffix: "km", fallback: 3 },
+  { key: "suv_flat_local_cad", label: "SUV flat fee", hint: "Flat, tax-inclusive fee for trips under the included distance", step: "1", suffix: "CAD", fallback: 50 },
+  { key: "flat_included_km", label: "Flat-rate distance", hint: "Kilometres covered by the flat fee", step: "1", suffix: "km", fallback: 50 },
+  { key: "excess_per_km_cad", label: "Excess distance rate", hint: "Charged per kilometre beyond the flat-rate distance", step: "0.5", suffix: "CAD / km", fallback: 5 },
+  { key: "suv_included_km", label: "SUV included distance (legacy)", hint: "Unused by the flat-rate model", step: "0.5", suffix: "km", fallback: 3 },
+
   { key: "per_km_rate_cad", label: "Distance rate", hint: "Charged per kilometre on every vehicle", step: "0.5", suffix: "CAD / km", fallback: 20 },
   { key: "base_fee_cad", label: "Base fee (smallest vehicle)", hint: "Scales up automatically for bigger vehicles", step: "1", suffix: "CAD", fallback: 20 },
   { key: "crew_member_rate_cad", label: "Crew member fee", hint: "Charged per extra helper", step: "1", suffix: "CAD", fallback: 15 },
