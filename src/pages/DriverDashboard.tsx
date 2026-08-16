@@ -254,6 +254,24 @@ const DriverDashboard = () => {
     };
   }, [loadAvailable, t]);
 
+  // Queue the next matching request into the high-priority popup
+  useEffect(() => {
+    if (!isOnline || isVerified !== true || activeJob) {
+      setIncoming(null);
+      return;
+    }
+    setIncoming((cur) => {
+      if (cur && available.some((j) => j.id === cur.id) && !rejected.includes(cur.id)) return cur;
+      return available.find((j) => !rejected.includes(j.id)) ?? null;
+    });
+  }, [available, rejected, isOnline, isVerified, activeJob]);
+
+  const handleRejectJob = (jobId: string) => {
+    setRejected((r) => (r.includes(jobId) ? r : [...r, jobId]));
+    setIncoming(null);
+  };
+
+
   const handleAcceptJob = async (jobId: string) => {
     if (!user) return;
     if (activeJob) {
