@@ -37,6 +37,16 @@ export interface Job {
 const sizeLabel = (s: string): Job["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
 
+const VEHICLE_LABELS: Record<string, string> = {
+  pickup_truck: "Pickup Truck",
+  cargo_van: "Cargo Van",
+  box_truck: "Box Truck",
+  moving_truck_16: "16ft Moving Truck",
+  suv: "SUV",
+};
+
+const vehicleLabel = (code?: string | null) => (code ? VEHICLE_LABELS[code] ?? code : null);
+
 // Haversine distance in km
 const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   const R = 6371;
