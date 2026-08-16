@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -28,6 +27,7 @@ interface DriverInfoCardProps {
   messageLabel?: string;
   callLabel?: string;
   optionsLabel?: string;
+  optionsItems?: ReactNode;
   children?: ReactNode;
   className?: string;
 }
