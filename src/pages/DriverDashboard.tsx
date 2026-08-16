@@ -8,6 +8,7 @@ import { DriverJobsTabs } from "@/components/driver/DriverJobsTabs";
 import { BottomNav } from "@/components/driver/BottomNav";
 import NotificationBell from "@/components/NotificationBell";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
+import IncomingJobModal from "@/components/driver/IncomingJobModal";
 import WalletScreen from "@/components/driver/WalletScreen";
 import ProfileScreen from "@/components/driver/ProfileScreen";
 import HistoryScreen from "@/components/driver/HistoryScreen";
@@ -29,10 +30,23 @@ export interface Job {
   status: JobStatus | "available";
   distanceKm?: number | null;
   etaMinutes?: number | null;
+  vehicleCategory?: string | null;
+  vehicleLabel?: string | null;
 }
+
 
 const sizeLabel = (s: string): Job["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
+
+const VEHICLE_LABELS: Record<string, string> = {
+  pickup_truck: "Pickup Truck",
+  cargo_van: "Cargo Van",
+  box_truck: "Box Truck",
+  moving_truck_16: "16ft Moving Truck",
+  suv: "SUV",
+};
+
+const vehicleLabel = (code?: string | null) => (code ? VEHICLE_LABELS[code] ?? code : null);
 
 // Haversine distance in km
 const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -71,14 +85,18 @@ const DriverDashboard = () => {
   const [driverRating, setDriverRating] = useState<number | null>(null);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  const [driverVehicle, setDriverVehicle] = useState<string | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
+  const [rejected, setRejected] = useState<string[]>([]);
+  const [incoming, setIncoming] = useState<Job | null>(null);
 
   useEffect(() => {
     if (!user) return;
     supabase
       .from("driver_profiles")
-      .select("full_name,rating,is_verified,verification_status")
+      .select("full_name,rating,is_verified,verification_status,vehicle_category")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -86,13 +104,16 @@ const DriverDashboard = () => {
         setDriverRating((data?.rating as number | null) ?? null);
         setIsVerified(Boolean((data as any)?.is_verified));
         setVerificationStatus(((data as any)?.verification_status as string | null) ?? null);
+        setDriverVehicle(((data as any)?.vehicle_category as string | null) ?? null);
+        setProfileLoaded(true);
       });
   }, [user]);
 
   const loadAvailable = useCallback(async () => {
+    if (!profileLoaded) return;
     const { data, error } = await supabase
       .from("bookings")
-      .select("id, pickup_address, dropoff_address, move_size, total_price, status, pickup_lat, pickup_lng")
+      .select("id, pickup_address, dropoff_address, move_size, total_price, status, pickup_lat, pickup_lng, vehicle_category")
       .eq("status", "pending" as never)
       .order("created_at", { ascending: false });
     if (error) return;
@@ -110,27 +131,33 @@ const DriverDashboard = () => {
       driverLng = (dp as any)?.current_lng ?? null;
     }
 
-    const jobs: Job[] = (data ?? []).map((b: any) => {
-      let distanceKm: number | null = null;
-      let etaMinutes: number | null = null;
-      if (driverLat != null && driverLng != null && b.pickup_lat != null && b.pickup_lng != null) {
-        distanceKm = haversineKm(driverLat, driverLng, b.pickup_lat, b.pickup_lng);
-        // Assume ~35 km/h avg urban speed
-        etaMinutes = Math.max(1, Math.round((distanceKm / 35) * 60));
-      }
-      return {
-        id: b.id,
-        bookingId: b.id,
-        customerName: "Customer",
-        pickupAddress: b.pickup_address,
-        dropoffAddress: b.dropoff_address,
-        moveSize: sizeLabel(b.move_size as string),
-        price: Number(b.total_price),
-        status: "available" as const,
-        distanceKm,
-        etaMinutes,
-      };
-    });
+    const jobs: Job[] = (data ?? [])
+      // Category matching: only broadcast orders whose requested vehicle
+      // category matches the driver's registered vehicle category.
+      .filter((b: any) => !driverVehicle || !b.vehicle_category || b.vehicle_category === driverVehicle)
+      .map((b: any) => {
+        let distanceKm: number | null = null;
+        let etaMinutes: number | null = null;
+        if (driverLat != null && driverLng != null && b.pickup_lat != null && b.pickup_lng != null) {
+          distanceKm = haversineKm(driverLat, driverLng, b.pickup_lat, b.pickup_lng);
+          // Assume ~35 km/h avg urban speed
+          etaMinutes = Math.max(1, Math.round((distanceKm / 35) * 60));
+        }
+        return {
+          id: b.id,
+          bookingId: b.id,
+          customerName: "Customer",
+          pickupAddress: b.pickup_address,
+          dropoffAddress: b.dropoff_address,
+          moveSize: sizeLabel(b.move_size as string),
+          price: Number(b.total_price),
+          status: "available" as const,
+          distanceKm,
+          etaMinutes,
+          vehicleCategory: b.vehicle_category ?? null,
+          vehicleLabel: vehicleLabel(b.vehicle_category),
+        };
+      });
 
     // Sort by proximity when we have geo data, else keep insertion order (recency)
     jobs.sort((a, b) => {
@@ -141,7 +168,8 @@ const DriverDashboard = () => {
     });
 
     setAvailable(jobs);
-  }, [user]);
+  }, [user, driverVehicle, profileLoaded]);
+
 
 
   const loadActiveJob = useCallback(async () => {
@@ -227,6 +255,24 @@ const DriverDashboard = () => {
     };
   }, [loadAvailable, t]);
 
+  // Queue the next matching request into the high-priority popup
+  useEffect(() => {
+    if (!isOnline || isVerified !== true || activeJob) {
+      setIncoming(null);
+      return;
+    }
+    setIncoming((cur) => {
+      if (cur && available.some((j) => j.id === cur.id) && !rejected.includes(cur.id)) return cur;
+      return available.find((j) => !rejected.includes(j.id)) ?? null;
+    });
+  }, [available, rejected, isOnline, isVerified, activeJob]);
+
+  const handleRejectJob = (jobId: string) => {
+    setRejected((r) => (r.includes(jobId) ? r : [...r, jobId]));
+    setIncoming(null);
+  };
+
+
   const handleAcceptJob = async (jobId: string) => {
     if (!user) return;
     if (activeJob) {
@@ -244,12 +290,18 @@ const DriverDashboard = () => {
       })
       .select("id")
       .single();
-    if (error) return toast.error(error.message);
+    if (error) {
+      setIncoming(null);
+      return toast.error(error.message);
+    }
     await supabase.from("bookings").update({ status: "assigned" }).eq("id", booking.bookingId);
     toast.success(t("driver.jobAccepted"));
+    setIncoming(null);
+    setActiveTab("home");
     setActiveJob({ ...booking, jobId: data.id, id: data.id, status: "assigned" });
     loadAvailable();
   };
+
 
   const handleUpdateJobStatus = async (nextStatus: JobStatus, code?: string) => {
     if (!activeJob?.jobId) return;
@@ -356,6 +408,8 @@ const DriverDashboard = () => {
       </main>
 
       <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
+
+      <IncomingJobModal job={incoming} onAccept={handleAcceptJob} onReject={handleRejectJob} />
 
       {/* Floating notification button */}
       <div className="fixed right-4 bottom-24 z-40">
