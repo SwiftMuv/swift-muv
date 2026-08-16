@@ -167,38 +167,29 @@ export function calculateMovePrice({
   const km = Math.max(0, distanceKm);
   const rates = getPricingRates();
 
-  let baseFee = 0;
-  let distanceFee = 0;
-  let servicePrice = 0;
-  const breakdown: Record<string, unknown> = {};
+  // Tier multiplier: SUV = 1x, bigger vehicles scale with their base fee.
+  const tierMultiplier = isSuv ? 1 : round2(vehicle.baseFee / BASE_FEE_CAD);
+  const flatRate = round2(rates.suvFlatLocal * tierMultiplier);
+  const includedKm = rates.flatIncludedKm;
+  const excessRatePerKm = round2(rates.excessPerKm * tierMultiplier);
+  const excessKm = round2(Math.max(0, km - includedKm));
+  const excessFee = round2(excessKm * excessRatePerKm);
 
-  if (isSuv) {
-    baseFee = rates.suvFlatLocal;
-    const extraKm = Math.max(0, km - rates.suvIncludedKm);
-    distanceFee = round2(extraKm * rates.perKmRate);
-    servicePrice = round2(baseFee + distanceFee);
-    Object.assign(breakdown, {
-      flatRate: baseFee,
-      distanceKm: km,
-      includedKm: rates.suvIncludedKm,
-      extraKm: round2(extraKm),
-      ratePerKm: rates.perKmRate,
-      serviceCost: servicePrice,
-    });
-  } else {
-    // Use per-vehicle base + per-km rate so bigger vehicles cost more.
-    baseFee = round2((vehicle.baseFee / BASE_FEE_CAD) * rates.baseFee);
-    const ratePerKm = rates.perKmRate;
-    distanceFee = km * ratePerKm;
-    servicePrice = baseFee + distanceFee;
-    Object.assign(breakdown, {
-      vehicle: vehicle.name,
-      baseFee,
-      distanceKm: km,
-      ratePerKm,
-      serviceCost: servicePrice,
-    });
-  }
+  // The flat rate (and its excess-km extension) is tax-inclusive.
+  const baseFee = flatRate;
+  const distanceFee = excessFee;
+  const servicePrice = round2(flatRate + excessFee);
+  const breakdown: Record<string, unknown> = {
+    vehicle: vehicle.name,
+    flatRate,
+    flatRateIncludesTax: true,
+    distanceKm: km,
+    includedKm,
+    excessKm,
+    excessRatePerKm,
+    excessFee,
+    serviceCost: servicePrice,
+  };
 
   const safeCrew = Math.max(0, Math.floor(crewCount));
   const crewMemberFee = rates.crewMemberRate;
@@ -211,10 +202,13 @@ export function calculateMovePrice({
   });
   heavyItemFee = round2(heavyItemFee);
 
-  const subtotal = round2(servicePrice + crewCost + heavyItemFee);
+  // Only the add-ons are taxed; the flat rate already includes tax.
+  const taxableExtras = round2(crewCost + heavyItemFee);
+  const subtotal = round2(servicePrice + taxableExtras);
   const taxRate = rates.taxRate;
-  const taxAmount = round2(subtotal * taxRate);
+  const taxAmount = round2(taxableExtras * taxRate);
   const finalPrice = round2(subtotal + taxAmount);
+
 
   return {
     recommendedVehicle: vehicle.name,
