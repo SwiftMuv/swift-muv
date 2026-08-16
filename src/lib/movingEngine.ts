@@ -1,12 +1,14 @@
 // Pricing engine (updated).
 //
-// Per-vehicle pricing — the bigger the vehicle, the higher the price.
-//   - SUV ("Extra Large Car / SUV", bags only): flat $50 CAD covering the
-//     first 3 km, then $20/km for every extra km.
-//   - All other vehicles: base fee scales +40% per vehicle tier (from $20),
-//     plus the standard distance rate of $20/km.
-//   - Quebec sales tax (14.975%) is applied to the subtotal.
-//   - Optional crew helpers add $15 CAD per person on every vehicle.
+// Flat-rate model:
+//   - SUV: any trip under 50 km costs a flat $50 CAD, which already includes
+//     the base service fee and all applicable taxes. Every km beyond 50 km
+//     adds $5/km.
+//   - Other vehicles: the same rule, scaled by vehicle tier (bigger vehicle =
+//     proportionally higher flat rate and excess-km rate).
+//   - Crew helpers ($15/person) and heavy-item surcharges are added on top and
+//     are taxed at the Quebec rate (14.975%).
+
 
 export interface SelectedItem {
   id: number;
