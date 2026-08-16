@@ -4,9 +4,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Phone, MessageSquare, MoreHorizontal, Star, KeyRound, Share2, Copy, LifeBuoy, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getVehicleImage } from "@/lib/vehicleImages";
 import JobChatSheet from "@/components/shared/JobChatSheet";
+import DriverInfoCard from "@/components/customer/DriverInfoCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -200,143 +200,97 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
         )}
       </div>
 
-      {/* Status */}
-      <div className="border-b border-white/10 px-4 py-4">
-        <h3
-          className="text-xl font-bold"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-        >
-          {etaMin != null ? t("cust.trip.pickupInMin", { min: etaMin }) : t("cust.trip.driverOnWay")}
-        </h3>
-        <p className="mt-0.5 text-sm text-white/60">{t("cust.trip.meetAtSpot")}</p>
-        <p className="mt-1 text-xs text-white/40 truncate">{pickupAddress}</p>
-      </div>
-
-      {/* Driver card */}
-      <div className="px-4 py-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-14 w-14 ring-2 ring-white/20">
-            {photo && <AvatarImage src={photo} alt={info.full_name ?? "Driver"} />}
-            <AvatarFallback className="bg-white/10 text-white">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold">{info.full_name ?? t("cust.trip.yourDriver")}</p>
-            <div className="flex items-center gap-1 text-sm text-white/60">
-              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-              {(info.rating ?? 5).toFixed(1)}
-            </div>
-          </div>
-          <div className="text-right">
-            {carImg && (
-              <img
-                src={carImg}
-                alt={vehicleLabel || "Driver vehicle"}
-                loading="lazy"
-                className="ml-auto h-12 w-20 object-contain"
-              />
-            )}
-            {vehicleLabel && <p className="text-xs text-white/60 truncate max-w-[140px]">{vehicleLabel}</p>}
-            {info.license_plate && (
-              <p className="mt-0.5 inline-block rounded bg-white px-2 py-0.5 font-mono text-xs font-bold text-black">
-                {info.license_plate}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              if (!jobId) {
-                toast.error(t("cust.trip.chatUnavailable"));
-                return;
-              }
-              setChatOpen(true);
-            }}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95"
-          >
-            <MessageSquare className="h-4 w-4" /> {t("cust.trip.message")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!info.phone) {
-                toast.error(t("cust.trip.phoneUnavailable"));
-                return;
-              }
-              window.location.href = `tel:${info.phone}`;
-            }}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95"
-          >
-            <Phone className="h-4 w-4" /> {t("cust.trip.call")}
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold text-white transition active:scale-95">
-              <MoreHorizontal className="h-4 w-4" /> {t("cust.trip.options")}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onSelect={async () => {
-                  const text = t("cust.trip.shareTrackingText", {
-                    driver: info.full_name ?? t("cust.trip.assigned"),
-                    plate: info.license_plate ? ` (${info.license_plate})` : "",
-                    pickup: pickupAddress,
-                    eta: etaMin != null ? t("cust.trip.etaSuffix", { min: etaMin }) : "",
-                  });
-                  try {
-                    if (navigator.share) {
-                      await navigator.share({ title: "My SwiftMuv trip", text, url: window.location.href });
-                    } else {
-                      await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
-                      toast.success(t("cust.trip.tripDetailsCopied"));
-                    }
-                  } catch {
-                    /* user dismissed share */
-                  }
-                }}
-              >
-                <Share2 className="mr-2 h-4 w-4" /> {t("cust.trip.shareTripStatus")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  if (pickupPos) {
-                    window.open(
-                      `https://www.google.com/maps/search/?api=1&query=${pickupPos[0]},${pickupPos[1]}`,
-                      "_blank",
-                      "noopener",
-                    );
+      <DriverInfoCard
+        statusTitle={etaMin != null ? t("cust.trip.pickupInMin", { min: etaMin }) : t("cust.trip.driverOnWay")}
+        statusSubtitle={t("cust.trip.meetAtSpot")}
+        pickupAddress={pickupAddress}
+        driverName={info.full_name ?? t("cust.trip.yourDriver")}
+        driverPhoto={photo}
+        driverInitials={initials}
+        driverRating={info.rating ?? 5}
+        vehicleModel={vehicleLabel}
+        licensePlate={info.license_plate ?? ""}
+        isTopRated={(info.rating ?? 0) >= 4.9}
+        vehicleImage={carImg}
+        messageLabel={t("cust.trip.message")}
+        callLabel={t("cust.trip.call")}
+        optionsLabel={t("cust.trip.options")}
+        onMessage={() => {
+          if (!jobId) {
+            toast.error(t("cust.trip.chatUnavailable"));
+            return;
+          }
+          setChatOpen(true);
+        }}
+        onCall={() => {
+          if (!info.phone) {
+            toast.error(t("cust.trip.phoneUnavailable"));
+            return;
+          }
+          window.location.href = `tel:${info.phone}`;
+        }}
+        optionsItems={
+          <>
+            <DropdownMenuItem
+              onSelect={async () => {
+                const text = t("cust.trip.shareTrackingText", {
+                  driver: info.full_name ?? t("cust.trip.assigned"),
+                  plate: info.license_plate ? ` (${info.license_plate})` : "",
+                  pickup: pickupAddress,
+                  eta: etaMin != null ? t("cust.trip.etaSuffix", { min: etaMin }) : "",
+                });
+                try {
+                  if (navigator.share) {
+                    await navigator.share({ title: "My SwiftMuv trip", text, url: window.location.href });
                   } else {
-                    window.open(
-                      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pickupAddress)}`,
-                      "_blank",
-                      "noopener",
-                    );
+                    await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
+                    toast.success(t("cust.trip.tripDetailsCopied"));
                   }
-                }}
-              >
-                <MapPin className="mr-2 h-4 w-4" /> {t("cust.trip.openPickupMaps")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={async () => {
-                  await navigator.clipboard.writeText(completionCode ?? pickupAddress);
-                  toast.success(completionCode ? t("cust.trip.completionCodeCopied") : t("cust.trip.addressCopied"));
-                }}
-              >
-                <Copy className="mr-2 h-4 w-4" /> {completionCode ? t("cust.trip.copyCompletionCode") : t("cust.trip.copyAddress")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  const subject = t("cust.trip.supportSubject", { job: jobId ? ` (job ${jobId.slice(0, 8)})` : "" });
-                  window.location.href = `mailto:support@swiftmuv.com?subject=${encodeURIComponent(subject)}`;
-                }}
-              >
-                <LifeBuoy className="mr-2 h-4 w-4" /> {t("cust.trip.contactSupport")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
+                } catch {
+                  /* user dismissed share */
+                }
+              }}
+            >
+              <Share2 className="mr-2 h-4 w-4" /> {t("cust.trip.shareTripStatus")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                if (pickupPos) {
+                  window.open(
+                    `https://www.google.com/maps/search/?api=1&query=${pickupPos[0]},${pickupPos[1]}`,
+                    "_blank",
+                    "noopener",
+                  );
+                } else {
+                  window.open(
+                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pickupAddress)}`,
+                    "_blank",
+                    "noopener",
+                  );
+                }
+              }}
+            >
+              <MapPin className="mr-2 h-4 w-4" /> {t("cust.trip.openPickupMaps")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={async () => {
+                await navigator.clipboard.writeText(completionCode ?? pickupAddress);
+                toast.success(completionCode ? t("cust.trip.completionCodeCopied") : t("cust.trip.addressCopied"));
+              }}
+            >
+              <Copy className="mr-2 h-4 w-4" /> {completionCode ? t("cust.trip.copyCompletionCode") : t("cust.trip.copyAddress")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                const subject = t("cust.trip.supportSubject", { job: jobId ? ` (job ${jobId.slice(0, 8)})` : "" });
+                window.location.href = `mailto:support@swiftmuv.com?subject=${encodeURIComponent(subject)}`;
+              }}
+            >
+              <LifeBuoy className="mr-2 h-4 w-4" /> {t("cust.trip.contactSupport")}
+            </DropdownMenuItem>
+          </>
+        }
+      >
         {jobId && (
           <JobChatSheet
             jobId={jobId}
@@ -347,7 +301,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
         )}
 
         {completionCode && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3">
+          <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3">
             <KeyRound className="h-5 w-5 shrink-0 text-white/70" />
             <div className="min-w-0 flex-1">
               <p className="text-[10px] uppercase tracking-wider text-white/50">{t("cust.trip.completionCode")}</p>
@@ -356,7 +310,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
             <p className="font-mono text-xl font-bold tracking-[0.3em]">{completionCode}</p>
           </div>
         )}
-      </div>
+      </DriverInfoCard>
     </div>
   );
 };
