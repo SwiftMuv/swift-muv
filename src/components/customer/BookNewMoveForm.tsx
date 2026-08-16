@@ -496,48 +496,25 @@ const BookNewMoveForm = ({ onBooked }: Props) => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary"><Receipt className="h-4 w-4" /></div>
              <h3 className="font-semibold">{t("booking.priceBreakdown")}</h3>
           </div>
-          {quote.isFlatRate ? (
-            <>
+          <>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{t("booking.suvFlatRate")}</span>
+              <span>{formatCurrency(quote.flatRate)}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {formatCurrency(quote.flatRate)} flat rate for trips under {quote.flatIncludedKm} km — includes service fee &amp; tax.
+              Extra distance is billed at {formatCurrency(quote.excessRatePerKm)}/km.
+            </p>
+            {quote.excessKm > 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("booking.suvFlatRate")}</span>
-                <span>{formatCurrency(Number(breakdown.flatRate ?? 0))}</span>
+                <span className="text-muted-foreground">
+                  {t("booking.distance")} ({quote.excessKm} km × {formatCurrency(quote.excessRatePerKm)}/km)
+                </span>
+                <span>{formatCurrency(quote.excessFee)}</span>
               </div>
-              {moveType !== "local" && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {t("booking.distance")} ({distanceKm} km × {formatCurrency(Number(breakdown.ratePerKm ?? 0))}/km)
-                  </span>
-                  <span>{formatCurrency(Number(breakdown.serviceCost ?? 0) - Number(breakdown.flatRate ?? 0))}</span>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {moveType === "local" && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {t("booking.volume")} ({quote.totalVolumeCuFt.toFixed(0)} ft³ × {formatCurrency(Number(breakdown.ratePerCuFt ?? 0))}/ft³)
-                  </span>
-                  <span>{formatCurrency(quote.servicePrice)}</span>
-                </div>
-              )}
-              {moveType === "intercity" && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {t("booking.distance")} ({distanceKm} km × {formatCurrency(Number(breakdown.ratePerKm ?? 0))}/km)
-                  </span>
-                  <span>{formatCurrency(quote.servicePrice)}</span>
-                </div>
-              )}
-              {moveType === "inter-province" && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {t("booking.weight")} ({quote.totalWeightLbs.toFixed(0)} lb × {formatCurrency(Number(breakdown.ratePerLb ?? 0))}/lb)
-                  </span>
-                  <span>{formatCurrency(quote.servicePrice)}</span>
-                </div>
-              )}
-            </>
+            )}
+          </>
+
           )}
           {effectiveCrew > 0 && (
             <div className="flex justify-between">
