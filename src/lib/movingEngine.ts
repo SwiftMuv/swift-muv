@@ -44,6 +44,10 @@ export const SUV_FLAT_LOCAL_CAD = 50;
 /** SUV flat fee covers the first 3 km. */
 export const SUV_INCLUDED_KM = 3;
 export const SUV_PER_KM_CAD = PER_KM_RATE_CAD;
+/** Flat-rate distance allowance (km) — trips under this are a flat fee. */
+export const FLAT_INCLUDED_KM = 50;
+/** Rate charged per km beyond the flat allowance. */
+export const EXCESS_PER_KM_CAD = 5;
 /** Quebec combined sales tax (GST 5% + QST 9.975%). */
 export const QC_TAX_RATE = 0.14975;
 
@@ -57,6 +61,8 @@ export interface PricingOverrides {
   baseFee?: number;
   crewMemberRate?: number;
   taxRate?: number;
+  flatIncludedKm?: number;
+  excessPerKm?: number;
 }
 
 const activeOverrides: PricingOverrides = {};
@@ -73,8 +79,11 @@ export function getPricingRates() {
     baseFee: activeOverrides.baseFee ?? BASE_FEE_CAD,
     crewMemberRate: activeOverrides.crewMemberRate ?? CREW_MEMBER_RATE_CAD,
     taxRate: activeOverrides.taxRate ?? QC_TAX_RATE,
+    flatIncludedKm: activeOverrides.flatIncludedKm ?? FLAT_INCLUDED_KM,
+    excessPerKm: activeOverrides.excessPerKm ?? EXCESS_PER_KM_CAD,
   };
 }
+
 
 // Compounded scale for non-SUV fleet: +40% base, +30% per-km per tier.
 const BASE_STEP = 1.4;
