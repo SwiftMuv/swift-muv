@@ -289,12 +289,18 @@ const DriverDashboard = () => {
       })
       .select("id")
       .single();
-    if (error) return toast.error(error.message);
+    if (error) {
+      setIncoming(null);
+      return toast.error(error.message);
+    }
     await supabase.from("bookings").update({ status: "assigned" }).eq("id", booking.bookingId);
     toast.success(t("driver.jobAccepted"));
+    setIncoming(null);
+    setActiveTab("home");
     setActiveJob({ ...booking, jobId: data.id, id: data.id, status: "assigned" });
     loadAvailable();
   };
+
 
   const handleUpdateJobStatus = async (nextStatus: JobStatus, code?: string) => {
     if (!activeJob?.jobId) return;
