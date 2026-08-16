@@ -29,7 +29,10 @@ export interface Job {
   status: JobStatus | "available";
   distanceKm?: number | null;
   etaMinutes?: number | null;
+  vehicleCategory?: string | null;
+  vehicleLabel?: string | null;
 }
+
 
 const sizeLabel = (s: string): Job["moveSize"] =>
   s === "small" ? "Small" : s === "large" ? "Large" : "Medium";
