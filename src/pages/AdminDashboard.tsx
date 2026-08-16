@@ -296,7 +296,6 @@ const AdminDashboard = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="profiles">Profiles</TabsTrigger>
-            <TabsTrigger value="pricing">Pricing</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
 
