@@ -177,14 +177,13 @@ const DriverInfoCard = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 bg-[#1e1e1e] text-white border-white/10">
-            {children && (
-              <div className="px-2 py-1.5">
-                {children}
-              </div>
-            )}
+            {optionsItems}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Extra bottom-sheet content (e.g. completion code) */}
+      {children && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
 };
