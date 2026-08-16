@@ -74,14 +74,18 @@ const DriverDashboard = () => {
   const [driverRating, setDriverRating] = useState<number | null>(null);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  const [driverVehicle, setDriverVehicle] = useState<string | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
+  const [rejected, setRejected] = useState<string[]>([]);
+  const [incoming, setIncoming] = useState<Job | null>(null);
 
   useEffect(() => {
     if (!user) return;
     supabase
       .from("driver_profiles")
-      .select("full_name,rating,is_verified,verification_status")
+      .select("full_name,rating,is_verified,verification_status,vehicle_category")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -89,13 +93,16 @@ const DriverDashboard = () => {
         setDriverRating((data?.rating as number | null) ?? null);
         setIsVerified(Boolean((data as any)?.is_verified));
         setVerificationStatus(((data as any)?.verification_status as string | null) ?? null);
+        setDriverVehicle(((data as any)?.vehicle_category as string | null) ?? null);
+        setProfileLoaded(true);
       });
   }, [user]);
 
   const loadAvailable = useCallback(async () => {
+    if (!profileLoaded) return;
     const { data, error } = await supabase
       .from("bookings")
-      .select("id, pickup_address, dropoff_address, move_size, total_price, status, pickup_lat, pickup_lng")
+      .select("id, pickup_address, dropoff_address, move_size, total_price, status, pickup_lat, pickup_lng, vehicle_category")
       .eq("status", "pending" as never)
       .order("created_at", { ascending: false });
     if (error) return;
@@ -113,27 +120,33 @@ const DriverDashboard = () => {
       driverLng = (dp as any)?.current_lng ?? null;
     }
 
-    const jobs: Job[] = (data ?? []).map((b: any) => {
-      let distanceKm: number | null = null;
-      let etaMinutes: number | null = null;
-      if (driverLat != null && driverLng != null && b.pickup_lat != null && b.pickup_lng != null) {
-        distanceKm = haversineKm(driverLat, driverLng, b.pickup_lat, b.pickup_lng);
-        // Assume ~35 km/h avg urban speed
-        etaMinutes = Math.max(1, Math.round((distanceKm / 35) * 60));
-      }
-      return {
-        id: b.id,
-        bookingId: b.id,
-        customerName: "Customer",
-        pickupAddress: b.pickup_address,
-        dropoffAddress: b.dropoff_address,
-        moveSize: sizeLabel(b.move_size as string),
-        price: Number(b.total_price),
-        status: "available" as const,
-        distanceKm,
-        etaMinutes,
-      };
-    });
+    const jobs: Job[] = (data ?? [])
+      // Category matching: only broadcast orders whose requested vehicle
+      // category matches the driver's registered vehicle category.
+      .filter((b: any) => !driverVehicle || !b.vehicle_category || b.vehicle_category === driverVehicle)
+      .map((b: any) => {
+        let distanceKm: number | null = null;
+        let etaMinutes: number | null = null;
+        if (driverLat != null && driverLng != null && b.pickup_lat != null && b.pickup_lng != null) {
+          distanceKm = haversineKm(driverLat, driverLng, b.pickup_lat, b.pickup_lng);
+          // Assume ~35 km/h avg urban speed
+          etaMinutes = Math.max(1, Math.round((distanceKm / 35) * 60));
+        }
+        return {
+          id: b.id,
+          bookingId: b.id,
+          customerName: "Customer",
+          pickupAddress: b.pickup_address,
+          dropoffAddress: b.dropoff_address,
+          moveSize: sizeLabel(b.move_size as string),
+          price: Number(b.total_price),
+          status: "available" as const,
+          distanceKm,
+          etaMinutes,
+          vehicleCategory: b.vehicle_category ?? null,
+          vehicleLabel: vehicleLabel(b.vehicle_category),
+        };
+      });
 
     // Sort by proximity when we have geo data, else keep insertion order (recency)
     jobs.sort((a, b) => {
@@ -144,7 +157,8 @@ const DriverDashboard = () => {
     });
 
     setAvailable(jobs);
-  }, [user]);
+  }, [user, driverVehicle, profileLoaded]);
+
 
 
   const loadActiveJob = useCallback(async () => {
