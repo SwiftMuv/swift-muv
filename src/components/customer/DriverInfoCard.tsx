@@ -50,6 +50,7 @@ const DriverInfoCard = ({
   messageLabel = "Message",
   callLabel = "Call",
   optionsLabel = "Options",
+  optionsItems,
   children,
   className,
 }: DriverInfoCardProps) => {
