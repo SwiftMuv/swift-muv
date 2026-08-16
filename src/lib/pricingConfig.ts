@@ -9,6 +9,8 @@ export const PRICING_KEYS = [
   "base_fee_cad",
   "crew_member_rate_cad",
   "tax_rate",
+  "flat_included_km",
+  "excess_per_km_cad",
 ] as const;
 
 export type PricingKey = (typeof PRICING_KEYS)[number];
@@ -20,7 +22,10 @@ const KEY_TO_OVERRIDE: Record<PricingKey, keyof PricingOverrides> = {
   base_fee_cad: "baseFee",
   crew_member_rate_cad: "crewMemberRate",
   tax_rate: "taxRate",
+  flat_included_km: "flatIncludedKm",
+  excess_per_km_cad: "excessPerKm",
 };
+
 
 export async function fetchPricingConfig(): Promise<Partial<Record<PricingKey, number>>> {
   const { data, error } = await supabase
