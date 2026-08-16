@@ -61,15 +61,18 @@ interface VehicleTile {
   eta: string;
   image: string;
   isSuv?: boolean;
+  /** Matching entry in VEHICLE_FLEET (used for pricing). */
+  fleetName?: string;
 }
 
 const VEHICLE_TILES: VehicleTile[] = [
   { name: "SUV", capacity: "Bags · flat items", eta: "3 min away", image: SuvImg, isSuv: true },
-  { name: "Cargo Van", capacity: "1–2 rooms · 2,000 lb", eta: "5 min away", image: CargoVanImg },
-  { name: "12ft Pickup", capacity: "Studio · 3,000 lb", eta: "6 min away", image: PickupImg },
-  { name: "16ft Truck", capacity: "1 bedroom · 4,500 lb", eta: "8 min away", image: BoxTruckImg },
-  { name: "26ft Truck", capacity: "3+ bedrooms · 10,000 lb", eta: "12 min away", image: MovingTruckImg },
+  { name: "Pickup", capacity: "Studio · 3,000 lb", eta: "6 min away", image: PickupImg, fleetName: "12ft Cube Van" },
+  { name: "Van", capacity: "1–2 rooms · 2,000 lb", eta: "5 min away", image: CargoVanImg, fleetName: "Cargo Van" },
+  { name: "16ft Truck", capacity: "1 bedroom · 4,500 lb", eta: "8 min away", image: BoxTruckImg, fleetName: "16ft Truck" },
+  { name: "26ft Truck", capacity: "3+ bedrooms · 10,000 lb", eta: "12 min away", image: MovingTruckImg, fleetName: "26ft Truck" },
 ];
+
 
 // Uber-style near-monochrome map — grayscale roads, muted land, subtle water.
 const UBER_MAP_STYLES: google.maps.MapTypeStyle[] = [
