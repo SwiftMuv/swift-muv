@@ -730,18 +730,41 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 {/* Price breakdown */}
               <div className="space-y-1.5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-[14px]">
                 <div className="flex justify-between text-neutral-400">
-                  <span>{t("booking.subtotal")}</span>
-                  <span className="font-semibold text-white">{formatCurrency(quote.subtotal)}</span>
+                  <span>
+                    {formatCurrency(quote.flatRate)} flat rate · under {quote.flatIncludedKm} km
+                  </span>
+                  <span className="font-semibold text-white">{formatCurrency(quote.flatRate)}</span>
                 </div>
-                <div className="flex justify-between text-neutral-400">
-                  <span>{t("booking.tax")}</span>
-                  <span className="font-semibold text-white">{formatCurrency(quote.taxAmount)}</span>
-                </div>
+                <p className="text-[12px] leading-snug text-neutral-500">
+                  {formatCurrency(quote.flatRate)} flat rate for trips under {quote.flatIncludedKm} km — includes service fee &amp; tax.
+                  Extra distance is billed at {formatCurrency(quote.excessRatePerKm)}/km.
+                </p>
+                {quote.excessKm > 0 && (
+                  <div className="flex justify-between text-neutral-400">
+                    <span>
+                      Extra distance ({quote.excessKm} km × {formatCurrency(quote.excessRatePerKm)})
+                    </span>
+                    <span className="font-semibold text-white">{formatCurrency(quote.excessFee)}</span>
+                  </div>
+                )}
+                {quote.crewCost > 0 && (
+                  <div className="flex justify-between text-neutral-400">
+                    <span>{t("booking.subtotal")}</span>
+                    <span className="font-semibold text-white">{formatCurrency(quote.subtotal)}</span>
+                  </div>
+                )}
+                {quote.taxAmount > 0 && (
+                  <div className="flex justify-between text-neutral-400">
+                    <span>{t("booking.tax")}</span>
+                    <span className="font-semibold text-white">{formatCurrency(quote.taxAmount)}</span>
+                  </div>
+                )}
                 <div className="mt-1 flex justify-between border-t border-neutral-800 pt-2 text-[16px] font-bold text-white">
                   <span>{t("booking.totalCad")}</span>
                   <span>{formatCurrency(quote.finalPrice)}</span>
                 </div>
               </div>
+
 
               <PaymentRow />
                 <Button
