@@ -564,6 +564,15 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <section className="space-y-4 pt-2">
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Pricing settings</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <AdminPricingSettings />
+        </section>
       </main>
     </div>
   );
