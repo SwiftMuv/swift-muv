@@ -212,7 +212,13 @@ export function calculateMovePrice({
 
   return {
     recommendedVehicle: vehicle.name,
-    isFlatRate: isSuv,
+    isFlatRate: true,
+    flatRate,
+    flatIncludedKm: includedKm,
+    excessKm,
+    excessRatePerKm,
+    excessFee,
+    flatRateIncludesTax: true,
     totalVolumeCuFt: totalVolume,
     totalWeightLbs: totalWeight,
     crewCount: safeCrew,
@@ -221,6 +227,7 @@ export function calculateMovePrice({
     baseFee,
     heavyItemFee,
     distanceFee: Math.round(distanceFee * 100) / 100,
+
     servicePrice: round2(servicePrice),
     subtotal,
     taxRate,
