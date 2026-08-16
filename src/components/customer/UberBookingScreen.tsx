@@ -342,11 +342,11 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   const items: SelectedItem[] = useMemo(() => {
     if (selectedTile.isSuv) return [];
-    const idx = VEHICLE_TILES.findIndex((v) => v.name === selectedTile.name);
-    const vehicle = VEHICLE_FLEET[idx];
+    const vehicle = fleetForTile(selectedTile);
     if (!vehicle) return [];
     return [{
       id: -1,
+
       item_name: selectedTile.name,
       cubic_feet: vehicle.maxVolumeCuFt * 0.7,
       weight_lbs: vehicle.maxWeightLbs * 0.7,
