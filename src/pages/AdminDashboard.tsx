@@ -527,10 +527,6 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="pricing">
-            <AdminPricingSettings />
-          </TabsContent>
-
           <TabsContent value="manage">
             <Card>
               <CardHeader>
