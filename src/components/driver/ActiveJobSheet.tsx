@@ -229,6 +229,50 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
           {t(nextStep.label)}
         </Button>
 
+        {onCancelJob && (
+          <Button
+            variant="ghost"
+            onClick={() => setCancelOpen(true)}
+            className="w-full mt-2 rounded-xl h-11 font-medium gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <XCircle className="w-4 h-4" />
+            {t("drv.activeJob.cancelJob") || "Cancel job"}
+          </Button>
+        )}
+
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("drv.activeJob.cancelJobTitle") || "Cancel this job?"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("drv.activeJob.cancelJobWarning") ||
+                  "You will forfeit all earnings for this move and the customer will be fully refunded. This cannot be undone."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={cancelling}>{t("common.cancel") || "Keep job"}</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={cancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setCancelling(true);
+                  try {
+                    await onCancelJob?.();
+                    setCancelOpen(false);
+                  } finally {
+                    setCancelling(false);
+                  }
+                }}
+              >
+                {cancelling ? "…" : t("drv.activeJob.cancelJobConfirm") || "Yes, cancel job"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+
+
         {threadJobId && (
           <JobChatSheet
             jobId={threadJobId}
