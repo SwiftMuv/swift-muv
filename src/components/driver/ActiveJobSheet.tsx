@@ -2,7 +2,17 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck, XCircle } from "lucide-react";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
 import { useI18n } from "@/contexts/I18nContext";
 import JobChatSheet from "@/components/shared/JobChatSheet";
@@ -12,7 +22,9 @@ import { toast } from "sonner";
 interface ActiveJobSheetProps {
   job: Job | null;
   onUpdateStatus: (status: JobStatus, code?: string) => void;
+  onCancelJob?: () => Promise<void> | void;
 }
+
 
 const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; color: string }[] = [
   { status: "arrived", label: "driver.arrivedPickup", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
