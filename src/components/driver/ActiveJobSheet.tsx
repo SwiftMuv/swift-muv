@@ -32,12 +32,15 @@ const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; col
   { status: "completed", label: "driver.completeTrip", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
 ];
 
-export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => {
+export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSheetProps) => {
   const { t, formatCurrency } = useI18n();
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
 
   const threadJobId = job?.jobId ?? job?.id ?? null;
   const bookingId = job?.bookingId ?? null;
