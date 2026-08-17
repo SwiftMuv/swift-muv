@@ -407,7 +407,7 @@ const DriverDashboard = () => {
         {activeTab === "profile" && <ProfileScreen />}
       </main>
 
-      <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
+      <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} onCancelJob={handleDriverCancelJob} />
 
       <IncomingJobModal job={incoming} onAccept={handleAcceptJob} onReject={handleRejectJob} />
 
