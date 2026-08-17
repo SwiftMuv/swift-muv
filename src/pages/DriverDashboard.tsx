@@ -353,18 +353,22 @@ const DriverDashboard = () => {
     setActiveJob({ ...activeJob, status: nextStatus });
   };
 
-  const handleDriverCancelJob = async () => {
+  const handleDriverCancelJob = async (): Promise<void> => {
     if (!activeJob?.jobId) return;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      if (!token) return toast.error(t("common.error") || "Not signed in");
+      if (!token) {
+        toast.error(t("common.error") || "Not signed in");
+        return;
+      }
       const { data, error } = await supabase.functions.invoke("driver-cancel-job", {
         headers: { Authorization: `Bearer ${token}` },
         body: { jobId: activeJob.jobId },
       });
       if (error || (data as any)?.error) {
-        return toast.error((data as any)?.error ?? error?.message ?? "Could not cancel job");
+        toast.error((data as any)?.error ?? error?.message ?? "Could not cancel job");
+        return;
       }
       toast.success(
         t("drv.activeJob.cancelJobDone") || "Job cancelled. The customer has been fully refunded.",
