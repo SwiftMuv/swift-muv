@@ -353,6 +353,33 @@ const DriverDashboard = () => {
     setActiveJob({ ...activeJob, status: nextStatus });
   };
 
+  const handleDriverCancelJob = async (): Promise<void> => {
+    if (!activeJob?.jobId) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        toast.error(t("common.error") || "Not signed in");
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("driver-cancel-job", {
+        headers: { Authorization: `Bearer ${token}` },
+        body: { jobId: activeJob.jobId },
+      });
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.error ?? error?.message ?? "Could not cancel job");
+        return;
+      }
+      toast.success(
+        t("drv.activeJob.cancelJobDone") || "Job cancelled. The customer has been fully refunded.",
+      );
+      setActiveJob(null);
+      await Promise.all([loadAvailable(), loadStats()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not cancel job");
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col dark">
@@ -407,7 +434,7 @@ const DriverDashboard = () => {
         {activeTab === "profile" && <ProfileScreen />}
       </main>
 
-      <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} />
+      <ActiveJobSheet job={activeJob} onUpdateStatus={handleUpdateJobStatus} onCancelJob={handleDriverCancelJob} />
 
       <IncomingJobModal job={incoming} onAccept={handleAcceptJob} onReject={handleRejectJob} />
 

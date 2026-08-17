@@ -2,7 +2,17 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck, XCircle } from "lucide-react";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
 import { useI18n } from "@/contexts/I18nContext";
 import JobChatSheet from "@/components/shared/JobChatSheet";
@@ -12,7 +22,9 @@ import { toast } from "sonner";
 interface ActiveJobSheetProps {
   job: Job | null;
   onUpdateStatus: (status: JobStatus, code?: string) => void;
+  onCancelJob?: () => Promise<void> | void;
 }
+
 
 const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; color: string }[] = [
   { status: "arrived", label: "driver.arrivedPickup", icon: <MapPin className="w-4 h-4" />, color: "bg-[hsl(var(--swift-info))]" },
@@ -20,12 +32,15 @@ const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; col
   { status: "completed", label: "driver.completeTrip", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-[hsl(var(--swift-success))]" },
 ];
 
-export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => {
+export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSheetProps) => {
   const { t, formatCurrency } = useI18n();
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
 
   const threadJobId = job?.jobId ?? job?.id ?? null;
   const bookingId = job?.bookingId ?? null;
@@ -213,6 +228,50 @@ export const ActiveJobSheet = ({ job, onUpdateStatus }: ActiveJobSheetProps) => 
           {nextStep.icon}
           {t(nextStep.label)}
         </Button>
+
+        {onCancelJob && (
+          <Button
+            variant="ghost"
+            onClick={() => setCancelOpen(true)}
+            className="w-full mt-2 rounded-xl h-11 font-medium gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <XCircle className="w-4 h-4" />
+            {t("drv.activeJob.cancelJob") || "Cancel job"}
+          </Button>
+        )}
+
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("drv.activeJob.cancelJobTitle") || "Cancel this job?"}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("drv.activeJob.cancelJobWarning") ||
+                  "You will forfeit all earnings for this move and the customer will be fully refunded. This cannot be undone."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={cancelling}>{t("common.cancel") || "Keep job"}</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={cancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setCancelling(true);
+                  try {
+                    await onCancelJob?.();
+                    setCancelOpen(false);
+                  } finally {
+                    setCancelling(false);
+                  }
+                }}
+              >
+                {cancelling ? "…" : t("drv.activeJob.cancelJobConfirm") || "Yes, cancel job"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+
 
         {threadJobId && (
           <JobChatSheet
