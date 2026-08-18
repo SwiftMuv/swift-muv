@@ -48,13 +48,35 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
     document.documentElement.classList.add("native-map-active");
     document.body.classList.add("native-map-active");
 
-    const createMap = async () => {
-      // Wait for the fixed map element to receive its final viewport bounds.
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      const bounds = mapElement.getBoundingClientRect();
-      if (bounds.width < 1 || bounds.height < 1) {
-        throw new Error("map container has no size");
+    const waitForSize = async () => {
+      // The element can be laid out a few frames after mount (sheet animation,
+      // fonts, safe-area insets). Poll instead of assuming one frame is enough.
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        const rect = mapElement.getBoundingClientRect();
+        if (rect.width >= 1 && rect.height >= 1) return true;
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       }
+      return false;
+    };
+
+    const createMap = async () => {
+      const sized = await waitForSize();
+      if (!sized) {
+        // Last resort: pin the element to the viewport so the native view has
+        // real bounds to attach to.
+        mapElement.style.position = "fixed";
+        mapElement.style.left = "0";
+        mapElement.style.top = "0";
+        mapElement.style.width = `${window.innerWidth}px`;
+        mapElement.style.height = `${window.innerHeight}px`;
+        mapElement.style.display = "block";
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        const rect = mapElement.getBoundingClientRect();
+        if (rect.width < 1 || rect.height < 1) {
+          throw new Error("map container has no size");
+        }
+      }
+      if (!active) return;
 
       startupTimer = window.setTimeout(() => {
         if (active && !mapRef.current) {
