@@ -21,6 +21,7 @@ export const isNativeAndroid = () =>
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
 export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: Props) => {
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const elementRef = useRef<HTMLElement | null>(null);
   const mapRef = useRef<GoogleMap | null>(null);
   const markerIdsRef = useRef<string[]>([]);
@@ -33,13 +34,31 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
   onErrorRef.current = onError;
 
   useEffect(() => {
-    if (!isNativeAndroid() || !elementRef.current) return;
+    if (!isNativeAndroid()) return;
+    const host = hostRef.current;
+    const mapElement = elementRef.current;
+    if (!host || !mapElement) return;
 
     let active = true;
     let startupTimer: number | undefined;
-    const mapElement = elementRef.current;
+
+    // 1. Always give the host + custom element explicit pixel dimensions so the
+    //    native bridge can never read a 0px bounding box.
+    const applyExplicitSize = () => {
+      const width = Math.max(1, Math.round(window.innerWidth));
+      const height = Math.max(1, Math.round(window.innerHeight));
+      host.style.width = `${width}px`;
+      host.style.height = `${height}px`;
+      mapElement.style.display = "block";
+      mapElement.style.width = `${width}px`;
+      mapElement.style.height = `${height}px`;
+    };
+    applyExplicitSize();
+    window.addEventListener("resize", applyExplicitSize);
+    window.addEventListener("orientationchange", applyExplicitSize);
+
     const transparentAncestors: HTMLElement[] = [];
-    let ancestor = mapElement.parentElement;
+    let ancestor: HTMLElement | null = host;
     while (ancestor) {
       ancestor.classList.add("native-map-host");
       transparentAncestors.push(ancestor);
@@ -48,33 +67,53 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
     document.documentElement.classList.add("native-map-active");
     document.body.classList.add("native-map-active");
 
-    const waitForSize = async () => {
-      // The element can be laid out a few frames after mount (sheet animation,
-      // fonts, safe-area insets). Poll instead of assuming one frame is enough.
-      for (let attempt = 0; attempt < 60; attempt += 1) {
-        const rect = mapElement.getBoundingClientRect();
-        if (rect.width >= 1 && rect.height >= 1) return true;
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      }
-      return false;
-    };
+    const nextFrame = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    // 2. Wait for the layout engine to actually report a non-zero box.
+    //    ResizeObserver resolves as soon as the box exists; the timeout guards
+    //    against environments where it never fires.
+    const waitForSize = (timeoutMs = 4000) =>
+      new Promise<boolean>((resolve) => {
+        const measure = () => {
+          const rect = mapElement.getBoundingClientRect();
+          return rect.width >= 1 && rect.height >= 1;
+        };
+        if (measure()) {
+          resolve(true);
+          return;
+        }
+        let settled = false;
+        const finish = (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          observer.disconnect();
+          window.clearTimeout(timer);
+          resolve(ok);
+        };
+        const observer = new ResizeObserver(() => {
+          if (measure()) finish(true);
+        });
+        observer.observe(mapElement);
+        const timer = window.setTimeout(() => finish(measure()), timeoutMs);
+      });
 
     const createMap = async () => {
-      const sized = await waitForSize();
+      // Double rAF: let styles/layout settle after mount and sheet animation.
+      await nextFrame();
+      await nextFrame();
+
+      let sized = await waitForSize();
       if (!sized) {
-        // Last resort: pin the element to the viewport so the native view has
-        // real bounds to attach to.
-        mapElement.style.position = "fixed";
-        mapElement.style.left = "0";
-        mapElement.style.top = "0";
-        mapElement.style.width = `${window.innerWidth}px`;
-        mapElement.style.height = `${window.innerHeight}px`;
-        mapElement.style.display = "block";
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        const rect = mapElement.getBoundingClientRect();
-        if (rect.width < 1 || rect.height < 1) {
-          throw new Error("map container has no size");
-        }
+        // Fallback: pin the element to the viewport so it has real bounds,
+        // then retry once before surfacing an error.
+        host.style.position = "fixed";
+        host.style.left = "0";
+        host.style.top = "0";
+        applyExplicitSize();
+        await nextFrame();
+        sized = await waitForSize(1500);
+        if (!sized) throw new Error("map container has no size");
       }
       if (!active) return;
 
@@ -114,6 +153,8 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
     return () => {
       active = false;
       if (startupTimer) window.clearTimeout(startupTimer);
+      window.removeEventListener("resize", applyExplicitSize);
+      window.removeEventListener("orientationchange", applyExplicitSize);
       setCreated(false);
       document.documentElement.classList.remove("native-map-active");
       document.body.classList.remove("native-map-active");
@@ -185,12 +226,19 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
   }, [created, dropoff, pickup]);
 
   return (
-    <capacitor-google-map
-      ref={(element) => {
-        elementRef.current = element;
-      }}
+    <div
+      ref={hostRef}
       className="absolute inset-0 block h-full w-full"
-    />
+      style={{ minWidth: "1px", minHeight: "1px" }}
+    >
+      <capacitor-google-map
+        ref={(element) => {
+          elementRef.current = element;
+        }}
+        className="block h-full w-full"
+        style={{ display: "block", width: "100%", height: "100%" }}
+      />
+    </div>
   );
 };
 
