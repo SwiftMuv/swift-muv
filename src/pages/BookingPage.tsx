@@ -395,7 +395,8 @@ const BookingPage = () => {
           )}
         </div>
 
-        <PricingCalculator distanceKm={distanceKm} />
+
+
 
 
         {/* Additional crew (optional) */}
