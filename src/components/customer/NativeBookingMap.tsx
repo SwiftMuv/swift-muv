@@ -126,7 +126,10 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
       const map = await GoogleMap.create({
         id: MAP_ID,
         element: mapElement,
-        apiKey: "native-manifest-key",
+        // Android reads com.google.android.geo.API_KEY from the manifest
+        // (injected at build time from SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY).
+        // Pass the env key when available so iOS/web fallbacks work too.
+        apiKey: NATIVE_MAP_KEY,
         forceCreate: true,
         config: {
           center: { lat: 45.5017, lng: -73.5673 },
