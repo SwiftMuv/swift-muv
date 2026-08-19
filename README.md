@@ -2,12 +2,12 @@
 
 ## Android Google Maps
 
-The hosted web app uses Lovable's managed Google Maps browser key. That key is
-restricted to Lovable-hosted domains and cannot render Maps JavaScript inside
-the Android WebView.
+The project key is committed for both build paths:
 
-For a local Android build, create an uncommitted `.env.local` file containing
-your own browser key:
+- Web/WebView: `VITE_GOOGLE_MAPS_BROWSER_KEY` in `.env`
+- Android native map: `SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY` in `android/gradle.properties`
+
+To override locally, create an uncommitted `.env.local`:
 
 ```env
 VITE_GOOGLE_MAPS_BROWSER_KEY=your_google_maps_browser_key
