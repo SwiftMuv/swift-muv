@@ -94,11 +94,11 @@ const HistoryScreen = ({ onRebook }: { onRebook?: () => void } = {}) => {
     (async () => {
       const { data } = await supabase
         .from("jobs")
-        .select("id, completed_at, tip_amount, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price)")
+        .select("id, completed_at, tip_amount, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price,status)")
         .eq("driver_id", user.id)
         .eq("status", "completed")
         .order("completed_at", { ascending: false });
-      const rows = (data ?? []).map((r: any) => ({
+      const rows = (data ?? []).filter((r: any) => r.bookings?.status !== "cancelled").map((r: any) => ({
         id: r.id,
         pickupAddress: r.bookings?.pickup_address ?? "",
         dropoffAddress: r.bookings?.dropoff_address ?? "",
