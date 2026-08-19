@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
-import PricingCalculator from "@/components/booking/PricingCalculator";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -395,7 +394,8 @@ const BookingPage = () => {
           )}
         </div>
 
-        <PricingCalculator distanceKm={distanceKm} />
+
+
 
 
         {/* Additional crew (optional) */}

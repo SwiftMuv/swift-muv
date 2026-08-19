@@ -203,7 +203,7 @@ const DriverDashboard = () => {
     const [{ data: completedRows }, { data: pendingRows }] = await Promise.all([
       supabase
         .from("jobs")
-        .select("id, completed_at, bookings:booking_id(total_price)")
+        .select("id, completed_at, bookings:booking_id(total_price,status)")
         .eq("driver_id", user.id)
         .eq("status", "completed"),
       supabase
@@ -212,7 +212,8 @@ const DriverDashboard = () => {
         .eq("driver_id", user.id)
         .eq("earnings_status", "pending"),
     ]);
-    const rows = completedRows ?? [];
+    // Exclude jobs whose booking was cancelled — the driver earns nothing on those.
+    const rows = (completedRows ?? []).filter((r: any) => r.bookings?.status !== "cancelled");
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfWeek = new Date(startOfDay);
@@ -227,6 +228,7 @@ const DriverDashboard = () => {
     });
     const pending = (pendingRows ?? []).reduce((s: number, r: any) => s + Number(r.driver_earnings ?? 0), 0);
     setStats({ today, week, completed: rows.length, pending });
+
   }, [user]);
 
   useEffect(() => {
