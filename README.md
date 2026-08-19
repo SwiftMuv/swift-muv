@@ -31,7 +31,10 @@ certificate SHA-1. Add it to your user Gradle properties (never commit it):
 SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY=your_android_maps_key
 ```
 
-The file is `~/.gradle/gradle.properties`. The browser key above remains needed
+The build reads this key, in order, from a Gradle project property, the
+`SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY` environment variable, or
+`android/local.properties`. Use `~/.gradle/gradle.properties` for a machine-wide
+value. The browser key above remains needed
 for Places autocomplete inside the WebView. Then rebuild and sync:
 
 ```bash

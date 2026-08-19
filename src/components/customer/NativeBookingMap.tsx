@@ -17,6 +17,13 @@ interface Props {
 
 const MAP_ID = "swiftmuv-booking-map";
 
+// Android injects the key via the manifest at build time; this value is only
+// used as a fallback on platforms that require it in JS.
+const NATIVE_MAP_KEY =
+  (import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY as string | undefined) ||
+  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined) ||
+  "native-manifest-key";
+
 export const isNativeAndroid = () =>
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
@@ -126,7 +133,10 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
       const map = await GoogleMap.create({
         id: MAP_ID,
         element: mapElement,
-        apiKey: "native-manifest-key",
+        // Android reads com.google.android.geo.API_KEY from the manifest
+        // (injected at build time from SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY).
+        // Pass the env key when available so iOS/web fallbacks work too.
+        apiKey: NATIVE_MAP_KEY,
         forceCreate: true,
         config: {
           center: { lat: 45.5017, lng: -73.5673 },
