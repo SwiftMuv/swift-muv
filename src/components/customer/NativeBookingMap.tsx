@@ -17,6 +17,13 @@ interface Props {
 
 const MAP_ID = "swiftmuv-booking-map";
 
+// Android injects the key via the manifest at build time; this value is only
+// used as a fallback on platforms that require it in JS.
+const NATIVE_MAP_KEY =
+  (import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY as string | undefined) ||
+  (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined) ||
+  "native-manifest-key";
+
 export const isNativeAndroid = () =>
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
