@@ -76,7 +76,16 @@ Deno.serve(async (req) => {
           return json({ error: 'Could not process cancellation fee', details: e?.message }, 502);
         }
       }
-      await admin.from('jobs').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', job.id);
+      // Driver earns nothing on a cancelled move — zero out earnings so it never
+      // shows up as paid work on the driver dashboard / history.
+      await admin.from('jobs').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        driver_earnings: 0,
+        platform_fee: 0,
+        tip_amount: 0,
+        earnings_status: 'released',
+      }).eq('id', job.id);
     }
 
     await admin.from('bookings').update({
