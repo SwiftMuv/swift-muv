@@ -1,24 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { GoogleMap, LatLngBounds } from "@capacitor/google-maps";
-
-interface Point {
-  lat: number;
-  lng: number;
-}
+import {
+  ROUTE_CASING,
+  ROUTE_LINE,
+  SWIFTMUV_DARK_MAP_STYLES,
+  SWIFTMUV_DEFAULT_CENTER,
+  isValidLatLng,
+  nativeBoundsFor,
+  type LatLngLiteral,
+} from "@/lib/mapCore";
 
 interface Props {
-  pickup?: Point;
-  dropoff?: Point;
-  styles: google.maps.MapTypeStyle[];
+  pickup?: LatLngLiteral | null;
+  dropoff?: LatLngLiteral | null;
   onReady: () => void;
   onError: (message: string) => void;
 }
 
-const MAP_ID = "swiftmuv-booking-map";
-
-// Android injects the key via the manifest at build time; this value is only
-// used as a fallback on platforms that require it in JS.
+const MAP_ID = "swiftmuv-native-booking-map";
 const NATIVE_MAP_KEY =
   (import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY as string | undefined) ||
   (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined) ||
@@ -27,7 +27,25 @@ const NATIVE_MAP_KEY =
 export const isNativeAndroid = () =>
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
-export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: Props) => {
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+const getViewportSize = () => ({
+  width: Math.max(1, Math.round(window.visualViewport?.width ?? window.innerWidth)),
+  height: Math.max(1, Math.round(window.visualViewport?.height ?? window.innerHeight)),
+});
+
+const friendlyNativeMapError = (message: string) => {
+  const lower = message.toLowerCase();
+  if (lower.includes("authorization") || lower.includes("api key") || lower.includes("apikey")) {
+    return "Native Google Map failed: Android Maps key is not authorized. Enable Maps SDK for Android and allow package com.swiftmuv.app.v2 with the SHA-1 used to sign this APK.";
+  }
+  if (lower.includes("size") || lower.includes("width") || lower.includes("height")) {
+    return "Native Google Map failed: map container has no size. Rebuild and sync Android so the latest map host sizing is bundled.";
+  }
+  return `Native Google Map failed: ${message}`;
+};
+
+export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const elementRef = useRef<HTMLElement | null>(null);
   const mapRef = useRef<GoogleMap | null>(null);
@@ -42,27 +60,30 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
 
   useEffect(() => {
     if (!isNativeAndroid()) return;
+
     const host = hostRef.current;
-    const mapElement = elementRef.current;
-    if (!host || !mapElement) return;
+    const element = elementRef.current;
+    if (!host || !element) return;
 
     let active = true;
     let startupTimer: number | undefined;
+    let resizeObserver: ResizeObserver | undefined;
 
-    // 1. Always give the host + custom element explicit pixel dimensions so the
-    //    native bridge can never read a 0px bounding box.
-    const applyExplicitSize = () => {
-      const width = Math.max(1, Math.round(window.innerWidth));
-      const height = Math.max(1, Math.round(window.innerHeight));
+    const applyFullScreenBounds = () => {
+      const { width, height } = getViewportSize();
+      host.style.position = "fixed";
+      host.style.inset = "0";
       host.style.width = `${width}px`;
       host.style.height = `${height}px`;
-      mapElement.style.display = "block";
-      mapElement.style.width = `${width}px`;
-      mapElement.style.height = `${height}px`;
+      host.style.minWidth = "1px";
+      host.style.minHeight = "1px";
+      host.style.overflow = "hidden";
+      element.style.display = "block";
+      element.style.width = `${width}px`;
+      element.style.height = `${height}px`;
+      element.style.minWidth = "1px";
+      element.style.minHeight = "1px";
     };
-    applyExplicitSize();
-    window.addEventListener("resize", applyExplicitSize);
-    window.addEventListener("orientationchange", applyExplicitSize);
 
     const transparentAncestors: HTMLElement[] = [];
     let ancestor: HTMLElement | null = host;
@@ -74,119 +95,116 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
     document.documentElement.classList.add("native-map-active");
     document.body.classList.add("native-map-active");
 
-    const nextFrame = () =>
-      new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const measuredBounds = () => {
+      applyFullScreenBounds();
+      const rect = element.getBoundingClientRect();
+      const viewport = getViewportSize();
+      return {
+        width: Math.max(1, Math.round(rect.width || viewport.width)),
+        height: Math.max(1, Math.round(rect.height || viewport.height)),
+        x: Math.round(Number.isFinite(rect.x) ? rect.x : 0),
+        y: Math.round(Number.isFinite(rect.y) ? rect.y : 0),
+      };
+    };
 
-    // 2. Wait for the layout engine to actually report a non-zero box.
-    //    ResizeObserver resolves as soon as the box exists; the timeout guards
-    //    against environments where it never fires.
-    const waitForSize = (timeoutMs = 4000) =>
-      new Promise<boolean>((resolve) => {
-        const measure = () => {
-          const rect = mapElement.getBoundingClientRect();
-          return rect.width >= 1 && rect.height >= 1;
+    const waitForNonZeroBounds = (timeoutMs = 5000) =>
+      new Promise<ReturnType<typeof measuredBounds>>((resolve, reject) => {
+        const read = () => {
+          const bounds = measuredBounds();
+          return bounds.width > 0 && bounds.height > 0 ? bounds : null;
         };
-        if (measure()) {
-          resolve(true);
+        const immediate = read();
+        if (immediate) {
+          resolve(immediate);
           return;
         }
+
         let settled = false;
-        const finish = (ok: boolean) => {
+        const finish = (bounds: ReturnType<typeof measuredBounds> | null) => {
           if (settled) return;
           settled = true;
-          observer.disconnect();
+          resizeObserver?.disconnect();
           window.clearTimeout(timer);
-          resolve(ok);
+          if (bounds) resolve(bounds);
+          else reject(new Error("map container has no size"));
         };
-        const observer = new ResizeObserver(() => {
-          if (measure()) finish(true);
-        });
-        observer.observe(mapElement);
-        const timer = window.setTimeout(() => finish(measure()), timeoutMs);
+
+        resizeObserver = new ResizeObserver(() => finish(read()));
+        resizeObserver.observe(element);
+        const timer = window.setTimeout(() => finish(read()), timeoutMs);
       });
 
-    const createMap = async () => {
-      // Double rAF: let styles/layout settle after mount and sheet animation.
+    const createNativeMap = async () => {
+      applyFullScreenBounds();
       await nextFrame();
       await nextFrame();
-
-      let sized = await waitForSize();
-      if (!sized) {
-        // Fallback: pin the element to the viewport so it has real bounds,
-        // then retry once before surfacing an error.
-        host.style.position = "fixed";
-        host.style.left = "0";
-        host.style.top = "0";
-        applyExplicitSize();
-        await nextFrame();
-        sized = await waitForSize(1500);
-        if (!sized) throw new Error("map container has no size");
-      }
+      const bounds = await waitForNonZeroBounds();
       if (!active) return;
-
-      const bounds = mapElement.getBoundingClientRect();
-      const mapWidth = Math.max(1, Math.round(bounds.width || window.innerWidth));
-      const mapHeight = Math.max(1, Math.round(bounds.height || window.innerHeight));
-      const mapX = Math.round(bounds.x || 0);
-      const mapY = Math.round(bounds.y || 0);
 
       startupTimer = window.setTimeout(() => {
         if (active && !mapRef.current) {
-          onErrorRef.current("Native map startup timed out. Verify the Android Maps SDK key and its package/SHA-1 restrictions.");
+          onErrorRef.current("Native Google Map failed: startup timed out. Verify the Android Maps SDK key, package name, SHA-1, and network access.");
         }
       }, 12000);
 
       const map = await GoogleMap.create({
         id: MAP_ID,
-        element: mapElement,
-        // Android reads com.google.android.geo.API_KEY from the manifest
-        // (injected at build time from SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY).
-        // Pass the env key when available so iOS/web fallbacks work too.
+        element,
         apiKey: NATIVE_MAP_KEY,
         forceCreate: true,
         config: {
-          center: { lat: 45.5017, lng: -73.5673 },
+          center: SWIFTMUV_DEFAULT_CENTER,
           zoom: 13,
-          width: mapWidth,
-          height: mapHeight,
-          x: mapX,
-          y: mapY,
+          width: bounds.width,
+          height: bounds.height,
+          x: bounds.x,
+          y: bounds.y,
           mapTypeId: "roadmap",
           androidLiteMode: false,
           devicePixelRatio: window.devicePixelRatio || 1,
-          styles,
+          styles: SWIFTMUV_DARK_MAP_STYLES,
         },
       });
+
       if (!active) {
         await map.destroy();
         return;
       }
+
       if (startupTimer) window.clearTimeout(startupTimer);
       mapRef.current = map;
       setCreated(true);
       onReadyRef.current();
     };
 
-    void createMap().catch((error: unknown) => {
+    const resizeNativeMap = () => {
+      applyFullScreenBounds();
+    };
+
+    window.addEventListener("resize", resizeNativeMap);
+    window.addEventListener("orientationchange", resizeNativeMap);
+
+    void createNativeMap().catch((error: unknown) => {
       if (startupTimer) window.clearTimeout(startupTimer);
       const message = error instanceof Error ? error.message : String(error);
-      onErrorRef.current(`Native Google Map failed: ${message}`);
+      onErrorRef.current(friendlyNativeMapError(message));
     });
 
     return () => {
       active = false;
       if (startupTimer) window.clearTimeout(startupTimer);
-      window.removeEventListener("resize", applyExplicitSize);
-      window.removeEventListener("orientationchange", applyExplicitSize);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", resizeNativeMap);
+      window.removeEventListener("orientationchange", resizeNativeMap);
       setCreated(false);
       document.documentElement.classList.remove("native-map-active");
       document.body.classList.remove("native-map-active");
-      transparentAncestors.forEach((element) => element.classList.remove("native-map-host"));
+      transparentAncestors.forEach((node) => node.classList.remove("native-map-host"));
       const map = mapRef.current;
       mapRef.current = null;
       if (map) void map.destroy();
     };
-  }, [styles]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -198,46 +216,28 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
       markerIdsRef.current = [];
       polylineIdsRef.current = [];
 
-      const points = [pickup, dropoff].filter((point): point is Point => Boolean(point));
+      const points = [pickup, dropoff].filter(isValidLatLng);
       if (points.length) {
         markerIdsRef.current = await map.addMarkers(
-          points.map((coordinate) => ({ coordinate })),
+          points.map((coordinate, index) => ({
+            coordinate,
+            title: index === 0 ? "Pickup" : "Drop-off",
+          })),
         );
       }
 
-      if (pickup && dropoff) {
+      if (pickup && dropoff && isValidLatLng(pickup) && isValidLatLng(dropoff)) {
+        const path = [pickup, dropoff];
         polylineIdsRef.current = await map.addPolylines([
-          {
-            path: [pickup, dropoff],
-            strokeColor: "#FFFFFF",
-            strokeOpacity: 1,
-            strokeWeight: 8,
-          },
-          {
-            path: [pickup, dropoff],
-            strokeColor: "#0F172A",
-            strokeOpacity: 1,
-            strokeWeight: 5,
-          },
+          { path, strokeColor: ROUTE_CASING.strokeColor, strokeOpacity: ROUTE_CASING.strokeOpacity, strokeWeight: ROUTE_CASING.strokeWeight },
+          { path, strokeColor: ROUTE_LINE.strokeColor, strokeOpacity: ROUTE_LINE.strokeOpacity, strokeWeight: ROUTE_LINE.strokeWeight },
         ]);
-        await map.fitBounds(
-          new LatLngBounds({
-            southwest: {
-              lat: Math.min(pickup.lat, dropoff.lat),
-              lng: Math.min(pickup.lng, dropoff.lng),
-            },
-            center: {
-              lat: (pickup.lat + dropoff.lat) / 2,
-              lng: (pickup.lng + dropoff.lng) / 2,
-            },
-            northeast: {
-              lat: Math.max(pickup.lat, dropoff.lat),
-              lng: Math.max(pickup.lng, dropoff.lng),
-            },
-          }),
-          80,
-        );
-      } else if (pickup) {
+        const bounds = nativeBoundsFor(path);
+        if (bounds) await map.fitBounds(new LatLngBounds(bounds), 80);
+        return;
+      }
+
+      if (pickup && isValidLatLng(pickup)) {
         await map.setCamera({ coordinate: pickup, zoom: 14, animate: true });
       }
     };
@@ -249,17 +249,12 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
   }, [created, dropoff, pickup]);
 
   return (
-    <div
-      ref={hostRef}
-      className="absolute inset-0 block h-full w-full"
-      style={{ minWidth: "1px", minHeight: "1px" }}
-    >
+    <div ref={hostRef} className="absolute inset-0 block h-full w-full">
       <capacitor-google-map
         ref={(element) => {
           elementRef.current = element;
         }}
         className="block h-full w-full"
-        style={{ display: "block", width: "100%", height: "100%" }}
       />
     </div>
   );

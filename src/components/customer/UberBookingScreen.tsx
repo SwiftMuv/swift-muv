@@ -20,8 +20,8 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { isNativeAndroid, NativeBookingMap } from "@/components/customer/NativeBookingMap";
+import { GoogleRouteMap } from "@/components/maps/GoogleRouteMap";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
 import { Button } from "@/components/ui/button";
@@ -71,28 +71,6 @@ const VEHICLE_TILES: VehicleTile[] = [
   { name: "Van", capacity: "1–2 rooms · 2,000 lb", eta: "5 min away", image: CargoVanImg, fleetName: "Cargo Van" },
   { name: "16ft Truck", capacity: "1 bedroom · 4,500 lb", eta: "8 min away", image: BoxTruckImg, fleetName: "16ft Truck" },
   { name: "26ft Truck", capacity: "3+ bedrooms · 10,000 lb", eta: "12 min away", image: MovingTruckImg, fleetName: "26ft Truck" },
-];
-
-
-// Uber-style near-monochrome map — grayscale roads, muted land, subtle water.
-const UBER_MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#000000" }] },
-  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#9aa0a6" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#000000" }] },
-  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#2a2a2a" }] },
-  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#132015" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2e2e2e" }] },
-  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#b0b4b8" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#373737" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#4a4a4a" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#5c5c5c" }] },
-  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#242424" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#06131c" }] },
-  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#3d5866" }] },
 ];
 
 
@@ -157,7 +135,6 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const { user } = useAuth();
   const { t, formatCurrency } = useI18n();
   const nativeAndroid = isNativeAndroid();
-  const { ready: mapsReady, error: mapsError } = useGoogleMaps(!nativeAndroid);
   const [nativeMapReady, setNativeMapReady] = useState(false);
   const [nativeMapError, setNativeMapError] = useState<string | null>(null);
 
@@ -205,28 +182,6 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   };
 
 
-  // Map refs
-  const mapDivRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const pickupMarkerRef = useRef<google.maps.Marker | null>(null);
-  const dropoffMarkerRef = useRef<google.maps.Marker | null>(null);
-  const routeLineRef = useRef<google.maps.Polyline | null>(null);
-  const routeCasingRef = useRef<google.maps.Polyline | null>(null);
-
-  // Init map
-  useEffect(() => {
-    if (nativeAndroid || !mapsReady || !mapDivRef.current || mapRef.current) return;
-    mapRef.current = new google.maps.Map(mapDivRef.current, {
-      center: { lat: 45.5017, lng: -73.5673 },
-      zoom: 13,
-      disableDefaultUI: true,
-      gestureHandling: "greedy",
-      clickableIcons: false,
-      backgroundColor: "#000000",
-      styles: UBER_MAP_STYLES,
-    });
-  }, [mapsReady, nativeAndroid]);
-
   // Distance calc
   useEffect(() => {
     if (!pickupPicked || !dropoffPicked || pickup.trim().length < 5 || dropoff.trim().length < 5) {
@@ -264,76 +219,6 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     }, 700);
     return () => clearTimeout(timer);
   }, [pickup, dropoff, pickupPicked, dropoffPicked]);
-
-  // Custom Uber-style dot markers via SVG
-  const makeDotIcon = (fill: string, ring = "#ffffff"): google.maps.Symbol => ({
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: 8,
-    fillColor: fill,
-    fillOpacity: 1,
-    strokeColor: ring,
-    strokeWeight: 3,
-  });
-
-  // Update markers + route
-  useEffect(() => {
-    if (nativeAndroid || !mapRef.current || !mapsReady) return;
-    const map = mapRef.current;
-    const p = distance?.pickup;
-    const d = distance?.dropoff;
-
-    pickupMarkerRef.current?.setMap(null);
-    dropoffMarkerRef.current?.setMap(null);
-    routeLineRef.current?.setMap(null);
-    routeCasingRef.current?.setMap(null);
-    pickupMarkerRef.current = null;
-    dropoffMarkerRef.current = null;
-    routeLineRef.current = null;
-    routeCasingRef.current = null;
-
-    if (p) {
-      pickupMarkerRef.current = new google.maps.Marker({
-        position: { lat: p.lat, lng: p.lng },
-        map,
-        icon: makeDotIcon("#0F172A"),
-      });
-    }
-    if (d) {
-      dropoffMarkerRef.current = new google.maps.Marker({
-        position: { lat: d.lat, lng: d.lng },
-        map,
-        icon: makeDotIcon("#0F172A"),
-      });
-    }
-    if (p && d) {
-      const path = [
-        { lat: p.lat, lng: p.lng },
-        { lat: d.lat, lng: d.lng },
-      ];
-      // White casing under black line — Uber signature route look.
-      routeCasingRef.current = new google.maps.Polyline({
-        path,
-        strokeColor: "#ffffff",
-        strokeOpacity: 1,
-        strokeWeight: 8,
-        map,
-      });
-      routeLineRef.current = new google.maps.Polyline({
-        path,
-        strokeColor: "#0F172A",
-        strokeOpacity: 1,
-        strokeWeight: 5,
-        map,
-      });
-      const bounds = new google.maps.LatLngBounds();
-      bounds.extend({ lat: p.lat, lng: p.lng });
-      bounds.extend({ lat: d.lat, lng: d.lng });
-      map.fitBounds(bounds, { top: 80, bottom: 340, left: 48, right: 48 });
-    } else if (p) {
-      map.setCenter({ lat: p.lat, lng: p.lng });
-      map.setZoom(14);
-    }
-  }, [distance, mapsReady, nativeAndroid]);
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
@@ -461,24 +346,30 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         <NativeBookingMap
           pickup={distance?.pickup}
           dropoff={distance?.dropoff}
-          styles={UBER_MAP_STYLES}
           onReady={() => setNativeMapReady(true)}
           onError={setNativeMapError}
         />
       ) : (
-        <div ref={mapDivRef} className="absolute inset-0" />
+        <GoogleRouteMap
+          pickup={distance?.pickup}
+          dropoff={distance?.dropoff}
+          className="absolute inset-0"
+          routeMode="straight"
+          fitMode="always"
+          fallbackText="Loading map…"
+        />
       )}
-      {!(nativeAndroid ? nativeMapReady : mapsReady) && !(nativeAndroid ? nativeMapError : mapsError) && (
+      {nativeAndroid && !nativeMapReady && !nativeMapError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <Loader2 className="h-6 w-6 animate-spin text-white" />
         </div>
       )}
-      {(nativeAndroid ? nativeMapError : mapsError) && (
+      {nativeAndroid && nativeMapError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black px-8 text-center">
           <div className="max-w-sm space-y-2">
             <AlertCircle className="mx-auto h-7 w-7 text-red-400" />
             <p className="text-sm font-semibold text-white">Map unavailable</p>
-            <p className="text-xs text-neutral-400">{nativeAndroid ? nativeMapError : mapsError}</p>
+            <p className="text-xs text-neutral-400">{nativeMapError}</p>
           </div>
         </div>
       )}
