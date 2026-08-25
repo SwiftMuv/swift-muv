@@ -89,7 +89,75 @@ export const GoogleRouteMap = ({
       styles: SWIFTMUV_DARK_MAP_STYLES,
     });
     directionsRef.current = new maps.DirectionsService();
+
+    // The booking sheet and native WebView often resize after mount; without a
+    // resize nudge Google Maps keeps a stale (sometimes zero) viewport and
+    // paints only the empty background canvas.
+    const nudge = () => {
+      const map = mapRef.current;
+      if (!map) return;
+      const center = map.getCenter();
+      maps.event.trigger(map, "resize");
+      if (center) map.setCenter(center);
+    };
+    const observer = new ResizeObserver(() => nudge());
+    observer.observe(element);
+    const timers = [60, 250, 800].map((ms) => window.setTimeout(nudge, ms));
+    window.addEventListener("orientationchange", nudge);
+
+    return () => {
+      observer.disconnect();
+      timers.forEach((t) => window.clearTimeout(t));
+      window.removeEventListener("orientationchange", nudge);
+    };
   }, [initialCenter, ready]);
+
+  // Live device location (blue dot) — keeps the background map "alive" before
+  // the customer has picked pickup/drop-off points.
+  useEffect(() => {
+    if (!ready || !showUserLocation || !navigator.geolocation) return;
+    const maps = window.google.maps;
+    let dot: google.maps.Marker | null = null;
+    let centered = false;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const map = mapRef.current;
+        if (!map) return;
+        const point = { lat: position.coords.latitude, lng: position.coords.longitude };
+        if (!dot) {
+          dot = new maps.Marker({
+            map,
+            position: point,
+            zIndex: 8,
+            icon: {
+              path: maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: "#4285F4",
+              fillOpacity: 1,
+              strokeColor: "#FFFFFF",
+              strokeWeight: 3,
+            },
+          });
+        } else {
+          dot.setPosition(point);
+        }
+        if (!centered && !validPickup && !validDropoff && !validDriver) {
+          centered = true;
+          map.setCenter(point);
+          map.setZoom(15);
+        }
+      },
+      () => undefined,
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 },
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      dot?.setMap(null);
+    };
+  }, [ready, showUserLocation, validPickup, validDropoff, validDriver]);
+
 
   useEffect(() => {
     const map = mapRef.current;
