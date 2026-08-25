@@ -356,8 +356,10 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           className="absolute inset-0"
           routeMode="straight"
           fitMode="always"
+          showUserLocation
           fallbackText="Loading map…"
         />
+
       )}
       {nativeAndroid && !nativeMapReady && !nativeMapError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
