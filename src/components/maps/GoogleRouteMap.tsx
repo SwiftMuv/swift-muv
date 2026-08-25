@@ -294,10 +294,11 @@ export const GoogleRouteMap = ({
       <div ref={containerRef} className="h-full w-full" />
 
       {(!ready || error) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background text-xs text-muted-foreground">
-          {error ? "Map unavailable" : fallbackText}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background px-6 text-center text-xs text-muted-foreground">
+          {error ? `Map unavailable — ${error}` : fallbackText}
         </div>
       )}
+
 
       {showLiveBadge && (
         <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 shadow-md backdrop-blur-sm">
