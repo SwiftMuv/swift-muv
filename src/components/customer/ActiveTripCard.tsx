@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { Phone, MessageSquare, MoreHorizontal, Star, KeyRound, Share2, Copy, LifeBuoy, MapPin } from "lucide-react";
+import { KeyRound, Share2, Copy, LifeBuoy, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getVehicleImage } from "@/lib/vehicleImages";
 import JobChatSheet from "@/components/shared/JobChatSheet";
 import DriverInfoCard from "@/components/customer/DriverInfoCard";
+import DriverTrackingMap from "@/components/tracking/DriverTrackingMap";
+import { haversineKm, type LatLngLiteral } from "@/lib/mapCore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,44 +38,6 @@ interface DriverInfo {
   current_lng: number | null;
 }
 
-const carIcon = new L.DivIcon({
-  html: `<div style="width:40px;height:40px;background:#ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.6)">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-2.7-3.6A2 2 0 0 0 13.7 5H6.3a2 2 0 0 0-1.6.9L2 9.5l-2 1.1V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
-  </div>`,
-  className: "",
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-});
-
-const pickupIcon = new L.DivIcon({
-  html: `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-    <div style="background:#fff;color:#000;font:600 11px/1 'DM Sans',sans-serif;padding:5px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.5)">Pick-up spot</div>
-    <div style="width:14px;height:14px;background:#fff;border:3px solid #000;border-radius:3px"></div>
-  </div>`,
-  className: "",
-  iconSize: [90, 40],
-  iconAnchor: [45, 40],
-});
-
-function FitBounds({ points }: { points: [number, number][] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (points.length === 0) return;
-    if (points.length === 1) map.setView(points[0], 14);
-    else map.fitBounds(L.latLngBounds(points), { padding: [50, 50] });
-  }, [map, points]);
-  return null;
-}
-
-const haversineKm = (a: [number, number], b: [number, number]) => {
-  const R = 6371;
-  const dLat = ((b[0] - a[0]) * Math.PI) / 180;
-  const dLng = ((b[1] - a[1]) * Math.PI) / 180;
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((a[0] * Math.PI) / 180) * Math.cos((b[0] * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-};
 
 const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Props) => {
   const { t } = useI18n();
@@ -84,6 +45,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
   const [completionCode, setCompletionCode] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [routeEtaMin, setRouteEtaMin] = useState<number | null>(null);
   const driverIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -136,21 +98,21 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
     };
   }, [bookingId]);
 
-  const driverPos = useMemo<[number, number] | null>(
-    () => (info?.current_lat != null && info?.current_lng != null ? [info.current_lat, info.current_lng] : null),
+  const driverPos = useMemo<LatLngLiteral | null>(
+    () => (info?.current_lat != null && info?.current_lng != null ? { lat: info.current_lat, lng: info.current_lng } : null),
     [info?.current_lat, info?.current_lng],
   );
-  const pickupPos = useMemo<[number, number] | null>(
-    () => (pickupLat != null && pickupLng != null ? [pickupLat, pickupLng] : null),
+  const pickupPos = useMemo<LatLngLiteral | null>(
+    () => (pickupLat != null && pickupLng != null ? { lat: pickupLat, lng: pickupLng } : null),
     [pickupLat, pickupLng],
   );
 
   if (!info) return null;
 
-  const points = [driverPos, pickupPos].filter(Boolean) as [number, number][];
+  const hasMapPoints = Boolean(driverPos || pickupPos);
   const km = driverPos && pickupPos ? haversineKm(driverPos, pickupPos) : null;
   const miles = km != null ? km * 0.621371 : null;
-  const etaMin = km != null ? Math.max(1, Math.round((km / 30) * 60)) : null;
+  const etaMin = routeEtaMin ?? (km != null ? Math.max(1, Math.round((km / 30) * 60)) : null);
 
   const photo = info.profile_picture_url || info.avatar_url || undefined;
   const carImg = info.vehicle_photo_url || getVehicleImage(info.vehicle_category);
@@ -166,27 +128,12 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
     <div className="overflow-hidden rounded-2xl bg-black text-white">
       {/* Map */}
       <div className="relative h-56 w-full bg-black">
-        {points.length > 0 ? (
-          <MapContainer
-            center={points[0]}
-            zoom={14}
-            scrollWheelZoom={false}
-            zoomControl={false}
-            attributionControl={false}
-            className="h-full w-full"
-            style={{ background: "#000000" }}
-          >
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-            <FitBounds points={points} />
-            {points.length === 2 && (
-              <>
-                <Polyline positions={points} pathOptions={{ color: "#ffffff", weight: 7, opacity: 0.25 }} />
-                <Polyline positions={points} pathOptions={{ color: "#ffffff", weight: 4, opacity: 1 }} />
-              </>
-            )}
-            {pickupPos && <Marker position={pickupPos} icon={pickupIcon} />}
-            {driverPos && <Marker position={driverPos} icon={carIcon} />}
-          </MapContainer>
+        {hasMapPoints ? (
+          <DriverTrackingMap
+            driverLocation={driverPos}
+            pickupLocation={pickupPos}
+            onEtaUpdate={setRouteEtaMin}
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-white/50">
             {t("cust.trip.waitingLocation")}
@@ -257,7 +204,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
               onSelect={() => {
                 if (pickupPos) {
                   window.open(
-                    `https://www.google.com/maps/search/?api=1&query=${pickupPos[0]},${pickupPos[1]}`,
+                    `https://www.google.com/maps/search/?api=1&query=${pickupPos.lat},${pickupPos.lng}`,
                     "_blank",
                     "noopener",
                   );
