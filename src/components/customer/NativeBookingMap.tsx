@@ -47,8 +47,10 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
         className="absolute inset-0 h-full w-full"
         routeMode="straight"
         fitMode="always"
+        showUserLocation
         fallbackText="Loading map…"
       />
+
     </div>
   );
 };
