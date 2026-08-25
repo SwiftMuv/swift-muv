@@ -53,7 +53,13 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
   const polylineIdsRef = useRef<string[]>([]);
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
-  const [created, setCreated] = useState(false);
+  const cameraRef = useRef<{ coordinate: LatLngLiteral; zoom: number }>({
+    coordinate: SWIFTMUV_DEFAULT_CENTER,
+    zoom: 13,
+  });
+  // 0 = no live native map. Increments on every successful (re)creation so the
+  // route/marker effect re-applies its overlays onto the fresh map instance.
+  const [mapEpoch, setMapEpoch] = useState(0);
 
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
@@ -67,7 +73,10 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
 
     let active = true;
     let startupTimer: number | undefined;
-    let resizeObserver: ResizeObserver | undefined;
+    let rebuildTimer: number | undefined;
+    let creating = false;
+    let announcedReady = false;
+    let lastSize = { width: 0, height: 0 };
 
     const applyFullScreenBounds = () => {
       const { width, height } = getViewportSize();
@@ -107,114 +116,185 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
       };
     };
 
-    const waitForNonZeroBounds = (timeoutMs = 5000) =>
+    const hasUsableSize = () => {
+      const bounds = measuredBounds();
+      return bounds.width > 1 && bounds.height > 1 ? bounds : null;
+    };
+
+    const waitForNonZeroBounds = (timeoutMs = 8000) =>
       new Promise<ReturnType<typeof measuredBounds>>((resolve, reject) => {
-        const read = () => {
-          const bounds = measuredBounds();
-          return bounds.width > 0 && bounds.height > 0 ? bounds : null;
-        };
-        const immediate = read();
+        const immediate = hasUsableSize();
         if (immediate) {
           resolve(immediate);
           return;
         }
 
         let settled = false;
+        let poll: number | undefined;
+        let observer: ResizeObserver | undefined;
         const finish = (bounds: ReturnType<typeof measuredBounds> | null) => {
           if (settled) return;
           settled = true;
-          resizeObserver?.disconnect();
+          observer?.disconnect();
+          if (poll) window.clearInterval(poll);
           window.clearTimeout(timer);
           if (bounds) resolve(bounds);
           else reject(new Error("map container has no size"));
         };
 
-        resizeObserver = new ResizeObserver(() => finish(read()));
-        resizeObserver.observe(element);
-        const timer = window.setTimeout(() => finish(read()), timeoutMs);
+        observer = new ResizeObserver(() => finish(hasUsableSize()));
+        observer.observe(element);
+        // Layout can settle without a ResizeObserver entry (e.g. WebView first
+        // paint after a route change), so poll as a safety net.
+        poll = window.setInterval(() => finish(hasUsableSize()), 120);
+        const timer = window.setTimeout(() => finish(hasUsableSize()), timeoutMs);
       });
+
+    const destroyCurrentMap = async () => {
+      const map = mapRef.current;
+      mapRef.current = null;
+      markerIdsRef.current = [];
+      polylineIdsRef.current = [];
+      if (!map) return;
+      try {
+        await map.destroy();
+      } catch {
+        /* map already gone */
+      }
+    };
 
     const createNativeMap = async () => {
-      applyFullScreenBounds();
-      await nextFrame();
-      await nextFrame();
-      const bounds = await waitForNonZeroBounds();
-      if (!active) return;
+      if (!active || creating) return;
+      creating = true;
+      try {
+        applyFullScreenBounds();
+        await nextFrame();
+        await nextFrame();
+        const bounds = await waitForNonZeroBounds();
+        if (!active) return;
 
-      startupTimer = window.setTimeout(() => {
-        if (active && !mapRef.current) {
-          onErrorRef.current("Native Google Map failed: startup timed out. Verify the Android Maps SDK key, package name, SHA-1, and network access.");
+        await destroyCurrentMap();
+
+        startupTimer = window.setTimeout(() => {
+          if (active && !mapRef.current) {
+            onErrorRef.current(
+              "Native Google Map failed: startup timed out. Verify the Android Maps SDK key, package name, SHA-1, and network access.",
+            );
+          }
+        }, 12000);
+
+        const map = await GoogleMap.create({
+          id: MAP_ID,
+          element,
+          apiKey: NATIVE_MAP_KEY,
+          forceCreate: true,
+          config: {
+            center: cameraRef.current.coordinate,
+            zoom: cameraRef.current.zoom,
+            width: bounds.width,
+            height: bounds.height,
+            x: bounds.x,
+            y: bounds.y,
+            mapTypeId: "roadmap",
+            androidLiteMode: false,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            styles: SWIFTMUV_DARK_MAP_STYLES,
+          },
+        });
+
+        if (startupTimer) window.clearTimeout(startupTimer);
+
+        if (!active) {
+          await map.destroy();
+          return;
         }
-      }, 12000);
 
-      const map = await GoogleMap.create({
-        id: MAP_ID,
-        element,
-        apiKey: NATIVE_MAP_KEY,
-        forceCreate: true,
-        config: {
-          center: SWIFTMUV_DEFAULT_CENTER,
-          zoom: 13,
-          width: bounds.width,
-          height: bounds.height,
-          x: bounds.x,
-          y: bounds.y,
-          mapTypeId: "roadmap",
-          androidLiteMode: false,
-          devicePixelRatio: window.devicePixelRatio || 1,
-          styles: SWIFTMUV_DARK_MAP_STYLES,
-        },
-      });
-
-      if (!active) {
-        await map.destroy();
-        return;
+        mapRef.current = map;
+        lastSize = { width: bounds.width, height: bounds.height };
+        setMapEpoch((epoch) => epoch + 1);
+        if (!announcedReady) {
+          announcedReady = true;
+          onReadyRef.current();
+        }
+      } catch (error: unknown) {
+        if (startupTimer) window.clearTimeout(startupTimer);
+        if (!active) return;
+        const message = error instanceof Error ? error.message : String(error);
+        onErrorRef.current(friendlyNativeMapError(message));
+      } finally {
+        creating = false;
       }
-
-      if (startupTimer) window.clearTimeout(startupTimer);
-      mapRef.current = map;
-      setCreated(true);
-      onReadyRef.current();
     };
 
-    const resizeNativeMap = () => {
+    // The native view is a separate Android surface: it does not reflow with the
+    // WebView, so a real size change requires recreating it at the new bounds.
+    const scheduleRebuild = (force = false) => {
+      if (!active) return;
+      if (rebuildTimer) window.clearTimeout(rebuildTimer);
+      rebuildTimer = window.setTimeout(() => {
+        if (!active) return;
+        applyFullScreenBounds();
+        const bounds = hasUsableSize();
+        if (!bounds) return;
+        const changed =
+          Math.abs(bounds.width - lastSize.width) > 2 || Math.abs(bounds.height - lastSize.height) > 2;
+        if (!force && mapRef.current && !changed) return;
+        void createNativeMap();
+      }, 220);
+    };
+
+    const handleViewportChange = () => {
       applyFullScreenBounds();
+      scheduleRebuild();
     };
 
-    window.addEventListener("resize", resizeNativeMap);
-    window.addEventListener("orientationchange", resizeNativeMap);
+    // Remount after navigation / app resume: the native surface is detached when
+    // the WebView page is hidden, so force a fresh map when we become visible.
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") scheduleRebuild(true);
+    };
 
-    void createNativeMap().catch((error: unknown) => {
-      if (startupTimer) window.clearTimeout(startupTimer);
-      const message = error instanceof Error ? error.message : String(error);
-      onErrorRef.current(friendlyNativeMapError(message));
-    });
+    const hostObserver = new ResizeObserver(() => scheduleRebuild());
+    hostObserver.observe(element);
+
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("orientationchange", handleViewportChange);
+    window.addEventListener("pageshow", handleVisibility);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    void createNativeMap();
 
     return () => {
       active = false;
       if (startupTimer) window.clearTimeout(startupTimer);
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", resizeNativeMap);
-      window.removeEventListener("orientationchange", resizeNativeMap);
-      setCreated(false);
+      if (rebuildTimer) window.clearTimeout(rebuildTimer);
+      hostObserver.disconnect();
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("orientationchange", handleViewportChange);
+      window.removeEventListener("pageshow", handleVisibility);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      setMapEpoch(0);
       document.documentElement.classList.remove("native-map-active");
       document.body.classList.remove("native-map-active");
       transparentAncestors.forEach((node) => node.classList.remove("native-map-host"));
-      const map = mapRef.current;
-      mapRef.current = null;
-      if (map) void map.destroy();
+      void destroyCurrentMap();
     };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!created || !map) return;
+    if (!mapEpoch || !map) return;
+
+    let cancelled = false;
 
     const updateRoute = async () => {
       if (markerIdsRef.current.length) await map.removeMarkers(markerIdsRef.current);
       if (polylineIdsRef.current.length) await map.removePolylines(polylineIdsRef.current);
       markerIdsRef.current = [];
       polylineIdsRef.current = [];
+      if (cancelled) return;
 
       const points = [pickup, dropoff].filter(isValidLatLng);
       if (points.length) {
@@ -225,6 +305,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
           })),
         );
       }
+      if (cancelled) return;
 
       if (pickup && dropoff && isValidLatLng(pickup) && isValidLatLng(dropoff)) {
         const path = [pickup, dropoff];
@@ -234,19 +315,33 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
         ]);
         const bounds = nativeBoundsFor(path);
         if (bounds) await map.fitBounds(new LatLngBounds(bounds), 80);
+        cameraRef.current = {
+          coordinate: {
+            lat: (pickup.lat + dropoff.lat) / 2,
+            lng: (pickup.lng + dropoff.lng) / 2,
+          },
+          zoom: 12,
+        };
         return;
       }
 
       if (pickup && isValidLatLng(pickup)) {
+        cameraRef.current = { coordinate: pickup, zoom: 14 };
         await map.setCamera({ coordinate: pickup, zoom: 14, animate: true });
       }
     };
 
     void updateRoute().catch((error: unknown) => {
+      if (cancelled) return;
       const message = error instanceof Error ? error.message : String(error);
       onErrorRef.current(`Native map route failed: ${message}`);
     });
-  }, [created, dropoff, pickup]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mapEpoch, dropoff, pickup]);
+
 
   return (
     <div ref={hostRef} className="absolute inset-0 block h-full w-full">
