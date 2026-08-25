@@ -340,7 +340,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   };
 
   return (
-    <div className={cn("fixed inset-0 z-30 font-sans text-white", nativeAndroid ? "bg-transparent" : "bg-black")}>
+    <div className={cn("fixed inset-0 z-30 font-sans text-white bg-black")}>
       {/* Full-screen map */}
       {nativeAndroid ? (
         <NativeBookingMap
