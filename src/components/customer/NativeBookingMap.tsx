@@ -179,38 +179,6 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
 
     const resizeNativeMap = () => {
       applyFullScreenBounds();
-      const map = mapRef.current;
-      if (!map) return;
-      const bounds = measuredBounds();
-      void map.setCamera({ coordinate: pickup && isValidLatLng(pickup) ? pickup : SWIFTMUV_DEFAULT_CENTER, zoom: 13 });
-      void GoogleMap.create({
-        id: MAP_ID,
-        element,
-        apiKey: NATIVE_MAP_KEY,
-        forceCreate: true,
-        config: {
-          center: pickup && isValidLatLng(pickup) ? pickup : SWIFTMUV_DEFAULT_CENTER,
-          zoom: 13,
-          width: bounds.width,
-          height: bounds.height,
-          x: bounds.x,
-          y: bounds.y,
-          mapTypeId: "roadmap",
-          androidLiteMode: false,
-          devicePixelRatio: window.devicePixelRatio || 1,
-          styles: SWIFTMUV_DARK_MAP_STYLES,
-        },
-      }).then((nextMap) => {
-        if (!active) {
-          void nextMap.destroy();
-          return;
-        }
-        mapRef.current = nextMap;
-        setCreated(true);
-      }).catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        onErrorRef.current(friendlyNativeMapError(message));
-      });
     };
 
     window.addEventListener("resize", resizeNativeMap);
@@ -236,7 +204,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
       mapRef.current = null;
       if (map) void map.destroy();
     };
-  }, [pickup]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
