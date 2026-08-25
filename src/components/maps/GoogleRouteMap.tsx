@@ -25,9 +25,12 @@ interface GoogleRouteMapProps {
   fitMode?: "always" | "smart";
   rounded?: boolean;
   showLiveBadge?: boolean;
+  /** Track the device GPS position and show it as a live blue dot. */
+  showUserLocation?: boolean;
   fallbackText?: string;
   onEtaUpdate?: (minutes: number) => void;
 }
+
 
 const defaultPadding: google.maps.Padding = { top: 80, right: 48, bottom: 340, left: 48 };
 const compactPadding: google.maps.Padding = { top: 40, right: 40, bottom: 40, left: 40 };
