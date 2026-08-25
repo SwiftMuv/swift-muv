@@ -1,7 +1,11 @@
 /// <reference types="google.maps" />
 import { useEffect, useState } from "react";
 
-const LOCAL_BROWSER_KEY = (import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY as string | undefined)?.trim();
+// Project Google Maps browser key (Maps JavaScript API enabled). Baked in so
+// native/Android builds always have a key even without a local .env file.
+const FALLBACK_BROWSER_KEY = "AIzaSyDjl-mHd2ViaJq2SaPeHV_s7CpaRFqWkV0";
+const LOCAL_BROWSER_KEY =
+  (import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY as string | undefined)?.trim() || FALLBACK_BROWSER_KEY;
 const LOVABLE_BROWSER_KEY = (
   import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined
 )?.trim();
