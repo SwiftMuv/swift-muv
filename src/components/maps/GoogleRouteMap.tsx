@@ -44,7 +44,9 @@ export const GoogleRouteMap = ({
   fitMode = "always",
   rounded = false,
   showLiveBadge = false,
+  showUserLocation = false,
   fallbackText = "Loading map…",
+
   onEtaUpdate,
 }: GoogleRouteMapProps) => {
   const { ready, error } = useGoogleMaps(true);
