@@ -124,6 +124,12 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
       }
       if (!active) return;
 
+      const bounds = mapElement.getBoundingClientRect();
+      const mapWidth = Math.max(1, Math.round(bounds.width || window.innerWidth));
+      const mapHeight = Math.max(1, Math.round(bounds.height || window.innerHeight));
+      const mapX = Math.round(bounds.x || 0);
+      const mapY = Math.round(bounds.y || 0);
+
       startupTimer = window.setTimeout(() => {
         if (active && !mapRef.current) {
           onErrorRef.current("Native map startup timed out. Verify the Android Maps SDK key and its package/SHA-1 restrictions.");
@@ -141,6 +147,13 @@ export const NativeBookingMap = ({ pickup, dropoff, styles, onReady, onError }: 
         config: {
           center: { lat: 45.5017, lng: -73.5673 },
           zoom: 13,
+          width: mapWidth,
+          height: mapHeight,
+          x: mapX,
+          y: mapY,
+          mapTypeId: "roadmap",
+          androidLiteMode: false,
+          devicePixelRatio: window.devicePixelRatio || 1,
           styles,
         },
       });
