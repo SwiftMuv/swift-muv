@@ -1,5 +1,5 @@
 /// <reference types="google.maps" />
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import {
   SWIFTMUV_DARK_MAP_STYLES,
