@@ -22,6 +22,7 @@ import About from "./pages/About.tsx";
 import Terms from "./pages/Terms.tsx";
 import TermsOfService from "./pages/TermsOfService.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import AccountDeletion from "./pages/AccountDeletion.tsx";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/account-deletion" element={<AccountDeletion />} />
             <Route path="/index" element={<EntryRedirect />} />
             <Route path="/login" element={<CustomerLogin />} />
             <Route path="/driver/login" element={<DriverLogin />} />
