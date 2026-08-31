@@ -69,10 +69,13 @@ export const GoogleRouteMap = ({
   const validDropoff = isValidLatLng(dropoff) ? dropoff : null;
   const validDriver = isValidLatLng(driver) ? driver : null;
 
-  const initialCenter = useMemo(
-    () => validDriver ?? validPickup ?? validDropoff ?? SWIFTMUV_DEFAULT_CENTER,
-    [validDriver, validPickup, validDropoff],
-  );
+  // Keep the latest proposed center in a ref so the init effect can stay
+  // stable (deps [ready] only). A changing center must NOT re-run init: the
+  // re-run exits early once mapRef.current exists, which previously killed
+  // the ResizeObserver/orientation resize handling for the map's lifetime.
+  const initialCenter = validDriver ?? validPickup ?? validDropoff ?? SWIFTMUV_DEFAULT_CENTER;
+  const initialCenterRef = useRef(initialCenter);
+  initialCenterRef.current = initialCenter;
 
   useEffect(() => {
     const element = containerRef.current;
@@ -80,7 +83,7 @@ export const GoogleRouteMap = ({
 
     const maps = window.google.maps;
     mapRef.current = new maps.Map(element, {
-      center: initialCenter,
+      center: initialCenterRef.current,
       zoom: 13,
       disableDefaultUI: true,
       clickableIcons: false,
@@ -110,7 +113,7 @@ export const GoogleRouteMap = ({
       timers.forEach((t) => window.clearTimeout(t));
       window.removeEventListener("orientationchange", nudge);
     };
-  }, [initialCenter, ready]);
+  }, [ready]);
 
   // Live device location (blue dot) — keeps the background map "alive" before
   // the customer has picked pickup/drop-off points.
