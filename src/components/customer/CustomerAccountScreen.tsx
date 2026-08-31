@@ -1,4 +1,4 @@
-import { FileText, Info, LogOut, Mail, Shield, User as UserIcon } from "lucide-react";
+import { FileText, Info, LogOut, Mail, Shield, Trash2, User as UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,9 +64,23 @@ export const CustomerAccountScreen = () => {
       </Button>
 
       <Button asChild variant="outline" className="w-full">
+        <Link to="/privacy-policy">
+          <Shield className="w-4 h-4 mr-2" />
+          Privacy Policy
+        </Link>
+      </Button>
+
+      <Button asChild variant="outline" className="w-full">
         <Link to="/about">
           <Info className="w-4 h-4 mr-2" />
           {t("common.aboutUs")}
+        </Link>
+      </Button>
+
+      <Button asChild variant="outline" className="w-full">
+        <Link to="/account-deletion">
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete My Account
         </Link>
       </Button>
 
