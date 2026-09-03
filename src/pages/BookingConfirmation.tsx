@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { haversineKm, type LatLngLiteral } from "@/lib/mapCore";
 
-const ACTIVE_STATUSES = ["pending", "assigned", "in_progress"];
+const ACTIVE_STATUSES = ["pending", "assigned", "in_progress"] as const;
 
 interface ActiveBooking {
   id: string;
