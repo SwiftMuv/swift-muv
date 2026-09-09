@@ -1,7 +1,25 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+
+// The Android WebView serves the bundled app from a local origin that does not
+// answer CORS preflights. Vite marks its <link>/<script> tags with
+// `crossorigin`, which makes the WebView drop the stylesheet and render the app
+// completely unstyled. Strip the attribute from the built HTML.
+const stripCrossorigin = (): Plugin => ({
+  name: "strip-crossorigin",
+  enforce: "post",
+  generateBundle(_options, bundle) {
+    for (const file of Object.values(bundle)) {
+      if (file.type === "asset" && file.fileName.endsWith(".html") && typeof file.source === "string") {
+        file.source = file.source.replace(/\s+crossorigin(="[^"]*")?/g, "");
+      }
+    }
+  },
+});
+
+
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -13,7 +31,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), stripCrossorigin(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
