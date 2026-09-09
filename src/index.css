@@ -125,3 +125,17 @@
     padding-bottom: env(safe-area-inset-bottom, 16px);
   }
 }
+
+/* The Android Maps SDK renders below the WebView. These layers must remain
+   transparent while the native booking map is mounted. */
+html.native-map-visible,
+html.native-map-visible body,
+html.native-map-visible #root {
+  background: transparent !important;
+}
+
+capacitor-google-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
