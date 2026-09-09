@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
-import { GoogleMap } from "@capacitor/google-maps";
+import { GoogleMap, LatLngBounds } from "@capacitor/google-maps";
 import { SWIFTMUV_DEFAULT_CENTER, isValidLatLng, type LatLngLiteral } from "@/lib/mapCore";
 
 interface Props {
@@ -24,6 +24,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
   const mapRef = useRef<GoogleMap | null>(null);
   const markerIdsRef = useRef<string[]>([]);
   const polylineIdsRef = useRef<string[]>([]);
+  const [mapReady, setMapReady] = useState(false);
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
 
@@ -78,6 +79,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
       }
 
       mapRef.current = map;
+      setMapReady(true);
       await map.enableTouch();
       try {
         await map.enableCurrentLocation(true);
@@ -101,6 +103,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
       observer?.disconnect();
       const map = mapRef.current;
       mapRef.current = null;
+      setMapReady(false);
       if (map) void map.destroy().catch(() => undefined);
       document.documentElement.classList.remove("native-map-visible");
       document.body.classList.remove("native-map-visible");
@@ -110,7 +113,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!mapReady || !map) return;
 
     let cancelled = false;
     const syncRoute = async () => {
@@ -132,16 +135,22 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
         polylineIdsRef.current = await map.addPolylines([
           { path: points, strokeColor: "#0F172A", strokeOpacity: 1, strokeWeight: 6 },
         ]);
-        await map.fitBounds({
-          southwest: {
-            lat: Math.min(points[0].lat, points[1].lat),
-            lng: Math.min(points[0].lng, points[1].lng),
+        const southwest = {
+          lat: Math.min(points[0].lat, points[1].lat),
+          lng: Math.min(points[0].lng, points[1].lng),
+        };
+        const northeast = {
+          lat: Math.max(points[0].lat, points[1].lat),
+          lng: Math.max(points[0].lng, points[1].lng),
+        };
+        await map.fitBounds(new LatLngBounds({
+          southwest,
+          center: {
+            lat: (southwest.lat + northeast.lat) / 2,
+            lng: (southwest.lng + northeast.lng) / 2,
           },
-          northeast: {
-            lat: Math.max(points[0].lat, points[1].lat),
-            lng: Math.max(points[0].lng, points[1].lng),
-          },
-        }, 80);
+          northeast,
+        }), 80);
       } else if (points.length === 1) {
         await map.setCamera({ coordinate: points[0], zoom: 14, animate: true });
       }
@@ -156,7 +165,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
     return () => {
       cancelled = true;
     };
-  }, [pickup, dropoff]);
+  }, [mapReady, pickup, dropoff]);
 
   return (
     <capacitor-google-map
