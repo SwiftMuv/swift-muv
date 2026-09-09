@@ -10,10 +10,15 @@ import { componentTagger } from "lovable-tagger";
 const stripCrossorigin = (): Plugin => ({
   name: "strip-crossorigin",
   enforce: "post",
-  transformIndexHtml(html) {
-    return html.replace(/\s+crossorigin(=".*?")?/g, "");
+  generateBundle(_options, bundle) {
+    for (const file of Object.values(bundle)) {
+      if (file.type === "asset" && file.fileName.endsWith(".html") && typeof file.source === "string") {
+        file.source = file.source.replace(/\s+crossorigin(="[^"]*")?/g, "");
+      }
+    }
   },
 });
+
 
 
 // https://vitejs.dev/config/
