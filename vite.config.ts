@@ -65,7 +65,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), stripCrossorigin(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), stripCrossorigin(), inlineStyles(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
