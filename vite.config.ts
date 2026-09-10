@@ -19,6 +19,40 @@ const stripCrossorigin = (): Plugin => ({
   },
 });
 
+// Some WebView builds still refuse to load the external stylesheet (CORS on the
+// local asset origin), which renders the app completely unstyled on device.
+// Inlining the CSS into the HTML removes that failure mode entirely and keeps
+// the result identical on macOS and Windows builds.
+const inlineStyles = (): Plugin => ({
+  name: "inline-styles",
+  enforce: "post",
+  generateBundle(_options, bundle) {
+    const cssFiles = Object.values(bundle).filter(
+      (file): file is typeof file & { type: "asset"; source: string } =>
+        file.type === "asset" && file.fileName.endsWith(".css") && typeof file.source === "string",
+    );
+    if (!cssFiles.length) return;
+
+    for (const file of Object.values(bundle)) {
+      if (file.type !== "asset" || !file.fileName.endsWith(".html") || typeof file.source !== "string") continue;
+      let html = file.source;
+      for (const css of cssFiles) {
+        const linkPattern = new RegExp(
+          `<link[^>]+href="[^"]*${css.fileName.split("/").pop()!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>`,
+          "g",
+        );
+        html = html.replace(linkPattern, "");
+      }
+      const styles = cssFiles.map((css) => `<style>${css.source}</style>`).join("\n");
+      html = html.replace("</head>", `${styles}\n</head>`);
+      file.source = html;
+    }
+
+    for (const css of cssFiles) delete bundle[css.fileName];
+  },
+});
+
+
 
 
 // https://vitejs.dev/config/
@@ -31,7 +65,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), stripCrossorigin(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), stripCrossorigin(), inlineStyles(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
