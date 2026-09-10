@@ -164,7 +164,7 @@ const CustomerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className={`min-h-screen pb-20 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent" : "bg-background"}`}>
       <TermsAgreementModal role="customer" />
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b">
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
