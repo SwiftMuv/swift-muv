@@ -167,7 +167,7 @@ const CustomerDashboard = () => {
   return (
     <div className={`min-h-screen pb-20 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent" : "bg-background"}`}>
       <TermsAgreementModal role="customer" />
-      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b">
+      <header className={`sticky top-0 z-40 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent border-b-0" : "bg-card/90 backdrop-blur-xl border-b"}`}>
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
           <div className="w-11 h-11 overflow-visible shrink-0">
             <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
