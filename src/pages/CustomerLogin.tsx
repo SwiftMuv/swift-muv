@@ -103,7 +103,7 @@ const CustomerLogin = () => {
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.emailPlaceholder")} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-white">{t("auth.password")}</Label>
+            <Label htmlFor="password" className="text-foreground">{t("auth.password")}</Label>
             <div className="relative">
               <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="pr-10" />
               <button

@@ -30,7 +30,7 @@ const PwInput = ({
   hideLabel: string;
 }) => (
   <div className="space-y-2">
-    <Label htmlFor={id} className="text-white">{label}</Label>
+    <Label htmlFor={id} className="text-foreground">{label}</Label>
     <div className="relative">
       <Input
         id={id}
