@@ -590,7 +590,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       <div
                         className={cn(
                           "flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-neutral-900",
-                          active && "ring-2 ring-white",
+                          active && "ring-2 ring-primary",
                         )}
                       >
                         <img
@@ -663,7 +663,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 <Button
                   onClick={() => setStep("schedule")}
                   disabled={!routeReady}
-                  className="mt-2 h-14 w-full rounded-2xl bg-white text-[16px] font-bold text-black shadow-lg hover:bg-neutral-200 active:scale-[0.99] transition disabled:bg-neutral-800 disabled:text-neutral-500"
+                  className="mt-2 h-14 w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground shadow-[var(--shadow-primary)] hover:brightness-110 active:scale-[0.99] transition disabled:bg-neutral-800 disabled:text-neutral-500"
                 >
                   {t("cust.booking.chooseVehicleBtn", { name: selectedTile.name })}
                 </Button>
