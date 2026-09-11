@@ -68,7 +68,7 @@ const CustomerLogin = () => {
           <img
             src={swiftmuvLogo}
             alt="SwiftMuv logo"
-            className="mx-auto h-[15.75rem] max-h-[30vh] w-auto max-w-full object-contain"
+            className="mx-auto h-[21rem] max-h-[40vh] w-auto max-w-full object-contain"
           />
 
           <h1 className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
