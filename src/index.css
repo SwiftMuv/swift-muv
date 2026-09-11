@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* SwiftMuv brand palette — dark slate surfaces with orange and amber accents. */
+    /* SwiftMuv logo palette — dark slate surfaces with deep blue and electric teal. */
     color-scheme: dark;
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
@@ -17,9 +17,9 @@
     --popover: 220 38% 15%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 14 100% 57%;
+    --primary: 216 84% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 36 100% 50%;
+    --primary-glow: 174 75% 48%;
 
     --secondary: 218 30% 20%;
     --secondary-foreground: 210 40% 98%;
@@ -27,8 +27,8 @@
     --muted: 218 30% 20%;
     --muted-foreground: 215 20% 72%;
 
-    --accent: 45 100% 51%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 174 75% 43%;
+    --accent-foreground: 0 0% 100%;
 
     --section: 221 42% 13%;
 
@@ -37,21 +37,21 @@
 
     --border: 217 27% 25%;
     --input: 217 27% 25%;
-    --ring: 14 100% 57%;
+    --ring: 174 75% 43%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(14 100% 57%), hsl(36 100% 50%));
-    --shadow-primary: 0 8px 24px -8px hsl(14 100% 57% / 0.45);
+    --gradient-primary: linear-gradient(135deg, hsl(216 84% 35%), hsl(174 75% 43%));
+    --shadow-primary: 0 8px 24px -8px hsl(174 75% 43% / 0.4);
 
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 14 100% 57%;
+    --sidebar-primary: 174 75% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 218 30% 20%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 27% 25%;
-    --sidebar-ring: 14 100% 57%;
+    --sidebar-ring: 174 75% 43%;
 
     --swift-success: 152 76% 40%;
     --swift-warning: 45 100% 51%;
@@ -70,9 +70,9 @@
     --popover: 220 38% 15%;
     --popover-foreground: 210 40% 96%;
 
-    --primary: 14 100% 57%;
+    --primary: 216 84% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 36 100% 50%;
+    --primary-glow: 174 75% 48%;
 
     --secondary: 218 30% 20%;
     --secondary-foreground: 210 40% 96%;
@@ -80,24 +80,24 @@
     --muted: 218 30% 20%;
     --muted-foreground: 215 20% 72%;
 
-    --accent: 45 100% 51%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 174 75% 43%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 40%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217 27% 25%;
     --input: 217 27% 25%;
-    --ring: 14 100% 57%;
+    --ring: 174 75% 43%;
 
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 14 100% 57%;
+    --sidebar-primary: 174 75% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 218 30% 20%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 27% 25%;
-    --sidebar-ring: 14 100% 57%;
+    --sidebar-ring: 174 75% 43%;
   }
 }
 
