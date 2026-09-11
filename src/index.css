@@ -17,6 +17,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     --popover-border: 217 27% 80%;
+    --menu-background: 0 0% 100%;
+    --menu-foreground: 222 47% 11%;
+    --menu-border: 217 27% 72%;
 
     --primary: 216 84% 35%;
     --primary-foreground: 0 0% 100%;
@@ -71,6 +74,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     --popover-border: 217 27% 80%;
+    --menu-background: 0 0% 100%;
+    --menu-foreground: 222 47% 11%;
+    --menu-border: 217 27% 72%;
 
     --primary: 216 84% 35%;
     --primary-foreground: 0 0% 100%;
@@ -132,6 +138,15 @@
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* Radix menus render in a document-level portal. Keep their surface
+     independent from dark page containers, including Android WebView. */
+  .app-menu-surface {
+    background-color: hsl(var(--menu-background)) !important;
+    color: hsl(var(--menu-foreground)) !important;
+    border-color: hsl(var(--menu-border)) !important;
+    color-scheme: light;
   }
 }
 
