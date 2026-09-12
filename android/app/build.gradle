@@ -57,11 +57,25 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+// Android Studio used to package whichever WebView files happened to be left
+// by the last manual `cap sync`. That made device builds stale while the Vite
+// preview showed current styles. Rebuild and copy the web app for every native
+// build so the APK/AAB always contains the current source tree.
+tasks.register('prepareCapacitorWebAssets', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine '/bin/bash', '-lc', 'npm run build && npx cap copy android'
+}
+
 tasks.register('verifyCapacitorWebAssets') {
+    dependsOn prepareCapacitorWebAssets
     doLast {
         def indexHtml = file('src/main/assets/public/index.html')
         if (!indexHtml.exists()) {
-            throw new GradleException('Missing Android WebView assets. Run `npm run build` then `npx cap sync android` before opening/running the project in Android Studio.')
+            throw new GradleException('Android WebView assets were not generated. Confirm Node.js and npm are available to Android Studio.')
+        }
+        def html = indexHtml.getText('UTF-8')
+        if (!html.contains('<style>') || html.contains('rel="stylesheet"')) {
+            throw new GradleException('Android WebView styles were not embedded correctly; refusing to package an unstyled app.')
         }
     }
 }
