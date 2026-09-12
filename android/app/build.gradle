@@ -19,8 +19,8 @@ android {
             throw new GradleException('Missing SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY. Add it to ~/.gradle/gradle.properties before building Android.')
         }
         manifestPlaceholders = [SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY: mapsKey]
-        versionCode 8
-        versionName "1.0.7"
+        versionCode 9
+        versionName "1.0.8"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
