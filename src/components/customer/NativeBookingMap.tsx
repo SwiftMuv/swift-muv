@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { GoogleMap, LatLngBounds } from "@capacitor/google-maps";
-import { SWIFTMUV_DEFAULT_CENTER, isValidLatLng, type LatLngLiteral } from "@/lib/mapCore";
+import {
+  SWIFTMUV_DARK_MAP_STYLES,
+  SWIFTMUV_DEFAULT_CENTER,
+  isValidLatLng,
+  type LatLngLiteral,
+} from "@/lib/mapCore";
 
 interface Props {
   pickup?: LatLngLiteral | null;
@@ -65,6 +70,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
         config: {
           center,
           zoom: isValidLatLng(pickup) ? 14 : 12,
+          styles: SWIFTMUV_DARK_MAP_STYLES,
           width: Math.round(rect.width),
           height: Math.round(rect.height),
           x: Math.round(rect.left),
