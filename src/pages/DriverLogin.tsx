@@ -209,7 +209,7 @@ const DriverLogin = () => {
           <img
             src={swiftmuvLogo}
             alt="SwiftMuv logo"
-            className="mx-auto h-[15.75rem] max-h-[30vh] w-auto max-w-full object-contain"
+            className="mx-auto h-[7.875rem] max-h-[15vh] w-auto max-w-full object-contain"
           />
 
           <h1
