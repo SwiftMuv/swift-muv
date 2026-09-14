@@ -62,21 +62,61 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
       }
 
       const center = isValidLatLng(pickup) ? pickup : SWIFTMUV_DEFAULT_CENTER;
-      const map = await GoogleMap.create({
-        id: NATIVE_MAP_ID,
-        element,
-        apiKey: ANDROID_MAP_KEY,
-        forceCreate: true,
-        config: {
-          center,
-          zoom: isValidLatLng(pickup) ? 14 : 12,
-          styles: SWIFTMUV_DARK_MAP_STYLES,
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-          x: Math.round(rect.left),
-          y: Math.round(rect.top),
-          androidLiteMode: false,
-        },
+      const createConfig = {
+        center,
+        zoom: isValidLatLng(pickup) ? 14 : 12,
+        styles: SWIFTMUV_DARK_MAP_STYLES,
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        x: Math.round(rect.left),
+        y: Math.round(rect.top),
+        androidLiteMode: false,
+      };
+
+      // Retry once: the Android Maps SDK can reject the first attach while the
+      // WebView surface is still settling.
+      let map: GoogleMap | null = null;
+      let lastError: unknown = null;
+      for (let attempt = 0; attempt < 2 && !map; attempt += 1) {
+        try {
+          map = await GoogleMap.create({
+            id: NATIVE_MAP_ID,
+            element,
+            apiKey: ANDROID_MAP_KEY,
+            forceCreate: true,
+            config: createConfig,
+          });
+        } catch (error) {
+          lastError = error;
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 400));
+        }
+      }
+      if (!map) {
+        throw lastError instanceof Error ? lastError : new Error("native map could not be created");
+      }
+
+      if (cancelled) {
+        await map.destroy();
+        return;
+      }
+
+      // Wait for the first rendered frame (camera idle) before reporting ready,
+      // so the loading overlay never lifts while tiles are still blank.
+      // Falls back after 4s so a slow network can't trap the spinner forever.
+      await new Promise<void>((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
+        const timer = window.setTimeout(finish, 4000);
+        map!
+          .setOnCameraIdleListener(() => {
+            window.clearTimeout(timer);
+            finish();
+          })
+          .catch(() => finish());
       });
 
       if (cancelled) {
