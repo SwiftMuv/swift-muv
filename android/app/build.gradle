@@ -15,11 +15,21 @@ android {
         // Prefer the machine-local key. A project-wide value can silently
         // override a valid Mac key and produce an authenticated map surface
         // whose tiles turn beige after the first frame.
+        def envProps = new Properties()
+        def envFile = rootProject.projectDir.parentFile ? new File(rootProject.projectDir.parentFile, '.env') : null
+        if (envFile?.exists()) {
+            envFile.eachLine { line ->
+                def m = (line =~ /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"?([^"#]*)"?\s*$/)
+                if (m.matches()) { envProps.setProperty(m[0][1], m[0][2].trim()) }
+            }
+        }
         def mapsKey = localProps.getProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
             System.getenv('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
-            project.findProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?: ''
+            project.findProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
+            envProps.getProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
+            envProps.getProperty('VITE_GOOGLE_MAPS_BROWSER_KEY') ?: ''
         if (mapsKey.toString().trim().isEmpty()) {
-            throw new GradleException('Missing SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY. Add it to android/local.properties before building Android.')
+            logger.warn('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY not set; building without a native Maps key. Add it to android/local.properties for full map access.')
         }
         manifestPlaceholders = [SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY: mapsKey]
         versionCode 10
