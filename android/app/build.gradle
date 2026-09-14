@@ -76,7 +76,11 @@ apply from: 'capacitor.build.gradle'
 // build so the APK/AAB always contains the current source tree.
 tasks.register('prepareCapacitorWebAssets', Exec) {
     workingDir rootProject.projectDir.parentFile
-    commandLine '/bin/bash', '-lc', 'npm run build && npx cap copy android'
+    // `cap sync` (not just `cap copy`) is required: sync regenerates
+    // capacitor.plugins.json and the native plugin registration. Without it
+    // the app fails at runtime with "CapacitorGoogleMaps plugin is not
+    // implemented on android" even though the plugin is in package.json.
+    commandLine '/bin/bash', '-lc', 'npm run build && npx cap sync android'
 }
 
 tasks.register('verifyCapacitorWebAssets') {
