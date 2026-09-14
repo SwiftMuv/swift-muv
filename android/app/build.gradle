@@ -19,11 +19,11 @@ android {
             System.getenv('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
             project.findProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?: ''
         if (mapsKey.toString().trim().isEmpty()) {
-            throw new GradleException('Missing SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY. Add it to ~/.gradle/gradle.properties before building Android.')
+            throw new GradleException('Missing SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY. Add it to android/local.properties before building Android.')
         }
         manifestPlaceholders = [SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY: mapsKey]
-        versionCode 9
-        versionName "1.0.8"
+        versionCode 10
+        versionName "1.0.9"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
