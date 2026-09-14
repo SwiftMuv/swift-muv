@@ -12,9 +12,12 @@ android {
         if (localPropsFile.exists()) {
             localPropsFile.withInputStream { localProps.load(it) }
         }
-        def mapsKey = project.findProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
+        // Prefer the machine-local key. A project-wide value can silently
+        // override a valid Mac key and produce an authenticated map surface
+        // whose tiles turn beige after the first frame.
+        def mapsKey = localProps.getProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
             System.getenv('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?:
-            localProps.getProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?: ''
+            project.findProperty('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY') ?: ''
         if (mapsKey.toString().trim().isEmpty()) {
             throw new GradleException('Missing SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY. Add it to ~/.gradle/gradle.properties before building Android.')
         }
