@@ -32,8 +32,8 @@ android {
             logger.warn('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY not set; building without a native Maps key. Add it to android/local.properties for full map access.')
         }
         manifestPlaceholders = [SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY: mapsKey]
-        versionCode 10
-        versionName "1.0.9"
+        versionCode 11
+        versionName "1.0.10"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -76,7 +76,11 @@ apply from: 'capacitor.build.gradle'
 // build so the APK/AAB always contains the current source tree.
 tasks.register('prepareCapacitorWebAssets', Exec) {
     workingDir rootProject.projectDir.parentFile
-    commandLine '/bin/bash', '-lc', 'npm run build && npx cap copy android'
+    // `cap sync` (not just `cap copy`) is required: sync regenerates
+    // capacitor.plugins.json and the native plugin registration. Without it
+    // the app fails at runtime with "CapacitorGoogleMaps plugin is not
+    // implemented on android" even though the plugin is in package.json.
+    commandLine '/bin/bash', '-lc', 'npm run build && npx cap sync android'
 }
 
 tasks.register('verifyCapacitorWebAssets') {
