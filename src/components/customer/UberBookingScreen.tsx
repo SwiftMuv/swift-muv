@@ -39,6 +39,7 @@ import {
   type VehicleSelection,
 } from "@/lib/movingEngine";
 import { usePricingVersion } from "@/lib/pricingConfig";
+import { decodePolyline } from "@/lib/mapCore";
 import SuvImg from "@/assets/vehicles/suv.png";
 import CargoVanImg from "@/assets/vehicles/cargo-van.png";
 import PickupImg from "@/assets/vehicles/pickup.png";
