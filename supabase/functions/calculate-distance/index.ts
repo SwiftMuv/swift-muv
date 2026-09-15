@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
         console.warn('Routes API returned no distance', first);
       }
     } catch (e) {
-      console.error('Routes API call failed', e);
+      if (!(e && typeof e === 'object' && 'skip' in e)) console.error('Routes API call failed', e);
     }
 
     // Haversine fallback if Routes API didn't return a value
