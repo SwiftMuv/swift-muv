@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
       else if (pickup.city && dropoff.city && pickup.city !== dropoff.city) moveType = 'intercity';
     }
 
-    return json({ km, durationSec, pickup, dropoff, moveType });
+    return json({ km, durationSec, polyline, pickup, dropoff, moveType });
   } catch (err) {
     console.error('calculate-distance error', err);
     return json({ error: err instanceof Error ? err.message : 'unknown' }, 500);
