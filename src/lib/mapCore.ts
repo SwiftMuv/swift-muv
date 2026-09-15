@@ -125,3 +125,39 @@ export const driverIcon = (maps: typeof google.maps): google.maps.Icon => ({
   scaledSize: new maps.Size(46, 46),
   anchor: new maps.Point(23, 23),
 });
+
+/**
+ * Decode a Google encoded polyline (Routes API `polyline.encodedPolyline`)
+ * into map coordinates so the real driving route can be drawn on both the
+ * web and native maps.
+ */
+export const decodePolyline = (encoded?: string | null): LatLngLiteral[] => {
+  if (!encoded) return [];
+  const points: LatLngLiteral[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < encoded.length) {
+    let result = 0;
+    let shift = 0;
+    let byte: number;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+
+    result = 0;
+    shift = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return points;
+};

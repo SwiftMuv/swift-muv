@@ -131,9 +131,40 @@ Deno.serve(async (req) => {
 
     let km: number | null = null;
     let durationSec: number | null = null;
+    let polyline: string | null = null;
 
-    // Use Routes API v2 with coordinates (most reliable)
+    // Preferred: computeRoutes returns distance, duration AND the drawable route path.
     try {
+      const res = await gfetch(
+        'https://routes.googleapis.com/directions/v2:computeRoutes',
+        '/routes/directions/v2:computeRoutes',
+        {
+          method: 'POST',
+          fieldMask: 'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline',
+          body: {
+            origin: { location: { latLng: { latitude: pickup.lat, longitude: pickup.lng } } },
+            destination: { location: { latLng: { latitude: dropoff.lat, longitude: dropoff.lng } } },
+            travelMode: 'DRIVE',
+            routingPreference: 'TRAFFIC_AWARE',
+            polylineQuality: 'OVERVIEW',
+          },
+        },
+      );
+      const text = await res.text();
+      if (!res.ok) console.error('computeRoutes error', res.status, text);
+      const route = JSON.parse(text)?.routes?.[0];
+      if (route?.distanceMeters) {
+        km = Math.round((route.distanceMeters / 1000) * 100) / 100;
+        durationSec = route.duration ? parseInt(String(route.duration).replace('s', ''), 10) : null;
+        polyline = route.polyline?.encodedPolyline ?? null;
+      }
+    } catch (e) {
+      console.error('computeRoutes call failed', e);
+    }
+
+    // Fallback: distance matrix (no route path, distance only)
+    try {
+      if (km != null) throw { skip: true };
       const body = {
         origins: [{ waypoint: { location: { latLng: { latitude: pickup.lat, longitude: pickup.lng } } } }],
         destinations: [{ waypoint: { location: { latLng: { latitude: dropoff.lat, longitude: dropoff.lng } } } }],
@@ -160,7 +191,7 @@ Deno.serve(async (req) => {
         console.warn('Routes API returned no distance', first);
       }
     } catch (e) {
-      console.error('Routes API call failed', e);
+      if (!(e && typeof e === 'object' && 'skip' in e)) console.error('Routes API call failed', e);
     }
 
     // Haversine fallback if Routes API didn't return a value
@@ -179,7 +210,7 @@ Deno.serve(async (req) => {
       else if (pickup.city && dropoff.city && pickup.city !== dropoff.city) moveType = 'intercity';
     }
 
-    return json({ km, durationSec, pickup, dropoff, moveType });
+    return json({ km, durationSec, polyline, pickup, dropoff, moveType });
   } catch (err) {
     console.error('calculate-distance error', err);
     return json({ error: err instanceof Error ? err.message : 'unknown' }, 500);
