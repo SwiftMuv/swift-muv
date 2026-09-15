@@ -162,9 +162,9 @@ Deno.serve(async (req) => {
       console.error('computeRoutes call failed', e);
     }
 
-    // Use Routes API v2 with coordinates (most reliable)
+    // Fallback: distance matrix (no route path, distance only)
     try {
-      if (km != null) throw new Error('skip-matrix');
+      if (km != null) throw { skip: true };
       const body = {
         origins: [{ waypoint: { location: { latLng: { latitude: pickup.lat, longitude: pickup.lng } } } }],
         destinations: [{ waypoint: { location: { latLng: { latitude: dropoff.lat, longitude: dropoff.lng } } } }],
