@@ -221,15 +221,17 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     }
   };
 
-  // Auto-resolve while typing (quietly), so picking suggestions still advances.
+  // Auto-resolve only once BOTH addresses were confirmed from the suggestion
+  // list. Half-typed text must never advance the flow — the customer taps
+  // "Choose vehicle" for that.
   useEffect(() => {
     if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
       setDistance(null);
       setDistanceError(null);
       return;
     }
-    const bothPicked = pickupPicked && dropoffPicked;
-    const timer = setTimeout(() => { void resolveRoute(!bothPicked); }, bothPicked ? 500 : 1200);
+    if (!pickupPicked || !dropoffPicked) return;
+    const timer = setTimeout(() => { void resolveRoute(true); }, 500);
     return () => clearTimeout(timer);
   }, [pickup, dropoff, pickupPicked, dropoffPicked]);
 
