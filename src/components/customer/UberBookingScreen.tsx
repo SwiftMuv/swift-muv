@@ -47,6 +47,9 @@ import MovingTruckImg from "@/assets/vehicles/moving-truck.png";
 
 interface DistanceResult {
   km: number;
+  durationSec?: number | null;
+  /** Encoded Google route path for drawing the live driving route. */
+  polyline?: string | null;
   pickup?: { lat: number; lng: number; province?: string; city?: string };
   dropoff?: { lat: number; lng: number; province?: string; city?: string };
   moveType?: MoveType;
@@ -255,6 +258,10 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
     [items, moveType, distanceKm, effectiveCrew, vehicleSelection, pricingVersion],
   );
 
+  // Real driving path from the backend, drawn on the map behind the sheet.
+  const routePath = useMemo(() => decodePolyline(distance?.polyline), [distance?.polyline]);
+  const etaMinutes = distance?.durationSec ? Math.max(1, Math.round(distance.durationSec / 60)) : null;
+
   const routeReady = distanceKm > 0 && !calculating && !distanceError;
 
   const handleSubmit = async () => {
@@ -273,7 +280,10 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       const bookingPayload = {
         pickup_address: pickup.trim(),
         dropoff_address: dropoff.trim(),
-        move_size: moveSizeFromVehicleName(quote.recommendedVehicle),
+        move_size: moveSizeFromVehicleName(
+          selectedTile.isSuv ? quote.recommendedVehicle : (selectedTile.fleetName ?? quote.recommendedVehicle),
+        ),
+        total_price: quote.finalPrice,
         move_type: moveType,
         distance_km: distanceKm,
         items: [],
@@ -356,6 +366,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         <NativeBookingMap
           pickup={distance?.pickup}
           dropoff={distance?.dropoff}
+          routePath={routePath}
           onReady={() => setNativeMapReady(true)}
           onError={setNativeMapError}
         />
@@ -364,6 +375,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           pickup={distance?.pickup}
           dropoff={distance?.dropoff}
           className="absolute inset-0"
+          routePath={routePath}
           routeMode="straight"
           fitMode="always"
           showUserLocation
@@ -397,7 +409,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         </button>
         {routeReady && step !== "where" && (
           <div className="pointer-events-auto rounded-full bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-black shadow-lg">
-            {distanceKm.toFixed(1)} km · {moveType}
+            {distanceKm.toFixed(1)} km{etaMinutes ? ` · ${etaMinutes} min` : ""} · {moveType}
           </div>
         )}
         <div className="w-11" />
