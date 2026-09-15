@@ -510,6 +510,18 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 </p>
               )}
 
+              {/* Explicit continue — works with typed addresses, no suggestion needed */}
+              <Button
+                type="button"
+                onClick={() => { void resolveRoute(false); }}
+                disabled={calculating || pickup.trim().length < 5 || dropoff.trim().length < 5}
+                className="h-12 w-full rounded-xl text-[15px] font-bold"
+              >
+                {calculating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {calculating ? t("cust.booking.findingRoute") : t("cust.booking.chooseVehicle")}
+              </Button>
+
+
               {/* Recent places — quick-fill chips */}
               {recents.length > 0 && (
                 <div className="space-y-2">
