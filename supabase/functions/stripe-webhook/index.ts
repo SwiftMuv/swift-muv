@@ -156,9 +156,16 @@ Deno.serve(async (req) => {
     pickup_lng: payload.pickup_lng ?? null,
     dropoff_lat: payload.dropoff_lat ?? null,
     dropoff_lng: payload.dropoff_lng ?? null,
+    scheduled_at: payload.scheduled_at ?? null,
     stripe_payment_intent_id: piId,
     status: 'pending',
   };
+
+  // Preserve the vehicle the customer picked and the total they confirmed.
+  if (typeof payload.recommended_vehicle === 'string' && payload.recommended_vehicle) {
+    insertRow.recommended_vehicle = payload.recommended_vehicle;
+  }
+  if (Number(payload.total_price) > 0) insertRow.total_price = Number(payload.total_price);
 
   const { data: inserted, error } = await admin
     .from('bookings')

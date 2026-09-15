@@ -285,6 +285,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           selectedTile.isSuv ? quote.recommendedVehicle : (selectedTile.fleetName ?? quote.recommendedVehicle),
         ),
         total_price: quote.finalPrice,
+        recommended_vehicle: selectedTile.isSuv ? "Extra Large Car / SUV" : (selectedTile.fleetName ?? quote.recommendedVehicle),
         move_type: moveType,
         distance_km: distanceKm,
         items: [],
