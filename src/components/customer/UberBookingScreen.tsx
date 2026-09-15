@@ -182,43 +182,53 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   };
 
 
-  // Distance calc
+  // Resolve the route from whatever addresses are typed. Suggestions are a
+  // convenience only — the backend geocodes plain text, so typed addresses work
+  // even when the Places suggestion list is unavailable (e.g. inside the app).
+  const resolveRoute = async (silent = false) => {
+    const from = pickup.trim();
+    const to = dropoff.trim();
+    if (from.length < 5 || to.length < 5) return;
+    setCalculating(true);
+    setDistanceError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke<DistanceResult>(
+        "calculate-distance",
+        { body: { origin: from, destination: to } },
+      );
+      if (error) throw error;
+      if (data?.fallback || data?.error || !data?.km) {
+        setDistance(null);
+        if (!silent) {
+          setDistanceError(data?.details ?? "Route could not be resolved. Enter more complete addresses.");
+        }
+        return;
+      }
+      setDistance(data);
+      rememberPlaces(from, to);
+      setStep("vehicle");
+      setSnap("half");
+    } catch (e) {
+      console.warn("Distance calc failed", e);
+      setDistance(null);
+      if (!silent) setDistanceError("Route calculation failed. Please try again.");
+    } finally {
+      setCalculating(false);
+    }
+  };
+
+  // Auto-resolve while typing (quietly), so picking suggestions still advances.
   useEffect(() => {
-    if (!pickupPicked || !dropoffPicked || pickup.trim().length < 5 || dropoff.trim().length < 5) {
+    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
       setDistance(null);
       setDistanceError(null);
       return;
     }
-    const timer = setTimeout(async () => {
-      setCalculating(true);
-      setDistanceError(null);
-      try {
-        const { data, error } = await supabase.functions.invoke<DistanceResult>(
-          "calculate-distance",
-          { body: { origin: pickup, destination: dropoff } },
-        );
-        if (error) throw error;
-        if (data?.fallback || data?.error) {
-          setDistance(null);
-          setDistanceError(data.details ?? "Route could not be resolved. Pick full addresses from the suggestions.");
-          return;
-        }
-        if (data?.km) {
-          setDistance(data);
-          rememberPlaces(pickup, dropoff);
-          setStep("vehicle");
-          setSnap("half");
-        }
-      } catch (e) {
-        console.warn("Distance calc failed", e);
-        setDistance(null);
-        setDistanceError("Route calculation failed.");
-      } finally {
-        setCalculating(false);
-      }
-    }, 700);
+    const bothPicked = pickupPicked && dropoffPicked;
+    const timer = setTimeout(() => { void resolveRoute(!bothPicked); }, bothPicked ? 500 : 1200);
     return () => clearTimeout(timer);
   }, [pickup, dropoff, pickupPicked, dropoffPicked]);
+
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
