@@ -22,6 +22,8 @@ interface GoogleRouteMapProps {
   driver?: LatLngLiteral | null;
   className?: string;
   routeMode?: "straight" | "directions";
+  /** Explicit driving route path (from the backend). Drawn instead of a straight line. */
+  routePath?: LatLngLiteral[] | null;
   fitMode?: "always" | "smart";
   rounded?: boolean;
   showLiveBadge?: boolean;
@@ -41,6 +43,7 @@ export const GoogleRouteMap = ({
   driver,
   className,
   routeMode = "straight",
+  routePath,
   fitMode = "always",
   rounded = false,
   showLiveBadge = false,
@@ -200,7 +203,8 @@ export const GoogleRouteMap = ({
     const origin = routeMode === "directions" ? validDriver : validPickup;
     const destination = routeMode === "directions" ? validPickup : validDropoff;
     const pathBase = [validDriver, validPickup, validDropoff].filter(isValidLatLng);
-    const routeKey = [routeMode, origin?.lat, origin?.lng, destination?.lat, destination?.lng, validDropoff?.lat, validDropoff?.lng].join("|");
+    const explicitPath = (routePath ?? []).filter(isValidLatLng);
+    const routeKey = [routeMode, explicitPath.length, explicitPath[0]?.lat, explicitPath[explicitPath.length - 1]?.lng, origin?.lat, origin?.lng, destination?.lat, destination?.lng, validDropoff?.lat, validDropoff?.lng].join("|");
     if (routeKey === routeKeyRef.current) return;
     routeKeyRef.current = routeKey;
 
@@ -242,6 +246,11 @@ export const GoogleRouteMap = ({
       routeRefs.current.line = new maps.Polyline({ ...routeStyle, path, map });
       fitPath(path);
     };
+
+    if (explicitPath.length >= 2) {
+      drawRoute(explicitPath);
+      return;
+    }
 
     if (!origin || !destination) {
       clearRoute();

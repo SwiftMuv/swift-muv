@@ -11,6 +11,8 @@ import {
 interface Props {
   pickup?: LatLngLiteral | null;
   dropoff?: LatLngLiteral | null;
+  /** Real driving route path from the backend; falls back to a straight line. */
+  routePath?: LatLngLiteral[] | null;
   onReady: () => void;
   onError: (message: string) => void;
 }
@@ -24,7 +26,7 @@ export const isNativeAndroid = () =>
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
 /** Native Android map rendered beneath the transparent Capacitor WebView. */
-export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) => {
+export const NativeBookingMap = ({ pickup, dropoff, routePath, onReady, onError }: Props) => {
   const elementRef = useRef<HTMLElement | null>(null);
   const mapRef = useRef<GoogleMap | null>(null);
   const markerIdsRef = useRef<string[]>([]);
@@ -178,17 +180,15 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
         );
       }
       if (points.length === 2) {
+        const line = (routePath ?? []).filter(isValidLatLng);
+        const path = line.length >= 2 ? line : points;
         polylineIdsRef.current = await map.addPolylines([
-          { path: points, strokeColor: "#0F172A", strokeOpacity: 1, strokeWeight: 6 },
+          { path, strokeColor: "#1EC8B6", strokeOpacity: 1, strokeWeight: 6 },
         ]);
-        const southwest = {
-          lat: Math.min(points[0].lat, points[1].lat),
-          lng: Math.min(points[0].lng, points[1].lng),
-        };
-        const northeast = {
-          lat: Math.max(points[0].lat, points[1].lat),
-          lng: Math.max(points[0].lng, points[1].lng),
-        };
+        const lats = path.map((p) => p.lat);
+        const lngs = path.map((p) => p.lng);
+        const southwest = { lat: Math.min(...lats), lng: Math.min(...lngs) };
+        const northeast = { lat: Math.max(...lats), lng: Math.max(...lngs) };
         await map.fitBounds(new LatLngBounds({
           southwest,
           center: {
@@ -211,7 +211,7 @@ export const NativeBookingMap = ({ pickup, dropoff, onReady, onError }: Props) =
     return () => {
       cancelled = true;
     };
-  }, [mapReady, pickup, dropoff]);
+  }, [mapReady, pickup, dropoff, routePath]);
 
   return (
     <capacitor-google-map
