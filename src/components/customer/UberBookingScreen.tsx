@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clock,
   Loader2,
+  LocateFixed,
   MapPin,
   Minus,
   Plus,
@@ -407,7 +408,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       {/* Full-screen map */}
       {nativeAndroid ? (
         <NativeBookingMap
-          pickup={distance?.pickup}
+          pickup={distance?.pickup ?? currentLocation}
           dropoff={distance?.dropoff}
           routePath={routePath}
           onReady={() => setNativeMapReady(true)}
@@ -415,7 +416,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         />
       ) : (
         <GoogleRouteMap
-          pickup={distance?.pickup}
+          pickup={distance?.pickup ?? currentLocation}
           dropoff={distance?.dropoff}
           className="absolute inset-0"
           routePath={routePath}
@@ -424,6 +425,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           showUserLocation
           fallbackText="Loading map…"
         />
+
 
       )}
       {nativeAndroid && !nativeMapReady && !nativeMapError && (
@@ -546,6 +548,27 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   )}
                 </div>
               </div>
+
+              {/* Current location — pre-filled on open, re-detect any time */}
+              <button
+                type="button"
+                onClick={() => { void detectCurrentLocation({ overwrite: true }); }}
+                disabled={locating}
+                className="flex w-full items-center gap-3 rounded-xl bg-neutral-900 px-3 py-3 text-left ring-1 ring-neutral-800 hover:bg-neutral-800 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800">
+                  {locating ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <LocateFixed className="h-4 w-4 text-white" />
+                  )}
+                </span>
+                <span className="flex-1 text-[14px] font-semibold text-white">
+                  {t("cust.booking.useCurrentLocation")}
+                </span>
+                <ChevronRight className="h-4 w-4 text-neutral-500" />
+              </button>
+
 
               {(pickupInvalid || dropoffInvalid) && !distanceError && (
                 <p className="flex items-center gap-1.5 text-[13px] font-medium text-red-400" role="alert">
