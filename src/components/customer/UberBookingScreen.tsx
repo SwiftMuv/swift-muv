@@ -40,6 +40,7 @@ import {
 } from "@/lib/movingEngine";
 import { usePricingVersion } from "@/lib/pricingConfig";
 import { decodePolyline } from "@/lib/mapCore";
+import { getCurrentPositionSafe } from "@/lib/locationPermission";
 import SuvImg from "@/assets/vehicles/suv.png";
 import CargoVanImg from "@/assets/vehicles/cargo-van.png";
 import PickupImg from "@/assets/vehicles/pickup.png";
@@ -162,6 +163,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [recents, setRecents] = useState<string[]>(() => loadRecents());
   const [pickupPicked, setPickupPicked] = useState(false);
   const [dropoffPicked, setDropoffPicked] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const pickupInvalid = looksIncomplete(pickup);
   const dropoffInvalid = looksIncomplete(dropoff);
@@ -184,6 +187,42 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       localStorage.removeItem(RECENTS_KEY);
     } catch { /* storage unavailable */ }
   };
+
+  // ---- Current location as the default pickup -------------------------------
+  // The map opens on the customer's own position and the pickup field is
+  // pre-filled with their street address. Both stay fully editable.
+  const detectCurrentLocation = async (opts: { overwrite?: boolean } = {}) => {
+    setLocating(true);
+    try {
+      const position = await getCurrentPositionSafe();
+      if (!position) {
+        if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
+        return;
+      }
+      setCurrentLocation(position);
+      const { data, error } = await supabase.functions.invoke<{ address?: string | null }>(
+        "reverse-geocode",
+        { body: position },
+      );
+      if (error) throw error;
+      const address = data?.address?.trim();
+      if (!address) return;
+      setPickup((prev) => (opts.overwrite || !prev.trim() ? address : prev));
+      if (opts.overwrite || !pickup.trim()) setPickupPicked(true);
+    } catch (e) {
+      console.warn("Current location lookup failed", e);
+      if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  useEffect(() => {
+    void detectCurrentLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
 
 
   // Resolve the route from whatever addresses are typed. Suggestions are a
