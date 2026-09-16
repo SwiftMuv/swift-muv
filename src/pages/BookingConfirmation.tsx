@@ -142,7 +142,11 @@ const BookingConfirmation = () => {
   const hasMapPoints = Boolean(driverPos || pickupPos || dropoffPos);
   const driverName = driver?.full_name ?? null;
   const driverPhoto = driver?.profile_picture_url || driver?.avatar_url || null;
-  const vehicleLabel = [driver?.vehicle_make, driver?.vehicle_model].filter(Boolean).join(" ") || null;
+  const vehicleLabel =
+    [driver?.vehicle_color, driver?.vehicle_make, driver?.vehicle_model, driver?.vehicle_year]
+      .filter(Boolean)
+      .join(" ") || null;
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
