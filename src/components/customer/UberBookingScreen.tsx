@@ -170,6 +170,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const preCheckoutBookingIdRef = useRef<string | null>(null);
   const { driver: assignedDriver, loading: driverLoading, etaMinutes: driverEta } = useAssignedDriver(
     activeBookingId,
     distance?.pickup ?? currentLocation,
@@ -367,6 +368,18 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       }
       setClientSecret(payload.clientSecret);
       setPublishableKey(payload.publishableKey);
+      // Remember the newest existing booking so that, after checkout closes, we
+      // only show driver details when a genuinely new (paid) booking exists.
+      if (user) {
+        const { data: prior } = await supabase
+          .from("bookings")
+          .select("id")
+          .eq("customer_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        preCheckoutBookingIdRef.current = prior?.id ?? null;
+      }
       setCheckoutOpen(true);
       setSubmitting(false);
     } catch (e) {
@@ -979,15 +992,25 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         onClose={async () => {
           setCheckoutOpen(false);
           setClientSecret(null);
+          // Only reveal driver details for a booking that was actually paid for:
+          // the payment webhook creates a brand-new booking row. If the customer
+          // cancelled, no new row appears and nothing is shown.
           if (user) {
-            const { data } = await supabase
-              .from("bookings")
-              .select("id")
-              .eq("customer_id", user.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (data?.id) setActiveBookingId(data.id);
+            const before = preCheckoutBookingIdRef.current;
+            for (let attempt = 0; attempt < 5; attempt++) {
+              const { data } = await supabase
+                .from("bookings")
+                .select("id")
+                .eq("customer_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (data?.id && data.id !== before) {
+                setActiveBookingId(data.id);
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 1500));
+            }
           }
           onBooked?.();
         }}

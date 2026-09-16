@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CalendarDays, CarFront, Clock, Loader2, LocateFixed, Phone, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -75,6 +75,7 @@ const BookingPage = () => {
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const pendingBookingIdRef = useRef<string | null>(null);
 
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
@@ -207,7 +208,10 @@ const BookingPage = () => {
         })
         .select("id")
         .single();
-      if (inserted?.id) setBookingId(inserted.id);
+      // Driver details are only revealed once checkout completes — see the
+      // Stripe modal's onClose below.
+      if (inserted?.id) pendingBookingIdRef.current = inserted.id;
+
 
 
       if (error || !inserted) {
@@ -610,7 +614,11 @@ const BookingPage = () => {
         open={checkoutOpen}
         clientSecret={clientSecret}
         publishableKey={publishableKey}
-        onClose={() => { setCheckoutOpen(false); setClientSecret(null); }}
+        onClose={() => {
+          setCheckoutOpen(false);
+          setClientSecret(null);
+          if (pendingBookingIdRef.current) setBookingId(pendingBookingIdRef.current);
+        }}
       />
     </div>
   );
