@@ -40,27 +40,46 @@ Deno.serve(async (req) => {
 
     // One helper for every Google call: direct host + ?key= when the project
     // key exists, otherwise the connector gateway path.
-    const gfetch = (
+    // Prefer the managed connector key (unrestricted); fall back to the project
+    // key, which may be app-restricted and rejected for server-side calls.
+    const gfetch = async (
       directUrl: string,
       gatewayPath: string,
       opts: { method?: string; body?: unknown; fieldMask?: string } = {},
     ): Promise<Response> => {
-      const headers: Record<string, string> = {};
-      let url: string;
-      if (DIRECT_KEY) {
-        url = directUrl + (directUrl.includes('?') ? '&' : '?') + `key=${DIRECT_KEY}`;
-      } else {
-        url = `${GATEWAY_URL}${gatewayPath}`;
-        headers['Authorization'] = `Bearer ${LOVABLE_API_KEY}`;
-        headers['X-Connection-Api-Key'] = GOOGLE_MAPS_API_KEY!;
-      }
-      if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
-      if (opts.fieldMask) headers['X-Goog-FieldMask'] = opts.fieldMask;
-      return fetch(url, {
+      const baseHeaders: Record<string, string> = {};
+      if (opts.body !== undefined) baseHeaders['Content-Type'] = 'application/json';
+      if (opts.fieldMask) baseHeaders['X-Goog-FieldMask'] = opts.fieldMask;
+      const init = {
         method: opts.method ?? 'GET',
-        headers,
         body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-      });
+      };
+
+      const targets: Array<{ url: string; headers: Record<string, string> }> = [];
+      if (LOVABLE_API_KEY && GOOGLE_MAPS_API_KEY) {
+        targets.push({
+          url: `${GATEWAY_URL}${gatewayPath}`,
+          headers: {
+            ...baseHeaders,
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY,
+          },
+        });
+      }
+      if (DIRECT_KEY) {
+        targets.push({
+          url: directUrl + (directUrl.includes('?') ? '&' : '?') + `key=${DIRECT_KEY}`,
+          headers: baseHeaders,
+        });
+      }
+
+      let last: Response | null = null;
+      for (const target of targets) {
+        const res = await fetch(target.url, { ...init, headers: target.headers });
+        if (res.ok) return res;
+        last = res;
+      }
+      return last ?? new Response('{}', { status: 500 });
     };
 
     // Geocode addresses first; extract coords + province/city
