@@ -32,11 +32,14 @@ interface DriverSnapshot {
   license_plate: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
+  vehicle_color: string | null;
+  vehicle_year: number | null;
   rating: number | null;
   phone: string | null;
   current_lat: number | null;
   current_lng: number | null;
 }
+
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
