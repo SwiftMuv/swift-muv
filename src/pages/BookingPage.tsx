@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
 import { decodePolyline } from "@/lib/mapCore";
 import { getCurrentPositionSafe } from "@/lib/locationPermission";
+import { useAssignedDriver } from "@/hooks/useAssignedDriver";
+
 
 import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 import { usePricingVersion } from "@/lib/pricingConfig";
