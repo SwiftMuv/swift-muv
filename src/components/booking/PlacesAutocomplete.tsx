@@ -1,7 +1,6 @@
-/// <reference types="google.maps" />
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { useGoogleMaps } from "@/hooks/useGoogleMaps";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   value: string;
@@ -9,69 +8,64 @@ interface Props {
   onSelect?: (description: string) => void;
   placeholder?: string;
   className?: string;
+  /** Optional bias so nearby addresses rank first. */
+  near?: { lat: number; lng: number } | null;
 }
 
 interface Suggestion {
   placeId: string;
   text: string;
+  secondary?: string;
 }
 
+/**
+ * Address suggestions come from the `places-autocomplete` edge function.
+ * The browser Maps key is app-restricted, so calling Google directly from the
+ * page is rejected — the backend key handles it instead.
+ */
 export const PlacesAutocomplete = ({
   value,
   onChange,
   onSelect,
   placeholder,
   className,
+  near,
 }: Props) => {
-  const { ready } = useGoogleMaps();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
-  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceRef = useRef<number | null>(null);
+  const lastQueryRef = useRef("");
 
   useEffect(() => {
-    if (!ready || !value || value.length < 3) {
-      setSuggestions([]);
+    const query = value?.trim() ?? "";
+    if (query.length < 3 || query === lastQueryRef.current) {
+      if (query.length < 3) setSuggestions([]);
       return;
     }
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(async () => {
       try {
-        const placesLib = (await google.maps.importLibrary("places")) as google.maps.PlacesLibrary;
-        const { AutocompleteSuggestion, AutocompleteSessionToken } = placesLib;
-        if (!sessionTokenRef.current) {
-          sessionTokenRef.current = new AutocompleteSessionToken();
-        }
-        const { suggestions: raw } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-          input: value,
-          sessionToken: sessionTokenRef.current,
+        const { data, error } = await supabase.functions.invoke("places-autocomplete", {
+          body: { input: query, lat: near?.lat, lng: near?.lng },
         });
-        const list: Suggestion[] = (raw ?? [])
-          .map((s) => {
-            const pred = s.placePrediction;
-            if (!pred) return null;
-            return {
-              placeId: pred.placeId,
-              text: pred.text?.toString?.() ?? "",
-            };
-          })
-          .filter(Boolean) as Suggestion[];
-        setSuggestions(list);
+        if (error) throw error;
+        setSuggestions(Array.isArray(data?.suggestions) ? data.suggestions : []);
       } catch (e) {
         console.warn("Places autocomplete failed", e);
+        setSuggestions([]);
       }
-    }, 250);
+    }, 300);
     return () => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
     };
-  }, [value, ready]);
+  }, [value, near?.lat, near?.lng]);
 
   const handlePick = (s: Suggestion) => {
+    lastQueryRef.current = s.text;
     onChange(s.text);
     onSelect?.(s.text);
     setSuggestions([]);
     setOpen(false);
-    sessionTokenRef.current = null;
   };
 
   return (
@@ -89,16 +83,19 @@ export const PlacesAutocomplete = ({
         autoComplete="off"
       />
       {open && suggestions.length > 0 && (
-        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-          {suggestions.map((s) => (
-            <li key={s.placeId}>
+        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-popover-border bg-popover shadow-lg">
+          {suggestions.map((s, i) => (
+            <li key={`${s.placeId}-${i}`}>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handlePick(s)}
-                className="block w-full truncate px-3 py-2 text-left text-sm text-black hover:bg-slate-100"
+                className="block w-full px-3 py-2 text-left text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground"
               >
-                {s.text}
+                <span className="block truncate font-medium">{s.text}</span>
+                {s.secondary && (
+                  <span className="block truncate text-xs opacity-70">{s.secondary}</span>
+                )}
               </button>
             </li>
           ))}
