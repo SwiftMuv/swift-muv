@@ -244,7 +244,6 @@ const BookingPage = () => {
 
       <div className="flex-1 space-y-6 p-4 pb-8">
 
-      <div className="flex-1 space-y-6 p-4 pb-8">
 
         {/* Live route map — distance + ETA overlay */}
         <div className="relative h-56 overflow-hidden rounded-2xl border border-border">
