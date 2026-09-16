@@ -40,18 +40,28 @@ Deno.serve(async (req) => {
     }
 
     const path = `/maps/api/geocode/json?latlng=${lat},${lng}`;
-    const url = DIRECT_KEY
-      ? `https://maps.googleapis.com${path}&key=${DIRECT_KEY}`
-      : `${GATEWAY_URL}${path}`;
-    const headers: Record<string, string> = DIRECT_KEY
-      ? {}
-      : { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY! };
+    // Managed connector key first (unrestricted), project key as fallback.
+    const targets: Array<{ url: string; headers: Record<string, string> }> = [];
+    if (LOVABLE_API_KEY && GOOGLE_MAPS_API_KEY) {
+      targets.push({
+        url: `${GATEWAY_URL}${path}`,
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY },
+      });
+    }
+    if (DIRECT_KEY) {
+      targets.push({ url: `https://maps.googleapis.com${path}&key=${DIRECT_KEY}`, headers: {} });
+    }
 
-    const res = await fetch(url, { headers });
-    const text = await res.text();
-    if (!res.ok) {
-      console.error('reverse geocode failed', res.status, text);
-      return json({ error: 'Reverse geocode failed', status: res.status, details: text }, res.status);
+    let res: Response | null = null;
+    let text = '';
+    for (const target of targets) {
+      res = await fetch(target.url, { headers: target.headers });
+      text = await res.text();
+      if (res.ok) break;
+      console.error('reverse geocode attempt failed', res.status, text);
+    }
+    if (!res || !res.ok) {
+      return json({ error: 'Reverse geocode failed', status: res?.status ?? 500, details: text }, 502);
     }
     const parsed = JSON.parse(text);
     const result = parsed?.results?.[0];
