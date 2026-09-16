@@ -196,6 +196,8 @@ const BookingPage = () => {
         })
         .select("id")
         .single();
+      if (inserted?.id) setBookingId(inserted.id);
+
 
       if (error || !inserted) {
         toast.error(t("bk.page.bookingFailed", { message: error?.message ?? "unknown" }));
