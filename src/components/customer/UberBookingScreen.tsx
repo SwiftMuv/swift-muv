@@ -992,15 +992,25 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         onClose={async () => {
           setCheckoutOpen(false);
           setClientSecret(null);
+          // Only reveal driver details for a booking that was actually paid for:
+          // the payment webhook creates a brand-new booking row. If the customer
+          // cancelled, no new row appears and nothing is shown.
           if (user) {
-            const { data } = await supabase
-              .from("bookings")
-              .select("id")
-              .eq("customer_id", user.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (data?.id) setActiveBookingId(data.id);
+            const before = preCheckoutBookingIdRef.current;
+            for (let attempt = 0; attempt < 5; attempt++) {
+              const { data } = await supabase
+                .from("bookings")
+                .select("id")
+                .eq("customer_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (data?.id && data.id !== before) {
+                setActiveBookingId(data.id);
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 1500));
+            }
           }
           onBooked?.();
         }}
