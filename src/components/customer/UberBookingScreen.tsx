@@ -915,19 +915,87 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         </div>
       </div>
 
+      {activeBookingId && (
+        <div className="absolute bottom-4 left-3 right-3 z-30 rounded-2xl border border-popover-border bg-popover p-4 shadow-xl">
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-neutral-400">
+            {t("cust.trip.yourDriver")}
+          </p>
+          {assignedDriver ? (
+            <div className="flex items-center gap-3">
+              {assignedDriver.photoUrl ? (
+                <img
+                  src={assignedDriver.photoUrl}
+                  alt={assignedDriver.fullName ?? t("cust.trip.yourDriver")}
+                  className="h-12 w-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-[15px] font-bold text-primary">
+                  {(assignedDriver.fullName ?? "?").charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-bold text-white">{assignedDriver.fullName ?? "—"}</p>
+                {assignedDriver.vehicleLabel && (
+                  <p className="truncate text-[12px] text-neutral-400">
+                    {assignedDriver.vehicleLabel}
+                    {assignedDriver.licensePlate ? ` · ${assignedDriver.licensePlate}` : ""}
+                  </p>
+                )}
+                {assignedDriver.phone && (
+                  <a href={`tel:${assignedDriver.phone}`} className="text-[12px] font-semibold text-primary">
+                    {assignedDriver.phone}
+                  </a>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                {driverEta != null && (
+                  <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[12px] font-bold text-primary">
+                    {driverEta} min
+                  </span>
+                )}
+                {assignedDriver.phone && (
+                  <a
+                    href={`tel:${assignedDriver.phone}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    aria-label={assignedDriver.phone}
+                  >
+                    <Phone className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-[13px] text-neutral-400">
+              {driverLoading ? t("cust.booking.preparingDots") : t("cust.trip.waitingLocation")}
+            </p>
+          )}
+        </div>
+      )}
+
       <StripeCheckoutModal
         open={checkoutOpen}
         clientSecret={clientSecret}
         publishableKey={publishableKey}
-        onClose={() => {
+        onClose={async () => {
           setCheckoutOpen(false);
           setClientSecret(null);
+          if (user) {
+            const { data } = await supabase
+              .from("bookings")
+              .select("id")
+              .eq("customer_id", user.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (data?.id) setActiveBookingId(data.id);
+          }
           onBooked?.();
         }}
       />
     </div>
   );
 };
+
 
 const PaymentRow = () => {
   const { t } = useI18n();
