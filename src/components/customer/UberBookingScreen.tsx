@@ -169,6 +169,12 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [dropoffPicked, setDropoffPicked] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const { driver: assignedDriver, loading: driverLoading, etaMinutes: driverEta } = useAssignedDriver(
+    activeBookingId,
+    distance?.pickup ?? currentLocation,
+  );
+
 
   const pickupInvalid = looksIncomplete(pickup);
   const dropoffInvalid = looksIncomplete(dropoff);
