@@ -48,20 +48,41 @@ Deno.serve(async (req) => {
       payload.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 50000 } };
     }
 
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    let url: string;
+    // The managed connector key is unrestricted, so try it first; the pasted
+    // project key may be app-restricted and rejected for server calls.
+    const attempts: Array<() => Promise<Response>> = [];
+    if (LOVABLE_API_KEY && GOOGLE_MAPS_API_KEY) {
+      attempts.push(() =>
+        fetch(`${GATEWAY_URL}/places/v1/places:autocomplete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            'X-Connection-Api-Key': GOOGLE_MAPS_API_KEY,
+          },
+          body: JSON.stringify(payload),
+        }),
+      );
+    }
     if (DIRECT_KEY) {
-      url = `https://places.googleapis.com/v1/places:autocomplete?key=${DIRECT_KEY}`;
-    } else {
-      url = `${GATEWAY_URL}/places/v1/places:autocomplete`;
-      headers['Authorization'] = `Bearer ${LOVABLE_API_KEY}`;
-      headers['X-Connection-Api-Key'] = GOOGLE_MAPS_API_KEY!;
+      attempts.push(() =>
+        fetch(`https://places.googleapis.com/v1/places:autocomplete?key=${DIRECT_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }),
+      );
     }
 
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
-    const text = await res.text();
-    if (!res.ok) {
-      console.error('places autocomplete failed', res.status, text);
+    let res: Response | null = null;
+    let text = '';
+    for (const attempt of attempts) {
+      res = await attempt();
+      text = await res.text();
+      if (res.ok) break;
+      console.error('places autocomplete attempt failed', res.status, text);
+    }
+    if (!res || !res.ok) {
       return json({ suggestions: [], error: 'AUTOCOMPLETE_FAILED' });
     }
     const parsed = JSON.parse(text);
