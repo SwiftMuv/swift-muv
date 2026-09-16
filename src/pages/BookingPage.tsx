@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, CarFront, Loader2, Truck, Users, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, CalendarDays, CarFront, Loader2, LocateFixed, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
+import { GoogleRouteMap } from "@/components/maps/GoogleRouteMap";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
+import { decodePolyline } from "@/lib/mapCore";
+import { getCurrentPositionSafe } from "@/lib/locationPermission";
 
 import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 import { usePricingVersion } from "@/lib/pricingConfig";
@@ -24,6 +27,8 @@ const CHECKOUT_FUNCTION = "stripe_checkout";
 
 interface DistanceResult {
   km: number;
+  durationSec?: number | null;
+  polyline?: string | null;
   pickup?: { lat: number; lng: number; province?: string; city?: string };
   dropoff?: { lat: number; lng: number; province?: string; city?: string };
   moveType?: MoveType;
@@ -31,6 +36,7 @@ interface DistanceResult {
   details?: string;
   fallback?: boolean;
 }
+
 
 const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
   if (name.startsWith("Cargo")) return "small";
@@ -64,13 +70,48 @@ const BookingPage = () => {
   const [globalFloor, setGlobalFloor] = useState<string>("");
   const [globalHasElevator, setGlobalHasElevator] = useState<boolean>(true);
   const [floorAccessEnabled, setFloorAccessEnabled] = useState<boolean>(false);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
     setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   };
 
+  // ---- Current device position as the default (editable) pickup -------------
+  const detectCurrentLocation = async (opts: { overwrite?: boolean } = {}) => {
+    setLocating(true);
+    try {
+      const position = await getCurrentPositionSafe();
+      if (!position) {
+        if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
+        return;
+      }
+      setCurrentLocation(position);
+      const { data, error } = await supabase.functions.invoke<{ address?: string | null }>(
+        "reverse-geocode",
+        { body: position },
+      );
+      if (error) throw error;
+      const address = data?.address?.trim();
+      if (!address) return;
+      setPickup((prev) => (opts.overwrite || !prev.trim() ? address : prev));
+      if (opts.overwrite || !pickup.trim()) setPickupPicked(true);
+    } catch (e) {
+      console.warn("Current location lookup failed", e);
+      if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
+    } finally {
+      setLocating(false);
+    }
+  };
+
   useEffect(() => {
-    if (!pickupPicked || !dropoffPicked || pickup.trim().length < 5 || dropoff.trim().length < 5) {
+    void detectCurrentLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Route, distance and ETA resolve as soon as both addresses are populated.
+  useEffect(() => {
+    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
       setDistance(null);
       setDistanceError(null);
       return;
@@ -81,7 +122,7 @@ const BookingPage = () => {
       try {
         const { data, error } = await supabase.functions.invoke<DistanceResult>(
           "calculate-distance",
-          { body: { origin: pickup, destination: dropoff } },
+          { body: { origin: pickup.trim(), destination: dropoff.trim() } },
         );
         if (error) throw error;
         if (data?.fallback || data?.error) {
@@ -97,11 +138,15 @@ const BookingPage = () => {
       } finally {
         setCalculating(false);
       }
-    }, 800);
+    }, pickupPicked && dropoffPicked ? 500 : 1000);
     return () => clearTimeout(timer);
   }, [pickup, dropoff, pickupPicked, dropoffPicked]);
 
+
+  const routePath = useMemo(() => decodePolyline(distance?.polyline), [distance?.polyline]);
+  const etaMinutes = distance?.durationSec ? Math.max(1, Math.round(distance.durationSec / 60)) : null;
   const moveType: MoveType = distance?.moveType ?? "local";
+
   const distanceKm = distance?.km ?? 0;
   const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
   const vehicleSelection: VehicleSelection = suvSelected ? "suv" : "auto";
@@ -199,6 +244,31 @@ const BookingPage = () => {
 
       <div className="flex-1 space-y-6 p-4 pb-8">
 
+
+        {/* Live route map — distance + ETA overlay */}
+        <div className="relative h-56 overflow-hidden rounded-2xl border border-border">
+          <GoogleRouteMap
+            pickup={distance?.pickup ?? currentLocation}
+            dropoff={distance?.dropoff}
+            routePath={routePath}
+            routeMode="straight"
+            fitMode="always"
+            showUserLocation
+            className="absolute inset-0"
+          />
+          {(distanceKm > 0 || calculating) && (
+            <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow-md backdrop-blur-sm">
+              {calculating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <span>
+                  {distanceKm} km{etaMinutes ? ` · ${etaMinutes} min` : ""}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="space-y-3">
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
           <PlacesAutocomplete
@@ -214,7 +284,18 @@ const BookingPage = () => {
             onSelect={() => setDropoffPicked(true)}
             placeholder={t("booking.enterDropoff")}
           />
+          <button
+            type="button"
+            onClick={() => { void detectCurrentLocation({ overwrite: true }); }}
+            disabled={locating}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+          >
+            {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LocateFixed className="h-3.5 w-3.5 text-primary" />}
+            {t("cust.booking.useCurrentLocation")}
+          </button>
         </div>
+
+
 
         {/* Move date — ASAP / Schedule for later */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
