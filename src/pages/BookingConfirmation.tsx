@@ -248,7 +248,13 @@ const BookingConfirmation = () => {
                 {driver.license_plate && (
                   <p className="text-xs font-mono text-foreground/80">{driver.license_plate}</p>
                 )}
+                {driver.phone && (
+                  <a href={`tel:${driver.phone}`} className="text-xs font-semibold text-primary">
+                    {driver.phone}
+                  </a>
+                )}
               </div>
+
               {driver.phone && (
                 <div className="flex gap-2">
                   <a
