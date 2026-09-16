@@ -149,6 +149,13 @@ const BookingPage = () => {
   const etaMinutes = distance?.durationSec ? Math.max(1, Math.round(distance.durationSec / 60)) : null;
   const moveType: MoveType = distance?.moveType ?? "local";
 
+  // Assigned driver for the booking just placed (name, phone, vehicle, arrival).
+  const { driver: assignedDriver, etaMinutes: driverEtaMinutes } = useAssignedDriver(
+    bookingId,
+    distance?.pickup ?? currentLocation,
+  );
+
+
   const distanceKm = distance?.km ?? 0;
   const effectiveCrew = crewEnabled ? Math.max(1, crewCount) : 0;
   const vehicleSelection: VehicleSelection = suvSelected ? "suv" : "auto";
