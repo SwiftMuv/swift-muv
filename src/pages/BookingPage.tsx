@@ -70,13 +70,48 @@ const BookingPage = () => {
   const [globalFloor, setGlobalFloor] = useState<string>("");
   const [globalHasElevator, setGlobalHasElevator] = useState<boolean>(true);
   const [floorAccessEnabled, setFloorAccessEnabled] = useState<boolean>(false);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
     setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   };
 
+  // ---- Current device position as the default (editable) pickup -------------
+  const detectCurrentLocation = async (opts: { overwrite?: boolean } = {}) => {
+    setLocating(true);
+    try {
+      const position = await getCurrentPositionSafe();
+      if (!position) {
+        if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
+        return;
+      }
+      setCurrentLocation(position);
+      const { data, error } = await supabase.functions.invoke<{ address?: string | null }>(
+        "reverse-geocode",
+        { body: position },
+      );
+      if (error) throw error;
+      const address = data?.address?.trim();
+      if (!address) return;
+      setPickup((prev) => (opts.overwrite || !prev.trim() ? address : prev));
+      if (opts.overwrite || !pickup.trim()) setPickupPicked(true);
+    } catch (e) {
+      console.warn("Current location lookup failed", e);
+      if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
+    } finally {
+      setLocating(false);
+    }
+  };
+
   useEffect(() => {
-    if (!pickupPicked || !dropoffPicked || pickup.trim().length < 5 || dropoff.trim().length < 5) {
+    void detectCurrentLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Route, distance and ETA resolve as soon as both addresses are populated.
+  useEffect(() => {
+    if (pickup.trim().length < 5 || dropoff.trim().length < 5) {
       setDistance(null);
       setDistanceError(null);
       return;
@@ -87,7 +122,7 @@ const BookingPage = () => {
       try {
         const { data, error } = await supabase.functions.invoke<DistanceResult>(
           "calculate-distance",
-          { body: { origin: pickup, destination: dropoff } },
+          { body: { origin: pickup.trim(), destination: dropoff.trim() } },
         );
         if (error) throw error;
         if (data?.fallback || data?.error) {
@@ -103,9 +138,10 @@ const BookingPage = () => {
       } finally {
         setCalculating(false);
       }
-    }, 800);
+    }, pickupPicked && dropoffPicked ? 500 : 1000);
     return () => clearTimeout(timer);
   }, [pickup, dropoff, pickupPicked, dropoffPicked]);
+
 
   const moveType: MoveType = distance?.moveType ?? "local";
   const distanceKm = distance?.km ?? 0;
