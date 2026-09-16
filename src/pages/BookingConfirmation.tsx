@@ -88,7 +88,7 @@ const BookingConfirmation = () => {
       }
       const { data: profile } = await supabase
         .from("driver_profiles")
-        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, rating, phone, current_lat, current_lng")
+        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_color, vehicle_year, rating, phone, current_lat, current_lng")
         .eq("user_id", job.driver_id)
         .maybeSingle();
       if (active) setDriver((profile as unknown as DriverSnapshot) ?? null);
