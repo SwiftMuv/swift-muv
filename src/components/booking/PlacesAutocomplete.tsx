@@ -100,6 +100,9 @@ export const PlacesAutocomplete = ({
         className={className}
         autoComplete="off"
       />
+      {open && suggestions.length === 0 && errorText && (
+        <p className="mt-1 text-xs text-destructive">{errorText}</p>
+      )}
       {open && suggestions.length > 0 && (
         <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-popover-border bg-popover shadow-lg">
           {suggestions.map((s, i) => (
