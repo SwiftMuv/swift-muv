@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, CarFront, Loader2, Truck, Users, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, CalendarDays, CarFront, Loader2, LocateFixed, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import { InventoryPicker } from "@/components/booking/InventoryPicker";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
+import { GoogleRouteMap } from "@/components/maps/GoogleRouteMap";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
+import { decodePolyline } from "@/lib/mapCore";
+import { getCurrentPositionSafe } from "@/lib/locationPermission";
 
 import { calculateMovePrice, type MoveType, type SelectedItem, type VehicleSelection } from "@/lib/movingEngine";
 import { usePricingVersion } from "@/lib/pricingConfig";
@@ -24,6 +27,8 @@ const CHECKOUT_FUNCTION = "stripe_checkout";
 
 interface DistanceResult {
   km: number;
+  durationSec?: number | null;
+  polyline?: string | null;
   pickup?: { lat: number; lng: number; province?: string; city?: string };
   dropoff?: { lat: number; lng: number; province?: string; city?: string };
   moveType?: MoveType;
@@ -31,6 +36,7 @@ interface DistanceResult {
   details?: string;
   fallback?: boolean;
 }
+
 
 const moveSizeFromVehicleName = (name: string): "small" | "medium" | "large" | "xlarge" => {
   if (name.startsWith("Cargo")) return "small";
