@@ -32,6 +32,7 @@ export const PlacesAutocomplete = ({
   near,
 }: Props) => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<number | null>(null);
   const lastQueryRef = useRef("");
