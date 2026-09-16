@@ -46,14 +46,31 @@ export const PlacesAutocomplete = ({
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(async () => {
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          setSuggestions([]);
+          setErrorText("Please sign in again to search addresses.");
+          return;
+        }
         const { data, error } = await supabase.functions.invoke("places-autocomplete", {
           body: { input: query, lat: near?.lat, lng: near?.lng },
         });
         if (error) throw error;
-        setSuggestions(Array.isArray(data?.suggestions) ? data.suggestions : []);
+        const list = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        setSuggestions(list);
+        setErrorText(
+          list.length === 0
+            ? data?.error
+              ? `Address lookup unavailable (${data.error})`
+              : null
+            : null,
+        );
       } catch (e) {
         console.warn("Places autocomplete failed", e);
         setSuggestions([]);
+        setErrorText(
+          `Address lookup failed: ${e instanceof Error ? e.message : "network error"}`,
+        );
       }
     }, 300);
     return () => {
