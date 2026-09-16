@@ -75,6 +75,7 @@ const BookingPage = () => {
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const pendingBookingIdRef = useRef<string | null>(null);
 
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
@@ -613,7 +614,11 @@ const BookingPage = () => {
         open={checkoutOpen}
         clientSecret={clientSecret}
         publishableKey={publishableKey}
-        onClose={() => { setCheckoutOpen(false); setClientSecret(null); }}
+        onClose={() => {
+          setCheckoutOpen(false);
+          setClientSecret(null);
+          if (pendingBookingIdRef.current) setBookingId(pendingBookingIdRef.current);
+        }}
       />
     </div>
   );
