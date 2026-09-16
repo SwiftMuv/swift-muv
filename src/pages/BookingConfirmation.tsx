@@ -32,11 +32,14 @@ interface DriverSnapshot {
   license_plate: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
+  vehicle_color: string | null;
+  vehicle_year: number | null;
   rating: number | null;
   phone: string | null;
   current_lat: number | null;
   current_lng: number | null;
 }
+
 
 const BookingConfirmation = () => {
   const navigate = useNavigate();
@@ -85,7 +88,7 @@ const BookingConfirmation = () => {
       }
       const { data: profile } = await supabase
         .from("driver_profiles")
-        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, rating, phone, current_lat, current_lng")
+        .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_color, vehicle_year, rating, phone, current_lat, current_lng")
         .eq("user_id", job.driver_id)
         .maybeSingle();
       if (active) setDriver((profile as unknown as DriverSnapshot) ?? null);
@@ -139,7 +142,11 @@ const BookingConfirmation = () => {
   const hasMapPoints = Boolean(driverPos || pickupPos || dropoffPos);
   const driverName = driver?.full_name ?? null;
   const driverPhoto = driver?.profile_picture_url || driver?.avatar_url || null;
-  const vehicleLabel = [driver?.vehicle_make, driver?.vehicle_model].filter(Boolean).join(" ") || null;
+  const vehicleLabel =
+    [driver?.vehicle_color, driver?.vehicle_make, driver?.vehicle_model, driver?.vehicle_year]
+      .filter(Boolean)
+      .join(" ") || null;
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -241,7 +248,13 @@ const BookingConfirmation = () => {
                 {driver.license_plate && (
                   <p className="text-xs font-mono text-foreground/80">{driver.license_plate}</p>
                 )}
+                {driver.phone && (
+                  <a href={`tel:${driver.phone}`} className="text-xs font-semibold text-primary">
+                    {driver.phone}
+                  </a>
+                )}
               </div>
+
               {driver.phone && (
                 <div className="flex gap-2">
                   <a
