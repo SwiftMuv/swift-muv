@@ -32,6 +32,7 @@ export const PlacesAutocomplete = ({
   near,
 }: Props) => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<number | null>(null);
   const lastQueryRef = useRef("");
@@ -45,14 +46,31 @@ export const PlacesAutocomplete = ({
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(async () => {
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          setSuggestions([]);
+          setErrorText("Please sign in again to search addresses.");
+          return;
+        }
         const { data, error } = await supabase.functions.invoke("places-autocomplete", {
           body: { input: query, lat: near?.lat, lng: near?.lng },
         });
         if (error) throw error;
-        setSuggestions(Array.isArray(data?.suggestions) ? data.suggestions : []);
+        const list = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        setSuggestions(list);
+        setErrorText(
+          list.length === 0
+            ? data?.error
+              ? `Address lookup unavailable (${data.error})`
+              : null
+            : null,
+        );
       } catch (e) {
         console.warn("Places autocomplete failed", e);
         setSuggestions([]);
+        setErrorText(
+          `Address lookup failed: ${e instanceof Error ? e.message : "network error"}`,
+        );
       }
     }, 300);
     return () => {
@@ -82,6 +100,9 @@ export const PlacesAutocomplete = ({
         className={className}
         autoComplete="off"
       />
+      {open && suggestions.length === 0 && errorText && (
+        <p className="mt-1 text-xs text-destructive">{errorText}</p>
+      )}
       {open && suggestions.length > 0 && (
         <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-popover-border bg-popover shadow-lg">
           {suggestions.map((s, i) => (
