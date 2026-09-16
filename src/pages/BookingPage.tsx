@@ -282,6 +282,66 @@ const BookingPage = () => {
           )}
         </div>
 
+        {/* Assigned driver — real name, phone, vehicle and expected arrival */}
+        {bookingId && (
+          <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("cust.trip.yourDriver")}
+              </p>
+              <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                <Clock className="h-3.5 w-3.5" />
+                {driverEtaMinutes != null ? `${driverEtaMinutes} min` : "—"}
+              </span>
+            </div>
+            {assignedDriver ? (
+              <div className="flex items-center gap-3">
+                {assignedDriver.photoUrl ? (
+                  <img
+                    src={assignedDriver.photoUrl}
+                    alt={assignedDriver.fullName ?? t("cust.trip.yourDriver")}
+                    loading="lazy"
+                    className="h-12 w-12 rounded-full border-2 border-primary/40 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/40 bg-primary/10 text-base font-bold text-primary">
+                    {(assignedDriver.fullName ?? "D").slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-foreground">
+                    {assignedDriver.fullName ?? t("cust.trip.yourDriver")}
+                  </p>
+                  {assignedDriver.vehicleLabel && (
+                    <p className="truncate text-xs text-muted-foreground">{assignedDriver.vehicleLabel}</p>
+                  )}
+                  {assignedDriver.licensePlate && (
+                    <p className="font-mono text-xs text-foreground/80">{assignedDriver.licensePlate}</p>
+                  )}
+                  {assignedDriver.phone && (
+                    <a href={`tel:${assignedDriver.phone}`} className="text-xs font-semibold text-primary">
+                      {assignedDriver.phone}
+                    </a>
+                  )}
+                </div>
+                {assignedDriver.phone && (
+                  <a
+                    href={`tel:${assignedDriver.phone}`}
+                    aria-label={t("bk.confirmation.callDriver")}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                  >
+                    <Phone className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t("cust.trip.waitingLocation")}</p>
+            )}
+          </div>
+        )}
+
+
+
         <div className="space-y-3">
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
           <PlacesAutocomplete
