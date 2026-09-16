@@ -72,6 +72,8 @@ const BookingPage = () => {
   const [floorAccessEnabled, setFloorAccessEnabled] = useState<boolean>(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+
 
   const updateItemMeta = (id: number, patch: Partial<Pick<SelectedItem, "floor_level" | "has_elevator">>) => {
     setSelectedItems((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
