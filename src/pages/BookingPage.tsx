@@ -207,7 +207,10 @@ const BookingPage = () => {
         })
         .select("id")
         .single();
-      if (inserted?.id) setBookingId(inserted.id);
+      // Driver details are only revealed once checkout completes — see the
+      // Stripe modal's onClose below.
+      if (inserted?.id) pendingBookingIdRef.current = inserted.id;
+
 
 
       if (error || !inserted) {
