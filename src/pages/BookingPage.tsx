@@ -244,6 +244,32 @@ const BookingPage = () => {
 
       <div className="flex-1 space-y-6 p-4 pb-8">
 
+      <div className="flex-1 space-y-6 p-4 pb-8">
+
+        {/* Live route map — distance + ETA overlay */}
+        <div className="relative h-56 overflow-hidden rounded-2xl border border-border">
+          <GoogleRouteMap
+            pickup={distance?.pickup ?? currentLocation}
+            dropoff={distance?.dropoff}
+            routePath={routePath}
+            routeMode="straight"
+            fitMode="always"
+            showUserLocation
+            className="absolute inset-0"
+          />
+          {(distanceKm > 0 || calculating) && (
+            <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow-md backdrop-blur-sm">
+              {calculating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <span>
+                  {distanceKm} km{etaMinutes ? ` · ${etaMinutes} min` : ""}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="space-y-3">
           <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("booking.pickup")}</label>
           <PlacesAutocomplete
@@ -259,7 +285,18 @@ const BookingPage = () => {
             onSelect={() => setDropoffPicked(true)}
             placeholder={t("booking.enterDropoff")}
           />
+          <button
+            type="button"
+            onClick={() => { void detectCurrentLocation({ overwrite: true }); }}
+            disabled={locating}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+          >
+            {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LocateFixed className="h-3.5 w-3.5 text-primary" />}
+            {t("cust.booking.useCurrentLocation")}
+          </button>
         </div>
+
+
 
         {/* Move date — ASAP / Schedule for later */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
