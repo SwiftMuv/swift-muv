@@ -427,15 +427,23 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   return (
     <div className={cn("fixed inset-0 z-30 font-sans text-white", nativeAndroid ? "bg-transparent" : "bg-black")}>
-      {/* Full-screen map */}
+      {/* Map — on native Android the map view consumes every touch inside its
+          frame, so its frame must stop where the bottom sheet begins or the
+          sheet can never scroll on a real phone. */}
       {nativeAndroid ? (
-        <NativeBookingMap
-          pickup={distance?.pickup ?? currentLocation}
-          dropoff={distance?.dropoff}
-          routePath={routePath}
-          onReady={() => setNativeMapReady(true)}
-          onError={setNativeMapError}
-        />
+        <div
+          className="absolute inset-x-0 top-0"
+          style={{ height: `calc(100% - ${snapHeights[snap]})` }}
+        >
+          <NativeBookingMap
+            key={`native-map-${snap}`}
+            pickup={distance?.pickup ?? currentLocation}
+            dropoff={distance?.dropoff}
+            routePath={routePath}
+            onReady={() => setNativeMapReady(true)}
+            onError={setNativeMapError}
+          />
+        </div>
       ) : (
         <GoogleRouteMap
           pickup={distance?.pickup ?? currentLocation}
