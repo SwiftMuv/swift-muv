@@ -617,7 +617,25 @@ const BookingPage = () => {
         onClose={() => {
           setCheckoutOpen(false);
           setClientSecret(null);
-          if (pendingBookingIdRef.current) setBookingId(pendingBookingIdRef.current);
+          // Never reveal driver details for an unpaid booking: closing or
+          // cancelling the payment window leaves the row without a payment
+          // reference, so confirm payment landed before showing anything.
+          const pendingId = pendingBookingIdRef.current;
+          if (!pendingId) return;
+          void (async () => {
+            for (let attempt = 0; attempt < 10; attempt++) {
+              const { data } = await supabase
+                .from("bookings")
+                .select("id, stripe_payment_intent_id, status")
+                .eq("id", pendingId)
+                .maybeSingle();
+              if (data?.stripe_payment_intent_id || (data?.status && data.status !== "pending")) {
+                setBookingId(pendingId);
+                return;
+              }
+              await new Promise((r) => setTimeout(r, 1500));
+            }
+          })();
         }}
       />
     </div>
