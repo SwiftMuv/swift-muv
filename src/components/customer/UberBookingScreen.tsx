@@ -989,15 +989,18 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         open={checkoutOpen}
         clientSecret={clientSecret}
         publishableKey={publishableKey}
-        onClose={async () => {
+        onClose={() => {
           setCheckoutOpen(false);
           setClientSecret(null);
-          // Only reveal driver details for a booking that was actually paid for:
-          // the payment webhook creates a brand-new booking row. If the customer
-          // cancelled, no new row appears and nothing is shown.
-          if (user) {
-            const before = preCheckoutBookingIdRef.current;
-            for (let attempt = 0; attempt < 5; attempt++) {
+          // Return to the booking screen immediately — never block the UI on
+          // polling. Only reveal driver details for a booking that was actually
+          // paid for: the payment webhook creates a brand-new booking row, so if
+          // the customer cancelled, no new row appears and nothing is shown.
+          onBooked?.();
+          if (!user) return;
+          const before = preCheckoutBookingIdRef.current;
+          void (async () => {
+            for (let attempt = 0; attempt < 10; attempt++) {
               const { data } = await supabase
                 .from("bookings")
                 .select("id")
@@ -1007,12 +1010,11 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 .maybeSingle();
               if (data?.id && data.id !== before) {
                 setActiveBookingId(data.id);
-                break;
+                return;
               }
               await new Promise((r) => setTimeout(r, 1500));
             }
-          }
-          onBooked?.();
+          })();
         }}
       />
     </div>
