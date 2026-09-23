@@ -436,7 +436,6 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           style={{ height: `calc(100% - ${snapHeights[snap]})` }}
         >
           <NativeBookingMap
-            key={`native-map-${snap}`}
             pickup={distance?.pickup ?? currentLocation}
             dropoff={distance?.dropoff}
             routePath={routePath}
@@ -1008,7 +1007,9 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           if (!user) return;
           const before = preCheckoutBookingIdRef.current;
           void (async () => {
-            for (let attempt = 0; attempt < 10; attempt++) {
+            // Poll for up to ~60s: the payment webhook can be slow. If it never
+            // lands, tell the customer instead of silently showing nothing.
+            for (let attempt = 0; attempt < 40; attempt++) {
               const { data } = await supabase
                 .from("bookings")
                 .select("id")
@@ -1022,6 +1023,9 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               }
               await new Promise((r) => setTimeout(r, 1500));
             }
+            toast.info(
+              "We're still confirming your payment. Your booking will appear in your trips shortly.",
+            );
           })();
         }}
       />

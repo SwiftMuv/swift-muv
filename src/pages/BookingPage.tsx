@@ -623,7 +623,9 @@ const BookingPage = () => {
           const pendingId = pendingBookingIdRef.current;
           if (!pendingId) return;
           void (async () => {
-            for (let attempt = 0; attempt < 10; attempt++) {
+            // Poll for up to ~60s: the payment webhook can be slow. If it never
+            // lands, tell the customer instead of silently showing nothing.
+            for (let attempt = 0; attempt < 40; attempt++) {
               const { data } = await supabase
                 .from("bookings")
                 .select("id, stripe_payment_intent_id, status")
@@ -635,6 +637,9 @@ const BookingPage = () => {
               }
               await new Promise((r) => setTimeout(r, 1500));
             }
+            toast.info(
+              "We're still confirming your payment. Your booking will appear in your trips shortly.",
+            );
           })();
         }}
       />
