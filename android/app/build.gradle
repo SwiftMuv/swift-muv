@@ -70,28 +70,7 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-// Android Studio used to package whichever WebView files happened to be left
-// by the last manual `cap sync`. That made device builds stale while the Vite
-// preview showed current styles. Rebuild and copy the web app for every native
-// build so the APK/AAB always contains the current source tree.
-// Best-effort only: Android Studio often launches without Node/npm on its PATH
-// (nvm, Homebrew, Windows), which used to break every compile. If the automatic
-// web build can't run, we fall back to whatever `npx cap sync android` already
-// copied from the terminal.
-tasks.register('prepareCapacitorWebAssets', Exec) {
-    workingDir rootProject.projectDir.parentFile
-    ignoreExitValue true
-    def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
-    if (isWindows) {
-        commandLine 'cmd', '/c', 'npm run build && npx cap sync android'
-    } else {
-        commandLine '/bin/bash', '-lc', 'export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"; [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"; npm run build && npx cap sync android'
-    }
-    doFirst { logger.lifecycle('Building web app and syncing Capacitor (best effort)...') }
-}
-
 tasks.register('verifyCapacitorWebAssets') {
-    dependsOn prepareCapacitorWebAssets
     doLast {
         def indexHtml = file('src/main/assets/public/index.html')
         if (!indexHtml.exists()) {
