@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { KeyRound, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
+import swiftmuvLogo from "@/assets/swiftmuv-logo.png";
 
 type LinkState = "validating" | "valid" | "invalid";
 
@@ -215,6 +216,7 @@ const ResetPassword = () => {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
         <div className="w-full max-w-sm space-y-6 text-center">
+          <img src={swiftmuvLogo} alt="SwiftMuv" className="mx-auto h-[7.875rem] max-h-[15vh] w-auto object-contain" />
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
@@ -255,8 +257,9 @@ const ResetPassword = () => {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 dark">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <KeyRound className="h-7 w-7 text-primary" />
+          <img src={swiftmuvLogo} alt="SwiftMuv" className="mx-auto h-[7.875rem] max-h-[15vh] w-auto object-contain" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <KeyRound className="h-6 w-6 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
             {t("auth.resetPassword.setNewPassword")}
