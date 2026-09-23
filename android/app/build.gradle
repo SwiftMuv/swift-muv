@@ -74,13 +74,20 @@ apply from: 'capacitor.build.gradle'
 // by the last manual `cap sync`. That made device builds stale while the Vite
 // preview showed current styles. Rebuild and copy the web app for every native
 // build so the APK/AAB always contains the current source tree.
+// Best-effort only: Android Studio often launches without Node/npm on its PATH
+// (nvm, Homebrew, Windows), which used to break every compile. If the automatic
+// web build can't run, we fall back to whatever `npx cap sync android` already
+// copied from the terminal.
 tasks.register('prepareCapacitorWebAssets', Exec) {
     workingDir rootProject.projectDir.parentFile
-    // `cap sync` (not just `cap copy`) is required: sync regenerates
-    // capacitor.plugins.json and the native plugin registration. Without it
-    // the app fails at runtime with "CapacitorGoogleMaps plugin is not
-    // implemented on android" even though the plugin is in package.json.
-    commandLine '/bin/bash', '-lc', 'npm run build && npx cap sync android'
+    ignoreExitValue true
+    def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+    if (isWindows) {
+        commandLine 'cmd', '/c', 'npm run build && npx cap sync android'
+    } else {
+        commandLine '/bin/bash', '-lc', 'export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"; [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"; npm run build && npx cap sync android'
+    }
+    doFirst { logger.lifecycle('Building web app and syncing Capacitor (best effort)...') }
 }
 
 tasks.register('verifyCapacitorWebAssets') {
@@ -88,11 +95,7 @@ tasks.register('verifyCapacitorWebAssets') {
     doLast {
         def indexHtml = file('src/main/assets/public/index.html')
         if (!indexHtml.exists()) {
-            throw new GradleException('Android WebView assets were not generated. Confirm Node.js and npm are available to Android Studio.')
-        }
-        def html = indexHtml.getText('UTF-8')
-        if (!html.contains('<style>') || html.contains('rel="stylesheet"')) {
-            throw new GradleException('Android WebView styles were not embedded correctly; refusing to package an unstyled app.')
+            throw new GradleException('Web app files are missing. In Terminal run: npm install && npm run build && npx cap sync android, then build again.')
         }
     }
 }

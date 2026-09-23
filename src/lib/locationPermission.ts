@@ -58,19 +58,29 @@ export async function ensureLocationPermission(): Promise<LocationPermissionStat
 export async function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   const state = await ensureLocationPermission();
   if (state === "denied" || state === "unavailable") return null;
-  try {
-    if (Capacitor.isNativePlatform()) {
-      const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10_000 });
-      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+  // Try a precise GPS fix first; indoors that often times out, so fall back
+  // to a quicker network/cached fix instead of giving up.
+  const attempts = [
+    { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
+    { enableHighAccuracy: false, timeout: 15_000, maximumAge: 300_000 },
+  ];
+  for (const opts of attempts) {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const pos = await Geolocation.getCurrentPosition(opts);
+        return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      }
+      const pos = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+          () => resolve(null),
+          opts,
+        );
+      });
+      if (pos) return pos;
+    } catch (err) {
+      console.warn("Location fix failed:", err);
     }
-    return await new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => resolve(null),
-        { enableHighAccuracy: true, timeout: 10_000 },
-      );
-    });
-  } catch {
-    return null;
   }
+  return null;
 }

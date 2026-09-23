@@ -230,6 +230,17 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   useEffect(() => {
     void detectCurrentLocation();
+    // The permission prompt from app start may still be open on first launch;
+    // try again shortly after, and whenever the app returns to the foreground.
+    const retry = window.setTimeout(() => void detectCurrentLocation(), 4000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void detectCurrentLocation();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearTimeout(retry);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
