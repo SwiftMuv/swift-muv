@@ -66,8 +66,6 @@ const DriverDashboard = () => {
   const { t } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
 
-  const [activeTab, setActiveTab] = useState("home");
-
   // Persist online/offline so RLS sees current state
   const toggleOnline = async () => {
     const next = !isOnline;
