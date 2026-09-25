@@ -93,23 +93,14 @@ const DriverDashboard = () => {
   const [incoming, setIncoming] = useState<Job | null>(null);
   const loadAvailableRef = useRef<(() => Promise<void>) | null>(null);
 
-  // The screen starts "Online" — make sure the server agrees, otherwise the
-  // job-visibility rules treat the driver as offline and hide every request.
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("driver_profiles")
-      .update({ is_online: isOnline })
-      .eq("user_id", user.id)
-      .then(() => loadAvailableRef.current?.());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
 
+  // Hydrate online/offline from the persisted profile so "Go offline"
+  // survives app restarts — never force the driver back online here.
   useEffect(() => {
     if (!user) return;
     supabase
       .from("driver_profiles")
-      .select("full_name,rating,is_verified,verification_status,vehicle_category")
+      .select("full_name,rating,is_verified,verification_status,vehicle_category,is_online")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -118,6 +109,7 @@ const DriverDashboard = () => {
         setIsVerified(Boolean((data as any)?.is_verified));
         setVerificationStatus(((data as any)?.verification_status as string | null) ?? null);
         setDriverVehicle(((data as any)?.vehicle_category as string | null) ?? null);
+        setIsOnline(((data as any)?.is_online as boolean | null) ?? true);
         setProfileLoaded(true);
       });
   }, [user]);
