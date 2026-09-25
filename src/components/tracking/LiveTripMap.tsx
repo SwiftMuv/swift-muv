@@ -115,7 +115,6 @@ const NativeLiveMap = ({ driver, target }: { driver: LatLngLiteral | null; targe
 
   return (
     <div className="absolute inset-0">
-      {/* @ts-expect-error capacitor custom element */}
       <capacitor-google-map ref={elRef} style={{ display: "block", width: "100%", height: "100%" }} />
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black text-xs text-white/60">{error}</div>
