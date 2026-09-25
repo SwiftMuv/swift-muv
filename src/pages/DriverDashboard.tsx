@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -91,6 +91,19 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [rejected, setRejected] = useState<string[]>([]);
   const [incoming, setIncoming] = useState<Job | null>(null);
+  const loadAvailableRef = useRef<(() => Promise<void>) | null>(null);
+
+  // The screen starts "Online" — make sure the server agrees, otherwise the
+  // job-visibility rules treat the driver as offline and hide every request.
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("driver_profiles")
+      .update({ is_online: isOnline })
+      .eq("user_id", user.id)
+      .then(() => loadAvailableRef.current?.());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -169,6 +182,7 @@ const DriverDashboard = () => {
 
     setAvailable(jobs);
   }, [user, driverVehicle, profileLoaded]);
+  loadAvailableRef.current = loadAvailable;
 
 
 
