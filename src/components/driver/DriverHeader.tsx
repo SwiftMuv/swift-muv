@@ -1,4 +1,4 @@
-import { Info, LogOut, FileText } from "lucide-react";
+import { Info, LogOut, FileText, Power } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +20,7 @@ interface DriverHeaderProps {
   avatarUrl?: string | null;
 }
 
-export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderProps) => {
+export const DriverHeader = ({ isOnline, onToggleOnline, driverName, avatarUrl }: DriverHeaderProps) => {
   const { signOut } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -82,6 +82,10 @@ export const DriverHeader = ({ isOnline, driverName, avatarUrl }: DriverHeaderPr
                   {isOnline ? t("common.online") : t("common.offline")}
                 </p>
               </div>
+              <DropdownMenuItem onClick={onToggleOnline} className="text-sm">
+                <Power className="w-4 h-4 mr-2" />
+                {isOnline ? "Go offline" : "Go online"}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/terms")} className="text-sm">
                 <FileText className="w-4 h-4 mr-2" />
