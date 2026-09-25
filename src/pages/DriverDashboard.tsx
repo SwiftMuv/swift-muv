@@ -275,7 +275,7 @@ const DriverDashboard = () => {
       if (cur && available.some((j) => j.id === cur.id) && !rejected.includes(cur.id)) return cur;
       return available.find((j) => !rejected.includes(j.id)) ?? null;
     });
-  }, [available, rejected, isOnline, isVerified, activeJob]);
+  }, [available, rejected, isOnline, isVerified, activeJob, profileLoaded]);
 
   const handleRejectJob = (jobId: string) => {
     setRejected((r) => (r.includes(jobId) ? r : [...r, jobId]));
