@@ -136,7 +136,7 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
     <div className="absolute inset-0">
       <capacitor-google-map ref={elRef} style={{ display: "block", width: "100%", height: "100%" }} />
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black text-xs text-white/60">{error}</div>
+        <div className="absolute inset-0 flex items-center justify-center bg-background text-xs text-muted-foreground">{error}</div>
       )}
     </div>
   );
@@ -156,7 +156,7 @@ const LiveTripMap = ({ bookingId, target, destination = null, showWaitingOverlay
   }, [position?.lat, position?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="relative h-full w-full bg-black">
+    <div className="relative h-full w-full bg-background">
       {native ? (
         <NativeLiveMap driver={smooth} target={target} destination={destination} />
       ) : (
@@ -164,7 +164,7 @@ const LiveTripMap = ({ bookingId, target, destination = null, showWaitingOverlay
       )}
 
       {!position && showWaitingOverlay && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 text-xs text-white/80">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/70 text-xs text-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
           Waiting for the driver's live location…
         </div>

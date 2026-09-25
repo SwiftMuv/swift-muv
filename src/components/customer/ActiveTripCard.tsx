@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
+import { Capacitor } from "@capacitor/core";
 
 interface Props {
   bookingId: string;
@@ -134,10 +135,11 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
     .join("")
     .toUpperCase();
   const vehicleLabel = info ? [info.vehicle_color, info.vehicle_make, info.vehicle_model].filter(Boolean).join(" ") : "";
+  const native = Capacitor.isNativePlatform();
 
   return (
     <div className={fullScreen ? "fixed inset-0 z-30 overflow-hidden bg-background text-foreground" : "overflow-hidden rounded-2xl bg-background text-foreground"}>
-      <div className={fullScreen ? "absolute inset-0 bottom-[290px] bg-background" : "relative h-56 w-full bg-background"}>
+      <div className={fullScreen ? (native ? "absolute inset-0 bottom-[290px] bg-background" : "absolute inset-0 bg-background") : "relative h-56 w-full bg-background"}>
         <LiveTripMap
           bookingId={bookingId}
           target={pickupPos}
@@ -256,11 +258,11 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
         )}
 
         {completionCode && (
-          <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3">
-            <KeyRound className="h-5 w-5 shrink-0 text-white/70" />
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/60 p-3">
+            <KeyRound className="h-5 w-5 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wider text-white/50">{t("cust.trip.completionCode")}</p>
-              <p className="text-xs text-white/70">{t("cust.trip.shareCodeNote")}</p>
+              <p className="text-[10px] uppercase text-muted-foreground">{t("cust.trip.completionCode")}</p>
+              <p className="text-xs text-muted-foreground">{t("cust.trip.shareCodeNote")}</p>
             </div>
             <p className="font-mono text-xl font-bold tracking-[0.3em]">{completionCode}</p>
           </div>
