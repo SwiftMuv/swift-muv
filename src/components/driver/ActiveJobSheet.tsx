@@ -18,6 +18,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import JobChatSheet from "@/components/shared/JobChatSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useBookingLocationBroadcast } from "@/hooks/useBookingLocationBroadcast";
 
 interface ActiveJobSheetProps {
   job: Job | null;
@@ -44,6 +45,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
 
   const threadJobId = job?.jobId ?? job?.id ?? null;
   const bookingId = job?.bookingId ?? null;
+  const gpsState = useBookingLocationBroadcast(bookingId, Boolean(job) && job?.status !== "completed");
 
   useEffect(() => {
     if (!bookingId) return;
