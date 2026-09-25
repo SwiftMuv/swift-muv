@@ -66,9 +66,6 @@ const DriverDashboard = () => {
   const { t } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
 
-  // Stream GPS to driver_profiles while online so the 20km RLS filter works
-  useDriverGeolocation(user?.id, isOnline);
-
   // Persist online/offline so RLS sees current state
   const toggleOnline = async () => {
     const next = !isOnline;
@@ -87,29 +84,25 @@ const DriverDashboard = () => {
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [driverVehicle, setDriverVehicle] = useState<string | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Stream GPS to driver_profiles while online so the 20km RLS filter works.
+  // Held off until the persisted online flag loads, so an offline driver who
+  // reopens the app never streams location.
+  useDriverGeolocation(user?.id, profileLoaded && isOnline);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
   const [rejected, setRejected] = useState<string[]>([]);
   const [incoming, setIncoming] = useState<Job | null>(null);
   const loadAvailableRef = useRef<(() => Promise<void>) | null>(null);
 
-  // The screen starts "Online" — make sure the server agrees, otherwise the
-  // job-visibility rules treat the driver as offline and hide every request.
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("driver_profiles")
-      .update({ is_online: isOnline })
-      .eq("user_id", user.id)
-      .then(() => loadAvailableRef.current?.());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
 
+  // Hydrate online/offline from the persisted profile so "Go offline"
+  // survives app restarts — never force the driver back online here.
   useEffect(() => {
     if (!user) return;
     supabase
       .from("driver_profiles")
-      .select("full_name,rating,is_verified,verification_status,vehicle_category")
+      .select("full_name,rating,is_verified,verification_status,vehicle_category,is_online")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -118,6 +111,7 @@ const DriverDashboard = () => {
         setIsVerified(Boolean((data as any)?.is_verified));
         setVerificationStatus(((data as any)?.verification_status as string | null) ?? null);
         setDriverVehicle(((data as any)?.vehicle_category as string | null) ?? null);
+        setIsOnline(((data as any)?.is_online as boolean | null) ?? true);
         setProfileLoaded(true);
       });
   }, [user]);
@@ -273,7 +267,7 @@ const DriverDashboard = () => {
 
   // Queue the next matching request into the high-priority popup
   useEffect(() => {
-    if (!isOnline || isVerified !== true || activeJob) {
+    if (!profileLoaded || !isOnline || isVerified !== true || activeJob) {
       setIncoming(null);
       return;
     }
@@ -281,7 +275,7 @@ const DriverDashboard = () => {
       if (cur && available.some((j) => j.id === cur.id) && !rejected.includes(cur.id)) return cur;
       return available.find((j) => !rejected.includes(j.id)) ?? null;
     });
-  }, [available, rejected, isOnline, isVerified, activeJob]);
+  }, [available, rejected, isOnline, isVerified, activeJob, profileLoaded]);
 
   const handleRejectJob = (jobId: string) => {
     setRejected((r) => (r.includes(jobId) ? r : [...r, jobId]));
