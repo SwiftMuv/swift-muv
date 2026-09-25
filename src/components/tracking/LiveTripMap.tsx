@@ -10,6 +10,7 @@ interface Props {
   bookingId: string;
   target: LatLngLiteral | null; // pickup or destination
   destination?: LatLngLiteral | null;
+  showWaitingOverlay?: boolean;
   onDriverPosition?: (p: LatLngLiteral | null) => void;
   onEtaUpdate?: (min: number) => void;
 }
@@ -145,7 +146,7 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
  * Live trip tracking: realtime driver position from the booking row,
  * smooth marker movement, loading and connection-lost states.
  */
-const LiveTripMap = ({ bookingId, target, destination = null, onDriverPosition, onEtaUpdate }: Props) => {
+const LiveTripMap = ({ bookingId, target, destination = null, showWaitingOverlay = true, onDriverPosition, onEtaUpdate }: Props) => {
   const { position, connection } = useLiveDriverLocation(bookingId);
   const smooth = useSmoothPosition(position);
   const native = Capacitor.isNativePlatform();
@@ -162,7 +163,7 @@ const LiveTripMap = ({ bookingId, target, destination = null, onDriverPosition, 
         <DriverTrackingMap driverLocation={smooth} pickupLocation={target} dropoffLocation={destination} onEtaUpdate={onEtaUpdate} />
       )}
 
-      {!position && (
+      {!position && showWaitingOverlay && (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 text-xs text-white/80">
           <Loader2 className="h-5 w-5 animate-spin" />
           Waiting for the driver's live location…

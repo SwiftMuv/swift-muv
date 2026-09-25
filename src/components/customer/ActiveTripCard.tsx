@@ -142,6 +142,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
           bookingId={bookingId}
           target={pickupPos}
           destination={dropoffPos}
+          showWaitingOverlay={Boolean(info)}
           onDriverPosition={setLiveDriverPos}
           onEtaUpdate={setRouteEtaMin}
         />
@@ -154,7 +155,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
       </div>
 
       {info ? <DriverInfoCard
-        className={fullScreen ? "absolute inset-x-0 bottom-0 z-20 max-h-[54vh] overflow-y-auto rounded-t-3xl pb-[calc(env(safe-area-inset-bottom)+3rem)]" : undefined}
+        className={fullScreen ? "absolute inset-x-0 bottom-0 z-20 max-h-[54vh] animate-in slide-in-from-bottom-6 overflow-y-auto rounded-t-3xl pb-[calc(env(safe-area-inset-bottom)+3rem)] duration-500" : undefined}
         statusTitle={etaMin != null ? t("cust.trip.pickupInMin", { min: etaMin }) : t("cust.trip.driverOnWay")}
         statusSubtitle={t("cust.trip.meetAtSpot")}
         pickupAddress={pickupAddress}
