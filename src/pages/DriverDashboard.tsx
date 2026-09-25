@@ -267,7 +267,7 @@ const DriverDashboard = () => {
 
   // Queue the next matching request into the high-priority popup
   useEffect(() => {
-    if (!isOnline || isVerified !== true || activeJob) {
+    if (!profileLoaded || !isOnline || isVerified !== true || activeJob) {
       setIncoming(null);
       return;
     }
