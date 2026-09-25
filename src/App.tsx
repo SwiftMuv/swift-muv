@@ -18,6 +18,8 @@ import BookingConfirmation from "./pages/BookingConfirmation.tsx";
 import CustomerDashboard from "./pages/CustomerDashboard.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Receipt from "./pages/Receipt.tsx";
+import TripCompleteListener from "@/components/TripCompleteListener";
 import About from "./pages/About.tsx";
 import Terms from "./pages/Terms.tsx";
 import TermsOfService from "./pages/TermsOfService.tsx";
@@ -37,6 +39,7 @@ const App = () => (
           <AuthBootGate>
           <AppBootstrap />
           <IdleLogout />
+          <TripCompleteListener />
           <Routes>
             <Route path="/" element={<EntryRedirect />} />
             <Route path="/about" element={<About />} />
@@ -97,6 +100,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/receipt/:bookingId" element={<ProtectedRoute requiredRole="customer"><Receipt /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
