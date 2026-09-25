@@ -171,6 +171,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [locating, setLocating] = useState(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const preCheckoutBookingIdRef = useRef<string | null>(null);
+  const checkoutSessionIdRef = useRef<string | null>(null);
   const { driver: assignedDriver, loading: driverLoading, etaMinutes: driverEta } = useAssignedDriver(
     activeBookingId,
     distance?.pickup ?? currentLocation,
@@ -366,7 +367,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       if (!accessToken) throw new Error("Missing auth token");
 
       const { data: payload, error: checkoutError } = await supabase.functions.invoke<{
-        clientSecret?: string; publishableKey?: string; error?: string;
+        clientSecret?: string; publishableKey?: string; sessionId?: string; error?: string;
       }>("stripe_checkout", {
         headers: { Authorization: `Bearer ${accessToken}` },
         body: { bookingPayload, amountCad: quote.finalPrice },
@@ -377,6 +378,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         setSubmitting(false);
         return;
       }
+      checkoutSessionIdRef.current = payload.sessionId ?? null;
       setClientSecret(payload.clientSecret);
       setPublishableKey(payload.publishableKey);
       // Remember the newest existing booking so that, after checkout closes, we
@@ -1014,13 +1016,28 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           // polling. Only reveal driver details for a booking that was actually
           // paid for: the payment webhook creates a brand-new booking row, so if
           // the customer cancelled, no new row appears and nothing is shown.
-          onBooked?.();
-          if (!user) return;
+          if (!user) { onBooked?.(); return; }
           const before = preCheckoutBookingIdRef.current;
           void (async () => {
+            // Confirm directly with the payment provider first, so the booking
+            // is created even if the payment webhook never arrives.
+            try {
+              const { data: conf } = await supabase.functions.invoke<{ bookingId?: string | null }>(
+                "confirm-checkout",
+                { body: { sessionId: checkoutSessionIdRef.current } },
+              );
+              onBooked?.();
+              if (conf?.bookingId) {
+                setActiveBookingId(conf.bookingId);
+                return;
+              }
+            } catch (e) {
+              console.warn("confirm-checkout failed", e);
+              onBooked?.();
+            }
             // Poll for up to ~60s: the payment webhook can be slow. If it never
             // lands, tell the customer instead of silently showing nothing.
-            for (let attempt = 0; attempt < 40; attempt++) {
+            for (let attempt = 0; attempt < 8; attempt++) {
               const { data } = await supabase
                 .from("bookings")
                 .select("id")
