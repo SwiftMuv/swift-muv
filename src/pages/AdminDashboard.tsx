@@ -26,6 +26,8 @@ type Booking = {
   move_size: string;
   vehicle_category: string | null;
   created_at: string;
+  pickup_lat?: number | null; pickup_lng?: number | null; dropoff_lat?: number | null; dropoff_lng?: number | null;
+  driver_lat?: number | null; driver_lng?: number | null;
 };
 
 type Profile = {
@@ -55,6 +57,36 @@ type VehicleCategoryRow = {
   display_order: number;
 };
 
+const hk = (a: number, b: number, c: number, d: number) => {
+  const r = Math.PI / 180, x = Math.sin(((c - a) * r) / 2), y = Math.sin(((d - b) * r) / 2);
+  return 2 * 6371 * Math.asin(Math.sqrt(x * x + Math.cos(a * r) * Math.cos(c * r) * y * y));
+};
+
+const TripProgress = ({ b }: { b: Booking }) => {
+  if (b.status === "cancelled") return null;
+  let pct = 0;
+  let label = "Waiting for driver";
+  if (b.status === "completed") { pct = 100; label = "Delivered"; }
+  else if (b.pickup_lat != null && b.pickup_lng != null && b.dropoff_lat != null && b.dropoff_lng != null) {
+    const total = hk(b.pickup_lat, b.pickup_lng, b.dropoff_lat, b.dropoff_lng);
+    if (b.driver_lat != null && b.driver_lng != null && total > 0) {
+      const left = hk(b.driver_lat, b.driver_lng, b.dropoff_lat, b.dropoff_lng);
+      pct = Math.round(Math.min(Math.max(1 - left / total, 0), 1) * 100);
+      label = `${left.toFixed(1)} km to drop-off`;
+    } else if (b.status !== "pending") label = "Driver assigned – no GPS yet";
+  } else return null;
+  return (
+    <div className="mt-2 w-full max-w-sm">
+      <div className="mb-1 flex justify-between text-[11px] text-muted-foreground">
+        <span>Pickup</span><span>{pct}% · {label}</span><span>Drop-off</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const { user, signOut } = useAuth();
   const { formatCurrency } = useI18n();
@@ -76,7 +108,7 @@ const AdminDashboard = () => {
       const [bRes, pRes, dRes, adRes, vRes, dvRes] = await Promise.all([
         supabase
           .from("bookings")
-          .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, vehicle_category, created_at")
+          .select("id, customer_id, status, total_price, pickup_address, dropoff_address, move_size, vehicle_category, created_at, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, driver_lat, driver_lng")
           .order("created_at", { ascending: false })
           .limit(100),
         supabase.rpc("get_profiles"),
@@ -116,6 +148,17 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-bookings-progress")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "bookings" }, (p) => {
+        const n = p.new as Booking;
+        setBookings((prev) => prev.map((b) => (b.id === n.id ? { ...b, ...n } : b)));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const stats = useMemo(() => {
     const totalRevenue = bookings
@@ -406,6 +449,7 @@ const AdminDashboard = () => {
                         <div className="text-xs text-muted-foreground">
                           {new Date(b.created_at).toLocaleString()} · {b.move_size}
                         </div>
+                        <TripProgress b={b} />
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge variant={b.status === "completed" ? "default" : b.status === "cancelled" ? "destructive" : "secondary"}>
@@ -443,6 +487,7 @@ const AdminDashboard = () => {
                         <div className="text-xs text-muted-foreground">
                           {new Date(b.created_at).toLocaleString()} · {b.move_size}
                         </div>
+                        <TripProgress b={b} />
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant={b.status === "completed" ? "default" : b.status === "cancelled" ? "destructive" : "secondary"}>
