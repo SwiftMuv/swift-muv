@@ -66,10 +66,7 @@ const DriverDashboard = () => {
   const { t } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
 
-  // Stream GPS to driver_profiles while online so the 20km RLS filter works.
-  // Held off until the persisted online flag loads, so an offline driver who
-  // reopens the app never streams location.
-  useDriverGeolocation(user?.id, profileLoaded && isOnline);
+  const [activeTab, setActiveTab] = useState("home");
 
   // Persist online/offline so RLS sees current state
   const toggleOnline = async () => {
