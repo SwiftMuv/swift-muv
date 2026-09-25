@@ -68,6 +68,18 @@ const CustomerDashboard = () => {
 
   useEffect(() => { loadBookings(); }, [loadBookings]);
 
+  // Recover any paid checkouts whose booking was never created (e.g. the
+  // payment webhook was not delivered), then refresh the list.
+  useEffect(() => {
+    if (!user) return;
+    void (async () => {
+      try {
+        const { data } = await supabase.functions.invoke<{ created?: string[] }>("confirm-checkout", { body: {} });
+        if (data?.created?.length) loadBookings();
+      } catch { /* best effort */ }
+    })();
+  }, [user, loadBookings]);
+
   // Handle Stripe checkout success redirect — the booking row is created
   // asynchronously by the stripe-webhook edge function.
   useEffect(() => {
