@@ -65,7 +65,7 @@ const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => 
 
 const DriverDashboard = () => {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
 
   // Persist online/offline so RLS sees current state
