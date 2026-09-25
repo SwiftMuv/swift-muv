@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +21,7 @@ import { useBookingLocationBroadcast } from "@/hooks/useBookingLocationBroadcast
 
 interface ActiveJobSheetProps {
   job: Job | null;
-  onUpdateStatus: (status: JobStatus, coords?: { lat: number; lng: number }) => void | Promise<void>;
+  onUpdateStatus: (status: JobStatus, coords?: { lat: number; lng: number }) => unknown;
   onCancelJob?: () => Promise<void> | void;
 }
 
