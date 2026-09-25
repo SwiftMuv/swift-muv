@@ -1,0 +1,2 @@
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS driver_lat double precision, ADD COLUMN IF NOT EXISTS driver_lng double precision, ADD COLUMN IF NOT EXISTS driver_location_updated_at timestamptz;
+ALTER TABLE public.bookings REPLICA IDENTITY FULL;

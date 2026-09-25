@@ -18,6 +18,7 @@ import { useI18n } from "@/contexts/I18nContext";
 import JobChatSheet from "@/components/shared/JobChatSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useBookingLocationBroadcast } from "@/hooks/useBookingLocationBroadcast";
 
 interface ActiveJobSheetProps {
   job: Job | null;
@@ -44,6 +45,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
 
   const threadJobId = job?.jobId ?? job?.id ?? null;
   const bookingId = job?.bookingId ?? null;
+  const gpsState = useBookingLocationBroadcast(bookingId, Boolean(job) && job?.status !== "completed");
 
   useEffect(() => {
     if (!bookingId) return;
@@ -109,6 +111,15 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
     <Sheet open>
       <SheetContent side="bottom" className="rounded-t-3xl max-h-[70vh] overflow-y-auto pb-8">
         <SheetHeader className="pb-3">
+          <p className={`text-xs ${gpsState === "active" ? "text-[hsl(var(--swift-success))]" : gpsState === "denied" || gpsState === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+            {gpsState === "active"
+              ? "● Sharing live location with customer"
+              : gpsState === "denied"
+                ? "Location permission denied — enable it in Settings so the customer can track you"
+                : gpsState === "error"
+                  ? "Couldn't read GPS — retrying"
+                  : "Waiting for GPS…"}
+          </p>
           <div className="flex items-center justify-between">
             <SheetTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               {t("driver.activeJob")} · {job.id}

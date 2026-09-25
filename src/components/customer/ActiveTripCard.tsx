@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getVehicleImage } from "@/lib/vehicleImages";
 import JobChatSheet from "@/components/shared/JobChatSheet";
 import DriverInfoCard from "@/components/customer/DriverInfoCard";
-import DriverTrackingMap from "@/components/tracking/DriverTrackingMap";
+import LiveTripMap from "@/components/tracking/LiveTripMap";
 import { haversineKm, type LatLngLiteral } from "@/lib/mapCore";
 import {
   DropdownMenu,
@@ -98,9 +98,12 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
     };
   }, [bookingId]);
 
+  const [liveDriverPos, setLiveDriverPos] = useState<LatLngLiteral | null>(null);
   const driverPos = useMemo<LatLngLiteral | null>(
-    () => (info?.current_lat != null && info?.current_lng != null ? { lat: info.current_lat, lng: info.current_lng } : null),
-    [info?.current_lat, info?.current_lng],
+    () =>
+      liveDriverPos ??
+      (info?.current_lat != null && info?.current_lng != null ? { lat: info.current_lat, lng: info.current_lng } : null),
+    [liveDriverPos, info?.current_lat, info?.current_lng],
   );
   const pickupPos = useMemo<LatLngLiteral | null>(
     () => (pickupLat != null && pickupLng != null ? { lat: pickupLat, lng: pickupLng } : null),
@@ -109,7 +112,6 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
 
   if (!info) return null;
 
-  const hasMapPoints = Boolean(driverPos || pickupPos);
   const km = driverPos && pickupPos ? haversineKm(driverPos, pickupPos) : null;
   const miles = km != null ? km * 0.621371 : null;
   const etaMin = routeEtaMin ?? (km != null ? Math.max(1, Math.round((km / 30) * 60)) : null);
@@ -128,17 +130,12 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
     <div className="overflow-hidden rounded-2xl bg-black text-white">
       {/* Map */}
       <div className="relative h-56 w-full bg-black">
-        {hasMapPoints ? (
-          <DriverTrackingMap
-            driverLocation={driverPos}
-            pickupLocation={pickupPos}
-            onEtaUpdate={setRouteEtaMin}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs text-white/50">
-            {t("cust.trip.waitingLocation")}
-          </div>
-        )}
+        <LiveTripMap
+          bookingId={bookingId}
+          target={pickupPos}
+          onDriverPosition={setLiveDriverPos}
+          onEtaUpdate={setRouteEtaMin}
+        />
 
         {miles != null && (
           <div className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-black shadow-lg">
