@@ -111,6 +111,15 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
     <Sheet open>
       <SheetContent side="bottom" className="rounded-t-3xl max-h-[70vh] overflow-y-auto pb-8">
         <SheetHeader className="pb-3">
+          <p className={`text-xs ${gpsState === "active" ? "text-[hsl(var(--swift-success))]" : gpsState === "denied" || gpsState === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+            {gpsState === "active"
+              ? "● Sharing live location with customer"
+              : gpsState === "denied"
+                ? "Location permission denied — enable it in Settings so the customer can track you"
+                : gpsState === "error"
+                  ? "Couldn't read GPS — retrying"
+                  : "Waiting for GPS…"}
+          </p>
           <div className="flex items-center justify-between">
             <SheetTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               {t("driver.activeJob")} · {job.id}
