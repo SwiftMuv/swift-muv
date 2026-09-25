@@ -86,6 +86,11 @@ const DriverDashboard = () => {
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [driverVehicle, setDriverVehicle] = useState<string | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Stream GPS to driver_profiles while online so the 20km RLS filter works.
+  // Held off until the persisted online flag loads, so an offline driver who
+  // reopens the app never streams location.
+  useDriverGeolocation(user?.id, profileLoaded && isOnline);
   const [stats, setStats] = useState({ today: 0, week: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
   const [rejected, setRejected] = useState<string[]>([]);
