@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { KeyRound, Share2, Copy, LifeBuoy, MapPin } from "lucide-react";
+import { KeyRound, Share2, Copy, LifeBuoy, MapPin, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getVehicleImage } from "@/lib/vehicleImages";
 import JobChatSheet from "@/components/shared/JobChatSheet";
@@ -20,6 +20,10 @@ interface Props {
   pickupAddress: string;
   pickupLat?: number | null;
   pickupLng?: number | null;
+  dropoffLat?: number | null;
+  dropoffLng?: number | null;
+  bookingStatus?: string;
+  fullScreen?: boolean;
 }
 
 interface DriverInfo {
@@ -39,13 +43,14 @@ interface DriverInfo {
 }
 
 
-const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Props) => {
+const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropoffLat, dropoffLng, bookingStatus, fullScreen = false }: Props) => {
   const { t } = useI18n();
   const [info, setInfo] = useState<DriverInfo | null>(null);
   const [completionCode, setCompletionCode] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [routeEtaMin, setRouteEtaMin] = useState<number | null>(null);
+  const [assignmentLoading, setAssignmentLoading] = useState(true);
   const driverIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +66,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
           setInfo(null);
           setCompletionCode(null);
           setJobId(null);
+          setAssignmentLoading(false);
         }
         return;
       }
@@ -79,6 +85,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
       if (!active) return;
       setInfo((profile as unknown as DriverInfo) ?? null);
       setCompletionCode((code as string | null) ?? null);
+      setAssignmentLoading(false);
     };
     load();
     const poll = setInterval(load, 10000);
@@ -109,42 +116,45 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
     () => (pickupLat != null && pickupLng != null ? { lat: pickupLat, lng: pickupLng } : null),
     [pickupLat, pickupLng],
   );
-
-  if (!info) return null;
+  const dropoffPos = useMemo<LatLngLiteral | null>(
+    () => (dropoffLat != null && dropoffLng != null ? { lat: dropoffLat, lng: dropoffLng } : null),
+    [dropoffLat, dropoffLng],
+  );
 
   const km = driverPos && pickupPos ? haversineKm(driverPos, pickupPos) : null;
   const miles = km != null ? km * 0.621371 : null;
   const etaMin = routeEtaMin ?? (km != null ? Math.max(1, Math.round((km / 30) * 60)) : null);
 
-  const photo = info.profile_picture_url || info.avatar_url || undefined;
-  const carImg = info.vehicle_photo_url || getVehicleImage(info.vehicle_category);
-  const initials = (info.full_name ?? t("cust.trip.driver"))
+  const photo = info?.profile_picture_url || info?.avatar_url || undefined;
+  const carImg = info ? info.vehicle_photo_url || getVehicleImage(info.vehicle_category) : undefined;
+  const initials = (info?.full_name ?? t("cust.trip.driver"))
     .split(" ")
     .map((s) => s[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  const vehicleLabel = [info.vehicle_color, info.vehicle_make, info.vehicle_model].filter(Boolean).join(" ");
+  const vehicleLabel = info ? [info.vehicle_color, info.vehicle_make, info.vehicle_model].filter(Boolean).join(" ") : "";
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-black text-white">
-      {/* Map */}
-      <div className="relative h-56 w-full bg-black">
+    <div className={fullScreen ? "fixed inset-0 z-30 overflow-hidden bg-background text-foreground" : "overflow-hidden rounded-2xl bg-background text-foreground"}>
+      <div className={fullScreen ? "absolute inset-0 bottom-[290px] bg-background" : "relative h-56 w-full bg-background"}>
         <LiveTripMap
           bookingId={bookingId}
           target={pickupPos}
+          destination={dropoffPos}
           onDriverPosition={setLiveDriverPos}
           onEtaUpdate={setRouteEtaMin}
         />
 
         {miles != null && (
-          <div className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-black shadow-lg">
+          <div className="pointer-events-none absolute bottom-4 left-4 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-card-foreground shadow-lg">
             {t("cust.trip.milesAway", { miles: miles.toFixed(1) })}
           </div>
         )}
       </div>
 
-      <DriverInfoCard
+      {info ? <DriverInfoCard
+        className={fullScreen ? "absolute inset-x-0 bottom-0 z-20 max-h-[54vh] overflow-y-auto rounded-t-3xl pb-[calc(env(safe-area-inset-bottom)+3rem)]" : undefined}
         statusTitle={etaMin != null ? t("cust.trip.pickupInMin", { min: etaMin }) : t("cust.trip.driverOnWay")}
         statusSubtitle={t("cust.trip.meetAtSpot")}
         pickupAddress={pickupAddress}
@@ -254,7 +264,29 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng }: Prop
             <p className="font-mono text-xl font-bold tracking-[0.3em]">{completionCode}</p>
           </div>
         )}
-      </DriverInfoCard>
+      </DriverInfoCard> : (
+        <div className={fullScreen ? "absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-border bg-card px-6 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-3 shadow-2xl" : "border-t border-border bg-card p-6"}>
+          <div className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-muted" />
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-lg font-bold">{assignmentLoading ? "Checking your trip…" : "Finding your driver"}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {bookingStatus === "pending" ? "Nearby drivers can see your request now." : "Your driver details will appear here as soon as they accept."}
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex items-start gap-3 rounded-lg bg-muted/60 p-3">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Pick-up point</p>
+              <p className="mt-1 truncate text-sm font-medium">{pickupAddress}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
