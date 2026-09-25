@@ -32,6 +32,8 @@ export interface Job {
   etaMinutes?: number | null;
   vehicleCategory?: string | null;
   vehicleLabel?: string | null;
+  dropoffLat?: number | null;
+  dropoffLng?: number | null;
 }
 
 
@@ -63,7 +65,7 @@ const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => 
 
 const DriverDashboard = () => {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
 
   // Persist online/offline so RLS sees current state
@@ -184,7 +186,7 @@ const DriverDashboard = () => {
     if (!user) return;
     const { data } = await supabase
       .from("jobs")
-      .select("id, booking_id, status, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price)")
+      .select("id, booking_id, status, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price,dropoff_lat,dropoff_lng)")
       .eq("driver_id", user.id)
       .neq("status", "completed")
       .maybeSingle();
@@ -203,6 +205,8 @@ const DriverDashboard = () => {
       moveSize: sizeLabel(b.move_size),
       price: Number(b.total_price),
       status: data.status as JobStatus,
+      dropoffLat: b.dropoff_lat ?? null,
+      dropoffLng: b.dropoff_lng ?? null,
     });
   }, [user]);
 
@@ -313,42 +317,32 @@ const DriverDashboard = () => {
   };
 
 
-  const handleUpdateJobStatus = async (nextStatus: JobStatus, code?: string) => {
+  const handleUpdateJobStatus = async (nextStatus: JobStatus, coords?: { lat: number; lng: number }) => {
     if (!activeJob?.jobId) return;
 
     if (nextStatus === "completed") {
-      if (!code) {
-        toast.error(t("driver.invalidCode"));
-        return;
-      }
-      const { data: ok, error } = await supabase.rpc("complete_job_with_code", {
+      if (!coords) return;
+      const { data: ok, error } = await supabase.rpc("complete_job_by_geofence" as never, {
         _job_id: activeJob.jobId,
-        _code: code,
-      });
+        _lat: coords.lat,
+        _lng: coords.lng,
+      } as never);
       if (error) return toast.error(error.message);
-      if (!ok) return toast.error(t("driver.invalidCode"));
+      if (!ok) return toast.error(t("drv.geofence.notYet"));
 
-      await supabase.from("bookings").update({ status: "completed" }).eq("id", activeJob.bookingId);
       setActiveJob({ ...activeJob, status: "completed" });
-
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
-        if (token) {
-          await supabase.functions.invoke("release-earnings", {
-            headers: { Authorization: `Bearer ${token}` },
-            body: { jobId: activeJob.jobId },
-          });
-        }
+        await supabase.functions.invoke("release-earnings", { body: { jobId: activeJob.jobId } });
       } catch (e) {
         console.warn("release-earnings failed", e);
       }
-      toast.success(t("driver.jobCompletedToast"));
+      await loadStats();
+      toast.success(t("drv.geofence.completed", { amount: formatCurrency(activeJob.price) }));
       setTimeout(() => {
         setActiveJob(null);
         loadAvailable();
         loadStats();
-      }, 1800);
+      }, 2500);
       return;
     }
 

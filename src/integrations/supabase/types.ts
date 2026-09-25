@@ -804,6 +804,10 @@ export type Database = {
         Args: { _job_id: string; _user_id: string }
         Returns: boolean
       }
+      complete_job_by_geofence: {
+        Args: { _job_id: string; _lat: number; _lng: number }
+        Returns: boolean
+      }
       complete_job_with_code: {
         Args: { _code: string; _job_id: string }
         Returns: boolean

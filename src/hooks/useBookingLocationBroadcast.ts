@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +12,14 @@ const MIN_INTERVAL_MS = 5_000;
  * Driver side: watches the device GPS while a trip is active and writes
  * driver_lat / driver_lng onto the booking row (throttled to every ~5s).
  */
-export function useBookingLocationBroadcast(bookingId: string | null | undefined, enabled: boolean) {
+export function useBookingLocationBroadcast(
+  bookingId: string | null | undefined,
+  enabled: boolean,
+  onPosition?: (lat: number, lng: number, accuracy: number | null) => void,
+) {
   const [state, setState] = useState<BroadcastState>("idle");
+  const onPosRef = useRef(onPosition);
+  onPosRef.current = onPosition;
 
   useEffect(() => {
     if (!bookingId || !enabled) {
@@ -47,10 +53,11 @@ export function useBookingLocationBroadcast(bookingId: string | null | undefined
       try {
         if (Capacitor.isNativePlatform()) {
           nativeWatch = await Geolocation.watchPosition(
-            { enableHighAccuracy: true, timeout: 20_000, maximumAge: 3_000 },
+            { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
             (pos, err) => {
               if (err || !pos) return;
               setState("active");
+              onPosRef.current?.(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? null);
               push(pos.coords.latitude, pos.coords.longitude);
             },
           );
@@ -58,10 +65,11 @@ export function useBookingLocationBroadcast(bookingId: string | null | undefined
           webWatch = navigator.geolocation.watchPosition(
             (pos) => {
               setState("active");
+              onPosRef.current?.(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? null);
               push(pos.coords.latitude, pos.coords.longitude);
             },
             () => setState("error"),
-            { enableHighAccuracy: true, maximumAge: 3_000, timeout: 20_000 },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 },
           );
         }
       } catch {

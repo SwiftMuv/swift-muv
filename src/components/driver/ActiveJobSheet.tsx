@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +21,7 @@ import { useBookingLocationBroadcast } from "@/hooks/useBookingLocationBroadcast
 
 interface ActiveJobSheetProps {
   job: Job | null;
-  onUpdateStatus: (status: JobStatus, code?: string) => void;
+  onUpdateStatus: (status: JobStatus, coords?: { lat: number; lng: number }) => unknown;
   onCancelJob?: () => Promise<void> | void;
 }
 
@@ -35,8 +34,9 @@ const statusFlow: { status: JobStatus; label: string; icon: React.ReactNode; col
 
 export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSheetProps) => {
   const { t, formatCurrency } = useI18n();
-  const [codeInput, setCodeInput] = useState("");
-  const [codeError, setCodeError] = useState(false);
+  const [distToDropM, setDistToDropM] = useState<number | null>(null);
+  const lastPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const completingRef = useRef(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -45,7 +45,27 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
 
   const threadJobId = job?.jobId ?? job?.id ?? null;
   const bookingId = job?.bookingId ?? null;
-  const gpsState = useBookingLocationBroadcast(bookingId, Boolean(job) && job?.status !== "completed");
+  const dLat = job?.dropoffLat ?? null;
+  const dLng = job?.dropoffLng ?? null;
+  const jobStatus = job?.status;
+  const onPosition = useCallback(
+    (lat: number, lng: number) => {
+      lastPosRef.current = { lat, lng };
+      if (dLat == null || dLng == null) return;
+      const R = 6371000, r = (v: number) => (v * Math.PI) / 180;
+      const a = Math.sin(r(dLat - lat) / 2) ** 2 + Math.cos(r(lat)) * Math.cos(r(dLat)) * Math.sin(r(dLng - lng) / 2) ** 2;
+      const m = 2 * R * Math.asin(Math.sqrt(a));
+      setDistToDropM(m);
+      if (m <= 20 && jobStatus === "in_transit" && !completingRef.current) {
+        completingRef.current = true;
+        Promise.resolve(onUpdateStatus("completed", { lat, lng })).finally(() => {
+          setTimeout(() => { completingRef.current = false; }, 10_000);
+        });
+      }
+    },
+    [dLat, dLng, jobStatus, onUpdateStatus],
+  );
+  const gpsState = useBookingLocationBroadcast(bookingId, Boolean(job) && job?.status !== "completed", onPosition);
 
   useEffect(() => {
     if (!bookingId) return;
@@ -77,17 +97,14 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
 
   const handleNext = () => {
     if (isCompleteStep) {
-      if (!/^\d{4}$/.test(codeInput)) {
-        setCodeError(true);
+      if (!lastPosRef.current) {
+        toast.error(t("drv.geofence.notYet"));
         return;
       }
-      setCodeError(false);
-      onUpdateStatus(nextStep.status, codeInput);
-      setCodeInput("");
+      onUpdateStatus("completed", lastPosRef.current);
       return;
     }
     onUpdateStatus(nextStep.status);
-    setCodeInput("");
   };
 
   if (job.status === "completed") {
@@ -209,25 +226,14 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
           </div>
         </div>
 
-        {/* Completion Code */}
         {isCompleteStep && (
-          <div className="mb-4">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
-              {t("driver.enterCode")}
-            </label>
-            <Input
-              value={codeInput}
-              onChange={(e) => {
-                setCodeInput(e.target.value);
-                setCodeError(false);
-              }}
-              placeholder={t("drv.activeJob.codePlaceholder")}
-              maxLength={4}
-              className={`text-center text-2xl tracking-[0.5em] font-mono h-14 rounded-xl ${
-                codeError ? "border-destructive" : ""
-              }`}
-            />
-            {codeError && <p className="text-xs text-destructive mt-1">{t("driver.invalidCode")}</p>}
+          <div className="mb-4 rounded-xl bg-secondary p-3 text-center">
+            <p className="text-xs text-muted-foreground">{t("drv.geofence.hint")}</p>
+            {distToDropM != null && (
+              <p className="text-lg font-bold text-primary mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                {t("drv.geofence.distance", { m: Math.round(distToDropM) })}
+              </p>
+            )}
           </div>
         )}
 
