@@ -1,0 +1,1 @@
+Driver availability is set online only after a successful driver sign-in; dashboard reloads must not override an in-session offline choice.

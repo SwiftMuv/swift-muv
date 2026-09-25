@@ -9,6 +9,7 @@ import { SWIFTMUV_DARK_MAP_STYLES, SWIFTMUV_DEFAULT_CENTER, type LatLngLiteral }
 interface Props {
   bookingId: string;
   target: LatLngLiteral | null; // pickup or destination
+  destination?: LatLngLiteral | null;
   onDriverPosition?: (p: LatLngLiteral | null) => void;
   onEtaUpdate?: (min: number) => void;
 }
@@ -45,11 +46,13 @@ function useSmoothPosition(target: LatLngLiteral | null) {
   return pos;
 }
 
-const NativeLiveMap = ({ driver, target }: { driver: LatLngLiteral | null; target: LatLngLiteral | null }) => {
+const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral | null; target: LatLngLiteral | null; destination: LatLngLiteral | null }) => {
   const elRef = useRef<HTMLElement | null>(null);
   const mapRef = useRef<GoogleMap | null>(null);
   const driverMarker = useRef<string | null>(null);
   const targetMarker = useRef<string | null>(null);
+  const destinationMarker = useRef<string | null>(null);
+  const routeLines = useRef<string[]>([]);
   const fitted = useRef(false);
   const busy = useRef(false);
   const [ready, setReady] = useState(false);
@@ -92,6 +95,15 @@ const NativeLiveMap = ({ driver, target }: { driver: LatLngLiteral | null; targe
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!ready || !map || !destination) return;
+    (async () => {
+      if (destinationMarker.current) await map.removeMarker(destinationMarker.current).catch(() => {});
+      destinationMarker.current = await map.addMarker({ coordinate: destination, title: "Destination", tintColor: { r: 255, g: 193, b: 7, a: 1 } });
+    })();
+  }, [ready, destination?.lat, destination?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!ready || !map || !driver || busy.current) return;
     busy.current = true;
     (async () => {
@@ -99,6 +111,12 @@ const NativeLiveMap = ({ driver, target }: { driver: LatLngLiteral | null; targe
         const old = driverMarker.current;
         driverMarker.current = await map.addMarker({ coordinate: driver, title: "Driver", tintColor: { r: 43, g: 178, b: 255, a: 1 } });
         if (old) await map.removeMarker(old).catch(() => {});
+        if (target) {
+          if (routeLines.current.length) await map.removePolylines(routeLines.current).catch(() => {});
+          routeLines.current = await map.addPolylines([
+            { path: [driver, target], strokeColor: "#2BB2FF", strokeOpacity: 1, strokeWeight: 6 },
+          ]);
+        }
         if (!fitted.current && target) {
           fitted.current = true;
           await map.setCamera({
@@ -127,7 +145,7 @@ const NativeLiveMap = ({ driver, target }: { driver: LatLngLiteral | null; targe
  * Live trip tracking: realtime driver position from the booking row,
  * smooth marker movement, loading and connection-lost states.
  */
-const LiveTripMap = ({ bookingId, target, onDriverPosition, onEtaUpdate }: Props) => {
+const LiveTripMap = ({ bookingId, target, destination = null, onDriverPosition, onEtaUpdate }: Props) => {
   const { position, connection } = useLiveDriverLocation(bookingId);
   const smooth = useSmoothPosition(position);
   const native = Capacitor.isNativePlatform();
@@ -139,9 +157,9 @@ const LiveTripMap = ({ bookingId, target, onDriverPosition, onEtaUpdate }: Props
   return (
     <div className="relative h-full w-full bg-black">
       {native ? (
-        <NativeLiveMap driver={smooth} target={target} />
+        <NativeLiveMap driver={smooth} target={target} destination={destination} />
       ) : (
-        <DriverTrackingMap driverLocation={smooth} pickupLocation={target} onEtaUpdate={onEtaUpdate} />
+        <DriverTrackingMap driverLocation={smooth} pickupLocation={target} dropoffLocation={destination} onEtaUpdate={onEtaUpdate} />
       )}
 
       {!position && (

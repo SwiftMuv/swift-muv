@@ -26,7 +26,6 @@ const DriverTrackingMap = ({
       dropoff={dropoffLocation ?? null}
       routeMode="directions"
       fitMode="smart"
-      rounded
       showLiveBadge
       onEtaUpdate={onEtaUpdate}
     />

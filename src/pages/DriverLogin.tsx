@@ -161,7 +161,15 @@ const DriverLogin = () => {
 
     if (!isSignUp) {
       const { error } = await signIn(email, password);
-      if (error) toast.error(error.message);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const driverId = sessionData.session?.user.id;
+        if (driverId) {
+          await supabase.from("driver_profiles").update({ is_online: true }).eq("user_id", driverId);
+        }
+      }
       setLoading(false);
       return;
     }
@@ -190,7 +198,7 @@ const DriverLogin = () => {
       try {
         await supabase
           .from("driver_profiles")
-          .update({ license_plate: licensePlate })
+          .update({ license_plate: licensePlate, is_online: true })
           .eq("user_id", session.user.id);
         await uploadDriverFiles(session.user.id);
       } catch (err) {
