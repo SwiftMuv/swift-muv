@@ -35,6 +35,8 @@ interface Booking {
   dropoff_address: string;
   pickup_lat: number | null;
   pickup_lng: number | null;
+  dropoff_lat: number | null;
+  dropoff_lng: number | null;
   total_price: number;
   status: string;
   created_at: string;
@@ -59,7 +61,7 @@ const CustomerDashboard = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("bookings")
-      .select("id, pickup_address, dropoff_address, pickup_lat, pickup_lng, total_price, status, created_at")
+      .select("id, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, total_price, status, created_at")
       .eq("customer_id", user.id)
       .order("created_at", { ascending: false });
     if (!error && data) setBookings(data as Booking[]);
@@ -168,6 +170,7 @@ const CustomerDashboard = () => {
 
   const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status));
   const completed = bookings.filter((b) => b.status === "completed");
+  const trackedBooking = active[0] ?? null;
 
   const titles: Record<string, string> = {
     home: t("dashboard.customer.title.home"),
@@ -177,9 +180,9 @@ const CustomerDashboard = () => {
   };
 
   return (
-    <div className={`min-h-screen pb-20 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent" : "bg-background"}`}>
+    <div className={`min-h-screen pb-20 ${(activeTab === "bookings" && isNativeAndroid()) || (activeTab === "activities" && trackedBooking) ? "bg-transparent" : "bg-background"}`}>
       <TermsAgreementModal role="customer" />
-      <header className={`sticky top-0 z-40 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent border-b-0" : "bg-card/90 backdrop-blur-xl border-b"}`}>
+      {!(activeTab === "activities" && trackedBooking) && <header className={`sticky top-0 z-40 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent border-b-0" : "bg-card/90 backdrop-blur-xl border-b"}`}>
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
           <div className="w-11 h-11 overflow-visible shrink-0">
             <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
@@ -192,9 +195,9 @@ const CustomerDashboard = () => {
             <NotificationBell />
           </div>
         </div>
-      </header>
+      </header>}
 
-      <main className="mx-auto max-w-3xl px-4 pt-4">
+      <main className={activeTab === "activities" && trackedBooking ? "" : "mx-auto max-w-3xl px-4 pt-4"}>
         {activeTab === "home" && <CustomerHomeScreen />}
 
         {activeTab === "bookings" && (
@@ -202,7 +205,18 @@ const CustomerDashboard = () => {
         )}
 
         {activeTab === "activities" && (
-          <div className="space-y-3 pb-4">
+          trackedBooking ? (
+            <ActiveTripCard
+              bookingId={trackedBooking.id}
+              bookingStatus={trackedBooking.status}
+              pickupAddress={trackedBooking.pickup_address}
+              pickupLat={trackedBooking.pickup_lat}
+              pickupLng={trackedBooking.pickup_lng}
+              dropoffLat={trackedBooking.dropoff_lat}
+              dropoffLng={trackedBooking.dropoff_lng}
+              fullScreen
+            />
+          ) : <div className="space-y-3 pb-4">
             {loading && <p className="text-muted-foreground text-sm">{t("common.loading")}</p>}
             {!loading && bookings.length === 0 && (
               <Card>
@@ -227,14 +241,6 @@ const CustomerDashboard = () => {
                   <CardContent className="space-y-2 text-sm">
                     <p><span className="text-muted-foreground">{t("common.from")}</span> {b.pickup_address}</p>
                     <p><span className="text-muted-foreground">{t("common.to")}</span> {b.dropoff_address}</p>
-                    {isActive && b.status !== "pending" && (
-                      <ActiveTripCard
-                        bookingId={b.id}
-                        pickupAddress={b.pickup_address}
-                        pickupLat={b.pickup_lat}
-                        pickupLng={b.pickup_lng}
-                      />
-                    )}
                     {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
                     {canCancel && (
                       <Button
