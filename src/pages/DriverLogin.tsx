@@ -82,8 +82,12 @@ const DriverLogin = () => {
   };
 
   useEffect(() => {
-    if (user && role === "driver") {
+    if (!user || !role) return;
+    if (role === "driver") {
       navigate("/driver/dashboard", { replace: true });
+    } else {
+      toast.info(role === "admin" ? "This is an admin account — opening the admin page." : "This is a customer account — opening the customer page.");
+      navigate(role === "admin" ? "/admin" : "/dashboard", { replace: true });
     }
   }, [user, role, navigate]);
 
