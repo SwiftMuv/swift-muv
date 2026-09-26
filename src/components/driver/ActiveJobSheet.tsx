@@ -48,6 +48,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const voice = useVoiceGuidance();
 
 
   const threadJobId = job?.jobId ?? job?.id ?? null;
