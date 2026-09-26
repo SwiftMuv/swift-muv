@@ -106,19 +106,6 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
     };
   }, [bookingId]);
 
-  const navStatus = job?.status;
-  const navKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!job || (navStatus !== "assigned" && navStatus !== "arrived")) return;
-    const key = `${job.jobId}:${navStatus}`;
-    if (navKeyRef.current === key) return;
-    navKeyRef.current = key;
-    const t = setTimeout(() => {
-      if (navStatus === "assigned") openNavigation(job.pickupAddress, job.pickupLat, job.pickupLng);
-      else openNavigation(job.dropoffAddress, job.dropoffLat, job.dropoffLng);
-    }, 800);
-    return () => clearTimeout(t);
-  }, [job?.jobId, navStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!job) return null;
 
