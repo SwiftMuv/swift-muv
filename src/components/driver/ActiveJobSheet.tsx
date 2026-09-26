@@ -11,13 +11,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck, XCircle } from "lucide-react";
+import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck, XCircle, Volume2, VolumeX } from "lucide-react";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
 import { useI18n } from "@/contexts/I18nContext";
 import JobChatSheet from "@/components/shared/JobChatSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBookingLocationBroadcast } from "@/hooks/useBookingLocationBroadcast";
+import { useVoiceGuidance } from "@/hooks/useVoiceGuidance";
 import LiveTripMap from "@/components/tracking/LiveTripMap";
 
 const openNavigation = (address: string, lat?: number | null, lng?: number | null) => {
