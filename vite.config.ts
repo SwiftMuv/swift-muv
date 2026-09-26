@@ -65,6 +65,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  define: { __APP_BUILD_STAMP__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')) },
   plugins: [react(), stripCrossorigin(), inlineStyles(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {

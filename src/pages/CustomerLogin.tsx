@@ -139,6 +139,7 @@ const CustomerLogin = () => {
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>
+        <p className="mt-4 text-center text-[10px] text-muted-foreground/70">Build {__APP_BUILD_STAMP__} UTC</p>
 
         <p className="text-center text-sm text-muted-foreground">
           {isSignUp ? t("auth.alreadyHaveAccount") : t("auth.dontHaveAccount")}{" "}
