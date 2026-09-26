@@ -199,6 +199,16 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
               <Navigation className="h-3.5 w-3.5" />
               {job.status === "assigned" ? "Navigate to pick-up" : "Navigate to drop-off"}
             </button>
+            {voice.supported && (
+              <button
+                type="button"
+                aria-label={voice.enabled ? "Mute voice guidance" : "Unmute voice guidance"}
+                onClick={() => voice.setEnabled(!voice.enabled)}
+                className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow-lg"
+              >
+                {voice.enabled ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
+              </button>
+            )}
           </div>
         )}
 
