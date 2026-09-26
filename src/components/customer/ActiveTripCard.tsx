@@ -52,6 +52,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
   const [chatOpen, setChatOpen] = useState(false);
   const [routeEtaMin, setRouteEtaMin] = useState<number | null>(null);
   const [assignmentLoading, setAssignmentLoading] = useState(true);
+  const [jobStatus, setJobStatus] = useState<string | null>(null);
   const driverIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
     const load = async () => {
       const { data: job } = await supabase
         .from("jobs")
-        .select("id, driver_id")
+        .select("id, driver_id, status")
         .eq("booking_id", bookingId)
         .maybeSingle();
       if (!job?.driver_id) {
@@ -72,7 +73,10 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
         return;
       }
       driverIdRef.current = job.driver_id;
-      if (active) setJobId(job.id);
+      if (active) {
+        setJobId(job.id);
+        setJobStatus((job as { status?: string }).status ?? null);
+      }
       const [{ data: profile }, { data: code }] = await Promise.all([
         supabase
           .from("driver_profiles")
@@ -84,12 +88,21 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
         supabase.rpc("get_job_completion_code", { _job_id: job.id }),
       ]);
       if (!active) return;
-      setInfo((profile as unknown as DriverInfo) ?? null);
+      // Keep the last good snapshot if a transient read returns nothing.
+      if (profile) setInfo(profile as unknown as DriverInfo);
       setCompletionCode((code as string | null) ?? null);
       setAssignmentLoading(false);
     };
     load();
-    const poll = setInterval(load, 10000);
+    // Poll fast until a driver is attached, then slower as a safety net.
+    const poll = setInterval(() => {
+      if (!driverIdRef.current || Date.now() % 3 === 0) void load();
+    }, 4000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
 
     const channel = supabase
       .channel(`active-trip-${bookingId}`)
@@ -98,13 +111,22 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
         { event: "*", schema: "public", table: "jobs", filter: `booking_id=eq.${bookingId}` },
         () => load(),
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "bookings", filter: `id=eq.${bookingId}` },
+        () => load(),
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void load();
+      });
     return () => {
       active = false;
       clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
       supabase.removeChannel(channel);
     };
-  }, [bookingId]);
+  }, [bookingId, bookingStatus]);
 
   const [liveDriverPos, setLiveDriverPos] = useState<LatLngLiteral | null>(null);
   const driverPos = useMemo<LatLngLiteral | null>(
@@ -257,26 +279,13 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
           />
         )}
 
-        {(() => {
-          const total = pickupPos && dropoffPos ? haversineKm(pickupPos, dropoffPos) : null;
-          const inTransit = bookingStatus === "in_progress";
-          const left = inTransit && driverPos && dropoffPos ? haversineKm(driverPos, dropoffPos) : total;
-          const pct = total && left != null ? Math.min(100, Math.max(0, Math.round(((total - left) / total) * 100))) : 0;
-          return (
-            <div className="mb-3 rounded-xl border border-border bg-muted/60 p-3">
-              <div className="mb-2 flex justify-between text-xs text-muted-foreground">
-                <span>{inTransit ? "On the way to drop-off" : "Driver heading to pick-up"}</span>
-                <span>{left != null ? `${left.toFixed(1)} km left` : ""}</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-background">
-                <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
-              </div>
-              <div className="mt-1 flex justify-between text-[10px] uppercase text-muted-foreground">
-                <span>Pick-up</span><span>{pct}%</span><span>Drop-off</span>
-              </div>
-            </div>
-          );
-        })()}
+        <TripProgress
+          pickup={pickupPos}
+          dropoff={dropoffPos}
+          driver={driverPos}
+          bookingStatus={bookingStatus}
+          jobStatus={jobStatus}
+        />
         {completionCode && (
           <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/60 p-3">
             <KeyRound className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -310,6 +319,57 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const STAGES = ["Accepted", "Picked up", "In transit", "Delivered"];
+
+/** Pickup → drop-off meter driven by live driver GPS and the job's status. */
+const TripProgress = ({
+  pickup, dropoff, driver, bookingStatus, jobStatus,
+}: {
+  pickup: LatLngLiteral | null;
+  dropoff: LatLngLiteral | null;
+  driver: LatLngLiteral | null;
+  bookingStatus?: string;
+  jobStatus: string | null;
+}) => {
+  const done = jobStatus === "completed" || bookingStatus === "completed";
+  const toDropoff = done || jobStatus === "loading" || jobStatus === "in_transit" || bookingStatus === "in_progress";
+  const total = pickup && dropoff ? haversineKm(pickup, dropoff) : null;
+  let pct = 0;
+  let left: number | null = null;
+  let label = "Driver heading to pick-up";
+  if (done) {
+    pct = 100; left = 0; label = "Delivered";
+  } else if (toDropoff) {
+    label = jobStatus === "loading" ? "Loading your items" : "On the way to drop-off";
+    left = driver && dropoff ? haversineKm(driver, dropoff) : total;
+    // Loading counts as having started; travel fills the rest of the bar.
+    const travelled = total && left != null ? Math.max(0, Math.min(1, (total - left) / total)) : 0;
+    pct = Math.round(10 + travelled * 89);
+  } else if (jobStatus === "arrived") {
+    label = "Driver has arrived at pick-up"; pct = 8; left = total;
+  } else {
+    left = driver && pickup ? haversineKm(driver, pickup) : null;
+    pct = 3;
+  }
+  const stage = done ? 3 : jobStatus === "in_transit" ? 2 : toDropoff ? 1 : 0;
+  return (
+    <div className="mb-3 rounded-xl border border-border bg-muted/60 p-3" aria-label="Trip progress">
+      <div className="mb-2 flex justify-between gap-2 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">{label}</span>
+        <span>{left != null && !done ? `${left.toFixed(1)} km ${toDropoff ? "to drop-off" : "to pick-up"}` : ""}</span>
+      </div>
+      <div className="relative h-2 overflow-hidden rounded-full bg-background">
+        <div className="h-full rounded-full bg-primary transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-2 grid grid-cols-4 text-[10px] uppercase">
+        {STAGES.map((s, i) => (
+          <span key={s} className={`${i === 0 ? "text-left" : i === 3 ? "text-right" : "text-center"} ${i <= stage ? "font-semibold text-primary" : "text-muted-foreground"}`}>{s}</span>
+        ))}
+      </div>
     </div>
   );
 };
