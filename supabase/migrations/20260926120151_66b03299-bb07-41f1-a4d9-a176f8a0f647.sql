@@ -1,0 +1,2 @@
+CREATE POLICY "Customers view their assigned driver" ON public.driver_profiles FOR SELECT TO authenticated USING (public.customer_has_job_with_driver(auth.uid(), user_id));
+ALTER PUBLICATION supabase_realtime ADD TABLE public.jobs;
