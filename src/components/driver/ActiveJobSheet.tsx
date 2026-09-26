@@ -11,13 +11,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck, XCircle } from "lucide-react";
+import { MapPin, Phone, MessageSquare, Navigation, CheckCircle2, Truck, XCircle, Volume2, VolumeX } from "lucide-react";
 import type { Job, JobStatus } from "@/pages/DriverDashboard";
 import { useI18n } from "@/contexts/I18nContext";
 import JobChatSheet from "@/components/shared/JobChatSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBookingLocationBroadcast } from "@/hooks/useBookingLocationBroadcast";
+import { useVoiceGuidance } from "@/hooks/useVoiceGuidance";
 import LiveTripMap from "@/components/tracking/LiveTripMap";
 
 const openNavigation = (address: string, lat?: number | null, lng?: number | null) => {
@@ -47,6 +48,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const voice = useVoiceGuidance();
 
 
   const threadJobId = job?.jobId ?? job?.id ?? null;
@@ -62,6 +64,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
       const a = Math.sin(r(dLat - lat) / 2) ** 2 + Math.cos(r(lat)) * Math.cos(r(dLat)) * Math.sin(r(dLng - lng) / 2) ** 2;
       const m = 2 * R * Math.asin(Math.sqrt(a));
       setDistToDropM(m);
+      if (jobStatus === "in_transit") voice.announceDistance(m);
       if (m <= 20 && jobStatus === "in_transit" && !completingRef.current) {
         completingRef.current = true;
         Promise.resolve(onUpdateStatus("completed", { lat, lng })).finally(() => {
@@ -69,8 +72,16 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
         });
       }
     },
-    [dLat, dLng, jobStatus, onUpdateStatus],
+    [dLat, dLng, jobStatus, onUpdateStatus, voice.announceDistance],
   );
+
+  // Spoken guidance when the trip stage changes
+  useEffect(() => {
+    if (!jobStatus) return;
+    if (jobStatus === "assigned") voice.announceStatus("assigned", "New job accepted. Navigating to the pick-up location.");
+    else if (jobStatus === "arrived") voice.announceStatus("arrived", "You have arrived at the pick-up location.");
+    else if (jobStatus === "in_transit") voice.announceStatus("in_transit", "Trip started. Navigating to the drop-off location.");
+  }, [jobStatus]); // eslint-disable-line react-hooks/exhaustive-deps
   const gpsState = useBookingLocationBroadcast(bookingId, Boolean(job) && job?.status !== "completed", onPosition);
 
   useEffect(() => {
@@ -188,6 +199,16 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
               <Navigation className="h-3.5 w-3.5" />
               {job.status === "assigned" ? "Navigate to pick-up" : "Navigate to drop-off"}
             </button>
+            {voice.supported && (
+              <button
+                type="button"
+                aria-label={voice.enabled ? "Mute voice guidance" : "Unmute voice guidance"}
+                onClick={() => voice.setEnabled(!voice.enabled)}
+                className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 shadow-lg"
+              >
+                {voice.enabled ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
+              </button>
+            )}
           </div>
         )}
 
