@@ -18,6 +18,12 @@ import JobChatSheet from "@/components/shared/JobChatSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBookingLocationBroadcast } from "@/hooks/useBookingLocationBroadcast";
+import LiveTripMap from "@/components/tracking/LiveTripMap";
+
+const openNavigation = (address: string, lat?: number | null, lng?: number | null) => {
+  const dest = lat != null && lng != null ? `${lat},${lng}` : encodeURIComponent(address);
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving&dir_action=navigate`, "_blank", "noopener");
+};
 
 interface ActiveJobSheetProps {
   job: Job | null;
@@ -89,6 +95,20 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
     };
   }, [bookingId]);
 
+  const navStatus = job?.status;
+  const navKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!job || (navStatus !== "assigned" && navStatus !== "arrived")) return;
+    const key = `${job.jobId}:${navStatus}`;
+    if (navKeyRef.current === key) return;
+    navKeyRef.current = key;
+    const t = setTimeout(() => {
+      if (navStatus === "assigned") openNavigation(job.pickupAddress, job.pickupLat, job.pickupLng);
+      else openNavigation(job.dropoffAddress, job.dropoffLat, job.dropoffLng);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [job?.jobId, navStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!job) return null;
 
   const currentStepIdx = statusFlow.findIndex((s) => s.status === job.status);
@@ -147,6 +167,30 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
           </div>
         </SheetHeader>
 
+        {/* Live navigation map: to pick-up until arrived, then to drop-off */}
+        {bookingId && (
+          <div className="relative mb-3 h-56 overflow-hidden rounded-xl">
+            <LiveTripMap
+              bookingId={bookingId}
+              target={
+                job.status === "assigned"
+                  ? job.pickupLat != null && job.pickupLng != null ? { lat: job.pickupLat, lng: job.pickupLng } : null
+                  : job.dropoffLat != null && job.dropoffLng != null ? { lat: job.dropoffLat, lng: job.dropoffLng } : null
+              }
+            />
+            <button
+              type="button"
+              onClick={() => job.status === "assigned"
+                ? openNavigation(job.pickupAddress, job.pickupLat, job.pickupLng)
+                : openNavigation(job.dropoffAddress, job.dropoffLat, job.dropoffLng)}
+              className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-lg"
+            >
+              <Navigation className="h-3.5 w-3.5" />
+              {job.status === "assigned" ? "Navigate to pick-up" : "Navigate to drop-off"}
+            </button>
+          </div>
+        )}
+
         {/* Progress */}
         <div className="flex gap-1 mb-4">
           {statusFlow.map((step, i) => (
@@ -196,15 +240,8 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
                 type="button"
                 aria-label={t("drv.activeJob.navigate")}
                 onClick={() => {
-                  const dest =
-                    job.status === "in_transit"
-                      ? job.dropoffAddress
-                      : job.pickupAddress;
-                  window.open(
-                    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`,
-                    "_blank",
-                    "noopener",
-                  );
+                  if (job.status === "assigned") openNavigation(job.pickupAddress, job.pickupLat, job.pickupLng);
+                  else openNavigation(job.dropoffAddress, job.dropoffLat, job.dropoffLng);
                 }}
                 className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center"
               >

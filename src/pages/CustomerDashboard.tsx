@@ -171,6 +171,14 @@ const CustomerDashboard = () => {
   const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status));
   const completed = bookings.filter((b) => b.status === "completed");
   const trackedBooking = active[0] ?? null;
+  const autoOpenedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!trackedBooking || trackedBooking.status === "pending") return;
+    const key = `${trackedBooking.id}:${trackedBooking.status}`;
+    if (autoOpenedRef.current === key) return;
+    autoOpenedRef.current = key;
+    setActiveTab("activities");
+  }, [trackedBooking?.id, trackedBooking?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const titles: Record<string, string> = {
     home: t("dashboard.customer.title.home"),
@@ -242,6 +250,11 @@ const CustomerDashboard = () => {
                     <p><span className="text-muted-foreground">{t("common.from")}</span> {b.pickup_address}</p>
                     <p><span className="text-muted-foreground">{t("common.to")}</span> {b.dropoff_address}</p>
                     {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
+                    {b.status === "completed" && (
+                      <Button size="sm" variant="outline" className="mt-2" onClick={() => { window.location.href = `/receipt/${b.id}`; }}>
+                        Receipt (PDF)
+                      </Button>
+                    )}
                     {canCancel && (
                       <Button
                         size="sm"
