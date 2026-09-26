@@ -250,6 +250,11 @@ const CustomerDashboard = () => {
                     <p><span className="text-muted-foreground">{t("common.from")}</span> {b.pickup_address}</p>
                     <p><span className="text-muted-foreground">{t("common.to")}</span> {b.dropoff_address}</p>
                     {isActive && b.status !== "pending" && <DriverReviewsForBooking bookingId={b.id} />}
+                    {b.status === "completed" && (
+                      <Button size="sm" variant="outline" className="mt-2" onClick={() => { window.location.href = `/receipt/${b.id}`; }}>
+                        Receipt (PDF)
+                      </Button>
+                    )}
                     {canCancel && (
                       <Button
                         size="sm"
