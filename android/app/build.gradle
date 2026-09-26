@@ -32,8 +32,8 @@ android {
             logger.warn('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY not set; building without a native Maps key. Add it to android/local.properties for full map access.')
         }
         manifestPlaceholders = [SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY: mapsKey]
-        versionCode 12
-        versionName "1.0.11"
+        versionCode 13
+        versionName "1.0.12"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -75,6 +75,16 @@ tasks.register('verifyCapacitorWebAssets') {
         def indexHtml = file('src/main/assets/public/index.html')
         if (!indexHtml.exists()) {
             throw new GradleException('Web app files are missing. In Terminal run: npm install && npm run build && npx cap sync android, then build again.')
+        }
+        // Block builds that would ship an OLD copy of the app: if any source
+        // file (e.g. after git pull) is newer than the synced web files, stop.
+        def srcDir = new File(rootProject.projectDir.parentFile, 'src')
+        if (srcDir.exists()) {
+            def newest = 0L
+            srcDir.eachFileRecurse { f -> if (f.isFile() && f.lastModified() > newest) newest = f.lastModified() }
+            if (newest > indexHtml.lastModified()) {
+                throw new GradleException('The app code changed since your last sync, so this build would install an OLD version. In Terminal run: npm install && npm run build && npx cap sync android, then build again.')
+            }
         }
     }
 }
