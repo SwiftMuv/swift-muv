@@ -64,6 +64,7 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
       const a = Math.sin(r(dLat - lat) / 2) ** 2 + Math.cos(r(lat)) * Math.cos(r(dLat)) * Math.sin(r(dLng - lng) / 2) ** 2;
       const m = 2 * R * Math.asin(Math.sqrt(a));
       setDistToDropM(m);
+      if (jobStatus === "in_transit") voice.announceDistance(m);
       if (m <= 20 && jobStatus === "in_transit" && !completingRef.current) {
         completingRef.current = true;
         Promise.resolve(onUpdateStatus("completed", { lat, lng })).finally(() => {
@@ -71,8 +72,16 @@ export const ActiveJobSheet = ({ job, onUpdateStatus, onCancelJob }: ActiveJobSh
         });
       }
     },
-    [dLat, dLng, jobStatus, onUpdateStatus],
+    [dLat, dLng, jobStatus, onUpdateStatus, voice.announceDistance],
   );
+
+  // Spoken guidance when the trip stage changes
+  useEffect(() => {
+    if (!jobStatus) return;
+    if (jobStatus === "assigned") voice.announceStatus("assigned", "New job accepted. Navigating to the pick-up location.");
+    else if (jobStatus === "arrived") voice.announceStatus("arrived", "You have arrived at the pick-up location.");
+    else if (jobStatus === "in_transit") voice.announceStatus("in_transit", "Trip started. Navigating to the drop-off location.");
+  }, [jobStatus]); // eslint-disable-line react-hooks/exhaustive-deps
   const gpsState = useBookingLocationBroadcast(bookingId, Boolean(job) && job?.status !== "completed", onPosition);
 
   useEffect(() => {
