@@ -221,18 +221,48 @@ const CustomerDashboard = () => {
         )}
 
         {activeTab === "activities" && (
-          trackedBooking ? (
-            <ActiveTripCard
-              bookingId={trackedBooking.id}
-              bookingStatus={trackedBooking.status}
-              pickupAddress={trackedBooking.pickup_address}
-              pickupLat={trackedBooking.pickup_lat}
-              pickupLng={trackedBooking.pickup_lng}
-              dropoffLat={trackedBooking.dropoff_lat}
-              dropoffLng={trackedBooking.dropoff_lng}
-              fullScreen
-            />
+          trackedBooking && tripFullScreen ? (
+            <>
+              <ActiveTripCard
+                bookingId={trackedBooking.id}
+                bookingStatus={trackedBooking.status}
+                pickupAddress={trackedBooking.pickup_address}
+                pickupLat={trackedBooking.pickup_lat}
+                pickupLng={trackedBooking.pickup_lng}
+                dropoffLat={trackedBooking.dropoff_lat}
+                dropoffLng={trackedBooking.dropoff_lng}
+                fullScreen
+              />
+              <button
+                type="button"
+                onClick={() => setTripFullScreen(false)}
+                className="fixed top-3 right-3 z-40 flex items-center gap-1.5 rounded-full border border-border bg-card/90 px-3 py-2 text-xs font-medium text-foreground shadow-lg backdrop-blur"
+              >
+                <List className="w-3.5 h-3.5" />
+                {t("customer.viewBookings")}
+              </button>
+            </>
           ) : <div className="space-y-3 pb-4">
+            {trackedBooking && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{t("customer.liveTrip")}</span>
+                  <Button size="sm" variant="outline" onClick={() => setTripFullScreen(true)}>
+                    <Maximize2 className="w-3.5 h-3.5 mr-1.5" />
+                    {t("customer.openFullMap")}
+                  </Button>
+                </div>
+                <ActiveTripCard
+                  bookingId={trackedBooking.id}
+                  bookingStatus={trackedBooking.status}
+                  pickupAddress={trackedBooking.pickup_address}
+                  pickupLat={trackedBooking.pickup_lat}
+                  pickupLng={trackedBooking.pickup_lng}
+                  dropoffLat={trackedBooking.dropoff_lat}
+                  dropoffLng={trackedBooking.dropoff_lng}
+                />
+              </div>
+            )}
             {loading && <p className="text-muted-foreground text-sm">{t("common.loading")}</p>}
             {!loading && bookings.length === 0 && (
               <Card>
