@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { RotateCw, X, AlertTriangle } from "lucide-react";
+import { RotateCw, X, AlertTriangle, List, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,6 +171,7 @@ const CustomerDashboard = () => {
   const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status));
   const completed = bookings.filter((b) => b.status === "completed");
   const trackedBooking = active[0] ?? null;
+  const [tripFullScreen, setTripFullScreen] = useState(true);
   const autoOpenedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!trackedBooking || trackedBooking.status === "pending") return;
@@ -180,6 +181,13 @@ const CustomerDashboard = () => {
     setActiveTab("activities");
   }, [trackedBooking?.id, trackedBooking?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // A new active booking should open in full live-trip view again.
+  useEffect(() => {
+    setTripFullScreen(true);
+  }, [trackedBooking?.id]);
+
+  const tripOpen = activeTab === "activities" && !!trackedBooking && tripFullScreen;
+
   const titles: Record<string, string> = {
     home: t("dashboard.customer.title.home"),
     bookings: t("dashboard.customer.title.bookings"),
@@ -188,9 +196,9 @@ const CustomerDashboard = () => {
   };
 
   return (
-    <div className={`min-h-screen pb-20 ${(activeTab === "bookings" && isNativeAndroid()) || (activeTab === "activities" && trackedBooking) ? "bg-transparent" : "bg-background"}`}>
+    <div className={`min-h-screen pb-20 ${(activeTab === "bookings" && isNativeAndroid()) || tripOpen ? "bg-transparent" : "bg-background"}`}>
       <TermsAgreementModal role="customer" />
-      {!(activeTab === "activities" && trackedBooking) && <header className={`sticky top-0 z-40 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent border-b-0" : "bg-card/90 backdrop-blur-xl border-b"}`}>
+      {!tripOpen && <header className={`sticky top-0 z-40 ${activeTab === "bookings" && isNativeAndroid() ? "bg-transparent border-b-0" : "bg-card/90 backdrop-blur-xl border-b"}`}>
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
           <div className="w-11 h-11 overflow-visible shrink-0">
             <img src={logo} alt="SwiftMuv" className="w-full h-full object-contain" />
@@ -205,7 +213,7 @@ const CustomerDashboard = () => {
         </div>
       </header>}
 
-      <main className={activeTab === "activities" && trackedBooking ? "" : "mx-auto max-w-3xl px-4 pt-4"}>
+      <main className={tripOpen ? "" : "mx-auto max-w-3xl px-4 pt-4"}>
         {activeTab === "home" && <CustomerHomeScreen />}
 
         {activeTab === "bookings" && (
