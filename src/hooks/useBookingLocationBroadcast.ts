@@ -6,7 +6,7 @@ import { ensureLocationPermission } from "@/lib/locationPermission";
 
 export type BroadcastState = "idle" | "requesting" | "active" | "denied" | "error";
 
-const MIN_INTERVAL_MS = 5_000;
+const MIN_INTERVAL_MS = 3_000;
 
 /**
  * Driver side: watches the device GPS while a trip is active and writes
@@ -39,7 +39,10 @@ export function useBookingLocationBroadcast(
         .from("bookings")
         .update({ driver_lat: lat, driver_lng: lng, driver_location_updated_at: new Date().toISOString() } as never)
         .eq("id", bookingId);
-      if (error) console.warn("Driver location update failed:", error.message);
+      if (error) {
+        console.warn("Driver location update failed:", error.message);
+        lastSent = 0; // retry on the next GPS reading
+      }
     };
 
     (async () => {
@@ -50,6 +53,27 @@ export function useBookingLocationBroadcast(
         setState("denied");
         return;
       }
+      // Quick first fix (cached/low accuracy is fine) so the customer sees the driver immediately.
+      const first = (lat: number, lng: number, acc: number | null) => {
+        if (cancelled) return;
+        setState("active");
+        onPosRef.current?.(lat, lng, acc);
+        lastSent = 0;
+        push(lat, lng);
+      };
+      try {
+        if (Capacitor.isNativePlatform()) {
+          Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 })
+            .then((p) => first(p.coords.latitude, p.coords.longitude, p.coords.accuracy ?? null))
+            .catch(() => {});
+        } else if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (p) => first(p.coords.latitude, p.coords.longitude, p.coords.accuracy ?? null),
+            () => {},
+            { enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 },
+          );
+        }
+      } catch { /* watch below still runs */ }
       try {
         if (Capacitor.isNativePlatform()) {
           nativeWatch = await Geolocation.watchPosition(
@@ -68,7 +92,7 @@ export function useBookingLocationBroadcast(
               onPosRef.current?.(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? null);
               push(pos.coords.latitude, pos.coords.longitude);
             },
-            () => setState("error"),
+            () => { if (!cancelled) setState((s) => (s === "active" ? s : "error")); },
             { enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 },
           );
         }

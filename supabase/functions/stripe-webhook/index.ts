@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
       .from('bookings')
       .select('id')
       .eq('stripe_payment_intent_id', piId)
+      .limit(1)
       .maybeSingle();
     if (existing) {
       return new Response(JSON.stringify({ received: true, booking_id: existing.id }), {
