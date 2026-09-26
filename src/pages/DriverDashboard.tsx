@@ -33,6 +33,8 @@ export interface Job {
   vehicleCategory?: string | null;
   vehicleLabel?: string | null;
   dropoffLat?: number | null;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
   dropoffLng?: number | null;
 }
 
@@ -186,7 +188,7 @@ const DriverDashboard = () => {
     if (!user) return;
     const { data } = await supabase
       .from("jobs")
-      .select("id, booking_id, status, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price,dropoff_lat,dropoff_lng)")
+      .select("id, booking_id, status, bookings:booking_id(pickup_address,dropoff_address,move_size,total_price,dropoff_lat,dropoff_lng,pickup_lat,pickup_lng)")
       .eq("driver_id", user.id)
       .neq("status", "completed")
       .maybeSingle();
@@ -207,6 +209,8 @@ const DriverDashboard = () => {
       status: data.status as JobStatus,
       dropoffLat: b.dropoff_lat ?? null,
       dropoffLng: b.dropoff_lng ?? null,
+      pickupLat: b.pickup_lat ?? null,
+      pickupLng: b.pickup_lng ?? null,
     });
   }, [user]);
 
@@ -313,6 +317,7 @@ const DriverDashboard = () => {
     setIncoming(null);
     setActiveTab("home");
     setActiveJob({ ...booking, jobId: data.id, id: data.id, status: "assigned" });
+    void loadActiveJob();
     loadAvailable();
   };
 
