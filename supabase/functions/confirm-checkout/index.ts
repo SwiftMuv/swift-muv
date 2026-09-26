@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       const piId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null;
       if (!piId) continue;
 
-      const { data: found } = await admin.from('bookings').select('id').eq('stripe_payment_intent_id', piId).maybeSingle();
+      const { data: found } = await admin.from('bookings').select('id').eq('stripe_payment_intent_id', piId).limit(1).maybeSingle();
       if (found) { existing.push(found.id); continue; }
 
       const payload = reassemble(meta);
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       const { data: ins, error } = await admin.from('bookings').insert(row).select('id').single();
       if (error) {
         // Unique race with the webhook — re-read.
-        const { data: again } = await admin.from('bookings').select('id').eq('stripe_payment_intent_id', piId).maybeSingle();
+        const { data: again } = await admin.from('bookings').select('id').eq('stripe_payment_intent_id', piId).limit(1).maybeSingle();
         if (again) existing.push(again.id); else console.error('confirm-checkout insert failed', error);
         continue;
       }
