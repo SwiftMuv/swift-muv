@@ -257,6 +257,26 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
           />
         )}
 
+        {(() => {
+          const total = pickupPos && dropoffPos ? haversineKm(pickupPos, dropoffPos) : null;
+          const inTransit = bookingStatus === "in_progress";
+          const left = inTransit && driverPos && dropoffPos ? haversineKm(driverPos, dropoffPos) : total;
+          const pct = total && left != null ? Math.min(100, Math.max(0, Math.round(((total - left) / total) * 100))) : 0;
+          return (
+            <div className="mb-3 rounded-xl border border-border bg-muted/60 p-3">
+              <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                <span>{inTransit ? "On the way to drop-off" : "Driver heading to pick-up"}</span>
+                <span>{left != null ? `${left.toFixed(1)} km left` : ""}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-background">
+                <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="mt-1 flex justify-between text-[10px] uppercase text-muted-foreground">
+                <span>Pick-up</span><span>{pct}%</span><span>Drop-off</span>
+              </div>
+            </div>
+          );
+        })()}
         {completionCode && (
           <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/60 p-3">
             <KeyRound className="h-5 w-5 shrink-0 text-muted-foreground" />
