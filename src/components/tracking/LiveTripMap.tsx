@@ -96,12 +96,29 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
 
   const tripRouteLines = useRef<string[]>([]);
 
-  // Full trip route pickup → drop-off so the customer sees the path taken.
+  // When the navigation target changes (pickup → drop-off), re-fit the camera and redraw.
+  useEffect(() => {
+    fitted.current = false;
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    if (routeLines.current.length) {
+      map.removePolylines(routeLines.current).catch(() => {});
+      routeLines.current = [];
+    }
+    if (target && driver) {
+      fitted.current = true;
+      map.setCamera({ coordinate: { lat: (driver.lat + target.lat) / 2, lng: (driver.lng + target.lng) / 2 }, zoom: 13, animate: true }).catch(() => {});
+    }
+  }, [ready, target?.lat, target?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Optional full trip route target → destination.
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map || !target || !destination) return;
+    if (!ready || !map) return;
     (async () => {
       if (tripRouteLines.current.length) await map.removePolylines(tripRouteLines.current).catch(() => {});
+      tripRouteLines.current = [];
+      if (!target || !destination) return;
       tripRouteLines.current = await map.addPolylines([
         { path: [target, destination], strokeColor: "#FFC107", strokeOpacity: 0.9, strokeWeight: 5 },
       ]);
@@ -110,9 +127,11 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map || !destination) return;
+    if (!ready || !map) return;
     (async () => {
       if (destinationMarker.current) await map.removeMarker(destinationMarker.current).catch(() => {});
+      destinationMarker.current = null;
+      if (!destination) return;
       destinationMarker.current = await map.addMarker({ coordinate: destination, title: "Destination", tintColor: { r: 255, g: 193, b: 7, a: 1 } });
     })();
   }, [ready, destination?.lat, destination?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
