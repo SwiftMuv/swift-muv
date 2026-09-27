@@ -36,7 +36,7 @@ export const DriverHeader = ({ isOnline, onToggleOnline, driverName, avatarUrl }
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/driver/login");
+    navigate("/driver/login", { replace: true });
   };
 
   return (

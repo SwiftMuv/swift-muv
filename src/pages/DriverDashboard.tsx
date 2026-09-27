@@ -335,19 +335,17 @@ const DriverDashboard = () => {
       if (error) return toast.error(error.message);
       if (!ok) return toast.error(t("drv.geofence.notYet"));
 
-      setActiveJob({ ...activeJob, status: "completed" });
+      const done = activeJob;
+      setActiveJob(null);
+      setActiveTab("home");
+      loadAvailable();
       try {
         await supabase.functions.invoke("release-earnings", { body: { jobId: activeJob.jobId } });
       } catch (e) {
         console.warn("release-earnings failed", e);
       }
       await loadStats();
-      toast.success(t("drv.geofence.completed", { amount: formatCurrency(activeJob.price) }));
-      setTimeout(() => {
-        setActiveJob(null);
-        loadAvailable();
-        loadStats();
-      }, 2500);
+      toast.success(t("drv.geofence.completed", { amount: formatCurrency(done.price) }));
       return;
     }
 
