@@ -22,6 +22,39 @@ export const IncomingJobModal = ({ job, seconds = 30, onAccept, onReject }: Prop
   const rejectRef = useRef(onReject);
   rejectRef.current = onReject;
 
+  // Ring + vibrate while a job request is on screen.
+  useEffect(() => {
+    if (!job) return;
+    let ctx: AudioContext | null = null;
+    const ring = () => {
+      try {
+        const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        ctx = ctx ?? new AC();
+        void ctx.resume();
+        [0, 0.18, 0.36].forEach((offset, i) => {
+          const osc = ctx!.createOscillator();
+          const gain = ctx!.createGain();
+          osc.type = "sine";
+          osc.frequency.value = i === 2 ? 1320 : 880;
+          const t0 = ctx!.currentTime + offset;
+          gain.gain.setValueAtTime(0.0001, t0);
+          gain.gain.exponentialRampToValueAtTime(0.5, t0 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+          osc.connect(gain).connect(ctx!.destination);
+          osc.start(t0);
+          osc.stop(t0 + 0.17);
+        });
+        navigator.vibrate?.([200, 100, 200]);
+      } catch { /* audio unavailable */ }
+    };
+    ring();
+    const id = window.setInterval(ring, 2000);
+    return () => {
+      window.clearInterval(id);
+      void ctx?.close();
+    };
+  }, [job]);
+
   useEffect(() => {
     if (!job) return;
     setLeft(seconds);
