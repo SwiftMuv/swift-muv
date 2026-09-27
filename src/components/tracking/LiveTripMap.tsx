@@ -94,6 +94,20 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
     })();
   }, [ready, target?.lat, target?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const tripRouteLines = useRef<string[]>([]);
+
+  // Full trip route pickup → drop-off so the customer sees the path taken.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !target || !destination) return;
+    (async () => {
+      if (tripRouteLines.current.length) await map.removePolylines(tripRouteLines.current).catch(() => {});
+      tripRouteLines.current = await map.addPolylines([
+        { path: [target, destination], strokeColor: "#FFC107", strokeOpacity: 0.9, strokeWeight: 5 },
+      ]);
+    })();
+  }, [ready, target?.lat, target?.lng, destination?.lat, destination?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !destination) return;
