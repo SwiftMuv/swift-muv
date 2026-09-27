@@ -133,7 +133,7 @@ const DriverInfoCard = ({
                 src={vehicleImage}
                 alt={displayVehicle}
                 loading="lazy"
-                className="ml-auto h-10 w-16 object-contain"
+                className="ml-auto h-[60px] w-24 object-contain"
               />
             )}
             {licensePlate && (
