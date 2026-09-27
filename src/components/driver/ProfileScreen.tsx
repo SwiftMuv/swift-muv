@@ -676,7 +676,7 @@ const ProfileScreen = () => {
           try {
             await signOut();
           } finally {
-            window.location.href = "/driver/login";
+            window.location.replace("/driver/login");
           }
         }}
       >

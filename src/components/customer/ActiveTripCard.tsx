@@ -47,7 +47,6 @@ interface DriverInfo {
 const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropoffLat, dropoffLng, bookingStatus, fullScreen = false }: Props) => {
   const { t } = useI18n();
   const [info, setInfo] = useState<DriverInfo | null>(null);
-  const [completionCode, setCompletionCode] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [routeEtaMin, setRouteEtaMin] = useState<number | null>(null);
@@ -66,7 +65,6 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
       if (!job?.driver_id) {
         if (active) {
           setInfo(null);
-          setCompletionCode(null);
           setJobId(null);
           setAssignmentLoading(false);
         }
@@ -77,20 +75,16 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
         setJobId(job.id);
         setJobStatus((job as { status?: string }).status ?? null);
       }
-      const [{ data: profile }, { data: code }] = await Promise.all([
-        supabase
+      const { data: profile } = await         supabase
           .from("driver_profiles")
           .select(
             "full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_color, vehicle_category, vehicle_photo_url, rating, phone, current_lat, current_lng",
           )
           .eq("user_id", job.driver_id)
-          .maybeSingle(),
-        supabase.rpc("get_job_completion_code", { _job_id: job.id }),
-      ]);
+          .maybeSingle();
       if (!active) return;
       // Keep the last good snapshot if a transient read returns nothing.
       if (profile) setInfo(profile as unknown as DriverInfo);
-      setCompletionCode((code as string | null) ?? null);
       setAssignmentLoading(false);
     };
     load();
@@ -253,11 +247,11 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={async () => {
-                await navigator.clipboard.writeText(completionCode ?? pickupAddress);
-                toast.success(completionCode ? t("cust.trip.completionCodeCopied") : t("cust.trip.addressCopied"));
+                await navigator.clipboard.writeText(pickupAddress);
+                toast.success(t("cust.trip.addressCopied"));
               }}
             >
-              <Copy className="mr-2 h-4 w-4" /> {completionCode ? t("cust.trip.copyCompletionCode") : t("cust.trip.copyAddress")}
+              <Copy className="mr-2 h-4 w-4" /> {t("cust.trip.copyAddress")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => {
@@ -286,16 +280,6 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
           bookingStatus={bookingStatus}
           jobStatus={jobStatus}
         />
-        {completionCode && (
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/60 p-3">
-            <KeyRound className="h-5 w-5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase text-muted-foreground">{t("cust.trip.completionCode")}</p>
-              <p className="text-xs text-muted-foreground">{t("cust.trip.shareCodeNote")}</p>
-            </div>
-            <p className="font-mono text-xl font-bold tracking-[0.3em]">{completionCode}</p>
-          </div>
-        )}
       </DriverInfoCard> : (
         <div className={fullScreen ? "absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-border bg-card px-6 pb-[calc(env(safe-area-inset-bottom)+5rem)] pt-3 shadow-2xl" : "border-t border-border bg-card p-6"}>
           <div className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-muted" />

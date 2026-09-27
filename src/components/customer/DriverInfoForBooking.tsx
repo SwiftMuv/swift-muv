@@ -24,8 +24,6 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
   const { t } = useI18n();
   const [info, setInfo] = useState<DriverInfo | null>(null);
 
-  const [completionCode, setCompletionCode] = useState<string | null>(null);
-
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -37,21 +35,16 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
       if (!job?.driver_id) {
         if (active) {
           setInfo(null);
-          setCompletionCode(null);
         }
         return;
       }
-      const [{ data: profile }, { data: code }] = await Promise.all([
-        supabase
+      const { data: profile } = await         supabase
           .from("driver_profiles")
           .select("full_name, avatar_url, profile_picture_url, license_plate, vehicle_make, vehicle_model, vehicle_category, vehicle_photo_url")
           .eq("user_id", job.driver_id)
-          .maybeSingle(),
-        supabase.rpc("get_job_completion_code", { _job_id: job.id }),
-      ]);
+          .maybeSingle();
       if (!active) return;
       setInfo((profile as DriverInfo) ?? null);
-      setCompletionCode((code as string | null) ?? null);
     };
     load();
 
@@ -112,22 +105,6 @@ const DriverInfoForBooking = ({ bookingId }: Props) => {
           />
         )}
       </div>
-      {completionCode && (
-        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 flex items-center gap-3">
-          <KeyRound className="w-5 h-5 text-cyan-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              {t("cust.driverInfo.completionCode")}
-            </p>
-            <p className="text-xs text-foreground">
-              {t("cust.driverInfo.shareCodeNote")}
-            </p>
-          </div>
-          <p className="font-mono text-xl font-bold tracking-[0.4em] text-cyan-500">
-            {completionCode}
-          </p>
-        </div>
-      )}
     </div>
   );
 };

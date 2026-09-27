@@ -133,7 +133,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear local state first so login pages never bounce back to a dashboard.
+    setUser(null);
+    setSession(null);
+    setRole(null);
+    try {
+      await Promise.race([
+        supabase.auth.signOut({ scope: "local" }),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    } catch (e) {
+      console.warn("signOut failed", e);
+    }
   };
 
   return (

@@ -181,6 +181,17 @@ const CustomerDashboard = () => {
     setActiveTab("activities");
   }, [trackedBooking?.id, trackedBooking?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When the live trip finishes, close the map and go back to the booking page.
+  const prevTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevTrackedRef.current;
+    prevTrackedRef.current = trackedBooking?.id ?? null;
+    if (prev && !trackedBooking) {
+      const b = bookings.find((x) => x.id === prev);
+      if (b?.status === "completed") setActiveTab("bookings");
+    }
+  }, [trackedBooking?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // A new active booking should open in full live-trip view again.
   useEffect(() => {
     setTripFullScreen(true);
