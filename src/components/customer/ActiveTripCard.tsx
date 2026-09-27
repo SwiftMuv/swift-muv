@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { useI18n } from "@/contexts/I18nContext";
 import { Capacitor } from "@capacitor/core";
+import { phoneNotify } from "@/lib/phoneNotify";
 
 interface Props {
   bookingId: string;
@@ -205,8 +206,9 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
       <div className={fullScreen ? (native ? "absolute inset-0 bottom-[290px] bg-background" : "absolute inset-0 bg-background") : "relative h-56 w-full bg-background"}>
         <LiveTripMap
           bookingId={bookingId}
-          target={pickupPos}
-          destination={dropoffPos}
+          key={toDropoff ? "to-dropoff" : "to-pickup"}
+          target={navTarget}
+          destination={null}
           showWaitingOverlay={Boolean(info)}
           onDriverPosition={setLiveDriverPos}
           onEtaUpdate={setRouteEtaMin}
@@ -221,8 +223,14 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
 
       {info ? <DriverInfoCard
         className={fullScreen ? "absolute inset-x-0 bottom-0 z-20 max-h-[54vh] animate-in slide-in-from-bottom-6 overflow-y-auto rounded-t-3xl pb-[calc(env(safe-area-inset-bottom)+3rem)] duration-500" : undefined}
-        statusTitle={etaMin != null ? t("cust.trip.pickupInMin", { min: etaMin }) : t("cust.trip.driverOnWay")}
-        statusSubtitle={t("cust.trip.meetAtSpot")}
+        statusTitle={
+          toDropoff
+            ? jobStatus === "arrived" ? "Your driver has arrived" : etaMin != null ? `Drop-off in ${etaMin} min` : "On the way to drop-off"
+            : countdown != null ? `Pick-up in ${countdown}` : t("cust.trip.driverOnWay")
+        }
+        statusSubtitle={
+          !toDropoff && arrivalClock ? `Arriving at the pick-up point around ${arrivalClock}` : t("cust.trip.meetAtSpot")
+        }
         pickupAddress={pickupAddress}
         driverName={info.full_name ?? t("cust.trip.yourDriver")}
         driverPhoto={photo}
