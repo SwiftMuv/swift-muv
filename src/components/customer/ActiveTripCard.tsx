@@ -138,9 +138,56 @@ const ActiveTripCard = ({ bookingId, pickupAddress, pickupLat, pickupLng, dropof
     [dropoffLat, dropoffLng],
   );
 
-  const km = driverPos && pickupPos ? haversineKm(driverPos, pickupPos) : null;
+  // Phase 1: driver → pick-up. Phase 2 (after "arrived at pick-up"): pick-up → drop-off.
+  const toDropoff =
+    ["arrived", "loading", "in_transit"].includes(jobStatus ?? "") || bookingStatus === "in_progress";
+  const navTarget = toDropoff ? dropoffPos : pickupPos;
+  useEffect(() => setRouteEtaMin(null), [toDropoff]);
+
+  const km = driverPos && navTarget ? haversineKm(driverPos, navTarget) : null;
   const miles = km != null ? km * 0.621371 : null;
   const etaMin = routeEtaMin ?? (km != null ? Math.max(1, Math.round((km / 30) * 60)) : null);
+
+  // Live countdown to the driver's arrival at the pick-up point.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const [arrivalAt, setArrivalAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (etaMin == null || toDropoff) { setArrivalAt(null); return; }
+    setArrivalAt(Date.now() + etaMin * 60_000);
+  }, [etaMin, toDropoff]);
+  const remainingMs = arrivalAt != null ? Math.max(0, arrivalAt - now) : null;
+  const countdown = remainingMs != null
+    ? `${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, "0")}`
+    : null;
+  const arrivalClock = arrivalAt != null
+    ? new Date(arrivalAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : null;
+
+  // Phone alerts: at 5 min away, then every 2 min, then on arrival.
+  const lastAlertRef = useRef<number | null>(null);
+  const arrivedAlertRef = useRef(false);
+  useEffect(() => {
+    if (!info || toDropoff || etaMin == null) return;
+    if (etaMin > 5) return;
+    const last = lastAlertRef.current;
+    if (last == null || Date.now() - last >= 2 * 60_000) {
+      lastAlertRef.current = Date.now();
+      void phoneNotify(
+        etaMin <= 1 ? "Your driver is almost there" : `Your driver is ${etaMin} min away`,
+        `${info.full_name ?? "Your driver"} will reach the pick-up point around ${arrivalClock ?? "soon"}.`,
+      );
+    }
+  }, [etaMin, now, toDropoff, info]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (jobStatus === "arrived" && !arrivedAlertRef.current) {
+      arrivedAlertRef.current = true;
+      void phoneNotify("Your driver has arrived", `${info?.full_name ?? "Your driver"} is at the pick-up point.`);
+    }
+  }, [jobStatus, info?.full_name]);
 
   const photo = info?.profile_picture_url || info?.avatar_url || undefined;
   const carImg = info ? info.vehicle_photo_url || getVehicleImage(info.vehicle_category) : undefined;

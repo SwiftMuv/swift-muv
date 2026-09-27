@@ -127,9 +127,11 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map || !destination) return;
+    if (!ready || !map) return;
     (async () => {
       if (destinationMarker.current) await map.removeMarker(destinationMarker.current).catch(() => {});
+      destinationMarker.current = null;
+      if (!destination) return;
       destinationMarker.current = await map.addMarker({ coordinate: destination, title: "Destination", tintColor: { r: 255, g: 193, b: 7, a: 1 } });
     })();
   }, [ready, destination?.lat, destination?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
