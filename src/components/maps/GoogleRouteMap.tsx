@@ -200,8 +200,10 @@ export const GoogleRouteMap = ({
     if (!ready || !map) return;
 
     const maps = window.google.maps;
-    const origin = routeMode === "directions" ? validDriver : validPickup;
-    const destination = routeMode === "directions" ? validPickup : validDropoff;
+    // Tracking mode: show the full trip route pickup → drop-off so the
+    // customer sees the path being taken; the driver marker moves along it.
+    const origin = routeMode === "directions" ? (validPickup ?? validDriver) : validPickup;
+    const destination = routeMode === "directions" ? (validDropoff ?? validPickup) : validDropoff;
     const pathBase = [validDriver, validPickup, validDropoff].filter(isValidLatLng);
     const explicitPath = (routePath ?? []).filter(isValidLatLng);
     const routeKey = [routeMode, explicitPath.length, explicitPath[0]?.lat, explicitPath[explicitPath.length - 1]?.lng, origin?.lat, origin?.lng, destination?.lat, destination?.lng, validDropoff?.lat, validDropoff?.lng].join("|");
