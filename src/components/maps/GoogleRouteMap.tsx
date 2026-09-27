@@ -200,9 +200,11 @@ export const GoogleRouteMap = ({
     if (!ready || !map) return;
 
     const maps = window.google.maps;
-    // Tracking mode: show the full trip route pickup → drop-off so the
-    // customer sees the path being taken; the driver marker moves along it.
-    const origin = routeMode === "directions" ? (validPickup ?? validDriver) : validPickup;
+    // Tracking mode: route from the driver's live position to the next stop
+    // (pickup first, then drop-off) so the customer sees the path being taken
+    // and a real driving ETA. Falls back to pickup → drop-off before the
+    // first driver GPS fix arrives.
+    const origin = routeMode === "directions" ? (validDriver ?? validPickup) : validPickup;
     const destination = routeMode === "directions" ? (validDropoff ?? validPickup) : validDropoff;
     const pathBase = [validDriver, validPickup, validDropoff].filter(isValidLatLng);
     const explicitPath = (routePath ?? []).filter(isValidLatLng);
