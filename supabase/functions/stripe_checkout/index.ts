@@ -53,7 +53,27 @@ Deno.serve(async (req) => {
     if (!payload || typeof payload !== 'object') return err('bookingPayload is required');
     if (!amountCad || amountCad <= 0) return err('Invalid amount');
 
-    const amountCents = Math.round(amountCad * 100);
+    // Re-validate any promo code server-side so discounts can't be forged.
+    const promoCode = typeof body.promoCode === 'string' && body.promoCode.trim()
+      ? body.promoCode.trim().toUpperCase()
+      : null;
+    let promoDiscount = 0;
+    if (promoCode) {
+      const admin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      const { data: rows } = await admin.rpc('validate_promo_code', {
+        _code: promoCode,
+        _subtotal: amountCad,
+      });
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      if (!row?.valid) return err(row?.message ?? 'Invalid promo code');
+      promoDiscount = Number(row.discount) || 0;
+    }
+
+    const finalCad = Math.max(0.5, Math.round((amountCad - promoDiscount) * 100) / 100);
+    const amountCents = Math.round(finalCad * 100);
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) return err('Stripe is not configured');
@@ -64,7 +84,13 @@ Deno.serve(async (req) => {
     const origin = getOrigin(req);
 
     // Serialize payload into chunked metadata keys (Stripe = 500 chars per value, 50 keys max).
-    const serialized = JSON.stringify({ ...payload, customer_id: userId });
+    const serialized = JSON.stringify({
+      ...payload,
+      customer_id: userId,
+      total_price: finalCad,
+      promo_code: promoCode,
+      promo_discount: promoDiscount,
+    });
     const parts = chunk(serialized);
     if (parts.length > 45) return err('Booking payload too large');
     const payloadMeta: Record<string, string> = { payload_count: String(parts.length) };

@@ -179,6 +179,24 @@ Deno.serve(async (req) => {
     return new Response('Insert failed', { status: 500, headers: corsHeaders });
   }
 
+  // Count the promo code use now that the booking exists.
+  const promoCode = typeof payload.promo_code === 'string' && payload.promo_code
+    ? (payload.promo_code as string).toUpperCase()
+    : null;
+  if (promoCode) {
+    const { data: promo } = await admin
+      .from('promo_codes')
+      .select('id, uses_count')
+      .eq('code', promoCode)
+      .maybeSingle();
+    if (promo) {
+      await admin
+        .from('promo_codes')
+        .update({ uses_count: (promo.uses_count ?? 0) + 1 })
+        .eq('id', promo.id);
+    }
+  }
+
   return new Response(JSON.stringify({ received: true, booking_id: inserted.id }), {
     status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

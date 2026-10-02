@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import AdminPricingSettings from "@/components/admin/AdminPricingSettings";
+import AdminPromoCodes from "@/components/admin/AdminPromoCodes";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
@@ -607,6 +608,7 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+            <AdminPromoCodes />
           </TabsContent>
         </Tabs>
 

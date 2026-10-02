@@ -172,11 +172,13 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           created_at: string
+          credit_balance: number
           full_name: string | null
           id: string
           phone: string | null
           preferred_currency: string
           preferred_language: string
+          referral_code: string | null
           terms_accepted_at: string | null
           updated_at: string
           user_id: string
@@ -185,11 +187,13 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           created_at?: string
+          credit_balance?: number
           full_name?: string | null
           id?: string
           phone?: string | null
           preferred_currency?: string
           preferred_language?: string
+          referral_code?: string | null
           terms_accepted_at?: string | null
           updated_at?: string
           user_id: string
@@ -198,12 +202,41 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           created_at?: string
+          credit_balance?: number
           full_name?: string | null
           id?: string
           phone?: string | null
           preferred_currency?: string
           preferred_language?: string
+          referral_code?: string | null
           terms_accepted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token?: string
           updated_at?: string
           user_id?: string
         }
@@ -687,6 +720,45 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
       ratings: {
         Row: {
           comment: string | null
@@ -714,6 +786,42 @@ export type Database = {
           ratee_id?: string
           rater_id?: string
           stars?: number
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          code: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          referee_credit: number
+          referee_id: string | null
+          referrer_credit: number
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          code: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referee_credit?: number
+          referee_id?: string | null
+          referrer_credit?: number
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referee_credit?: number
+          referee_id?: string | null
+          referrer_credit?: number
+          referrer_id?: string
+          status?: string
         }
         Relationships: []
       }
@@ -829,6 +937,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      generate_referral_code: { Args: { _name: string }; Returns: string }
       get_driver_reviews: {
         Args: { _driver_id: string; _limit?: number }
         Returns: {
@@ -885,6 +994,14 @@ export type Database = {
           message: Json
           msg_id: number
           read_ct: number
+        }[]
+      }
+      validate_promo_code: {
+        Args: { _code: string; _subtotal: number }
+        Returns: {
+          discount: number
+          message: string
+          valid: boolean
         }[]
       }
     }

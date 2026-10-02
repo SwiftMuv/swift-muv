@@ -7,6 +7,7 @@ import { DriverStats } from "@/components/driver/DriverStats";
 import { DriverJobsTabs } from "@/components/driver/DriverJobsTabs";
 import { BottomNav } from "@/components/driver/BottomNav";
 import NotificationBell from "@/components/NotificationBell";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { ActiveJobSheet } from "@/components/driver/ActiveJobSheet";
 import IncomingJobModal from "@/components/driver/IncomingJobModal";
 import WalletScreen from "@/components/driver/WalletScreen";
@@ -67,6 +68,7 @@ const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => 
 
 const DriverDashboard = () => {
   const { user } = useAuth();
+  usePushNotifications();
   const { t, formatCurrency } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
 

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
 import LangCurrencySettings from "@/components/LangCurrencySettings";
+import ReferralCard from "@/components/customer/ReferralCard";
 
 
 export const CustomerAccountScreen = () => {
@@ -52,6 +53,8 @@ export const CustomerAccountScreen = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ReferralCard />
 
       <LangCurrencySettings />
 
