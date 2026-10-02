@@ -329,6 +329,11 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   const routeReady = distanceKm > 0 && !calculating && !distanceError;
 
+  // Promo code discount, validated server-side again at checkout.
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const promoDiscount = appliedPromo?.discount ?? 0;
+  const payableTotal = Math.max(0, Math.round((quote.finalPrice - promoDiscount) * 100) / 100);
+
   const handleSubmit = async () => {
     if (!user) return;
     setSubmitting(true);
@@ -348,7 +353,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         move_size: moveSizeFromVehicleName(
           selectedTile.isSuv ? quote.recommendedVehicle : (selectedTile.fleetName ?? quote.recommendedVehicle),
         ),
-        total_price: quote.finalPrice,
+        total_price: payableTotal,
         recommended_vehicle: selectedTile.isSuv ? "Extra Large Car / SUV" : (selectedTile.fleetName ?? quote.recommendedVehicle),
         move_type: moveType,
         distance_km: distanceKm,
@@ -370,7 +375,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         clientSecret?: string; publishableKey?: string; sessionId?: string; error?: string;
       }>("stripe_checkout", {
         headers: { Authorization: `Bearer ${accessToken}` },
-        body: { bookingPayload, amountCad: quote.finalPrice },
+        body: { bookingPayload, amountCad: payableTotal, promoCode: appliedPromo?.code ?? null },
       });
 
       if (checkoutError || !payload?.clientSecret || !payload.publishableKey) {
@@ -794,10 +799,25 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                     <span className="font-semibold text-white">{formatCurrency(quote.taxAmount)}</span>
                   </div>
                 )}
+                {appliedPromo && (
+                  <div className="flex justify-between text-emerald-400">
+                    <span>{t("promo.discount")} ({appliedPromo.code})</span>
+                    <span className="font-semibold">−{formatCurrency(appliedPromo.discount)}</span>
+                  </div>
+                )}
                 <div className="mt-1 flex justify-between border-t border-neutral-800 pt-2 text-[16px] font-bold text-white">
                   <span>{t("booking.totalCad")}</span>
-                  <span>{formatCurrency(quote.finalPrice)}</span>
+                  <span>{formatCurrency(payableTotal)}</span>
                 </div>
+              </div>
+
+              <div className="mt-2">
+                <p className="mb-1 text-[12px] font-medium text-neutral-400">{t("promo.label")}</p>
+                <PromoCodeInput
+                  subtotal={quote.finalPrice}
+                  applied={appliedPromo}
+                  onApply={setAppliedPromo}
+                />
               </div>
 
 
@@ -941,7 +961,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                 className="h-14 w-full rounded-2xl bg-white text-[16px] font-bold text-black shadow-lg hover:bg-neutral-200 active:scale-[0.99] transition disabled:bg-neutral-800 disabled:text-neutral-500"
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {submitting ? t("cust.booking.preparingDots") : t("cust.booking.confirmAmount", { amount: formatCurrency(quote.finalPrice) })}
+                {submitting ? t("cust.booking.preparingDots") : t("cust.booking.confirmAmount", { amount: formatCurrency(payableTotal) })}
               </Button>
             </div>
           )}
