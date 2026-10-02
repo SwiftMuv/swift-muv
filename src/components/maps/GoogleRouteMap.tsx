@@ -206,6 +206,10 @@ export const GoogleRouteMap = ({
     // first driver GPS fix arrives.
     const origin = routeMode === "directions" ? (validDriver ?? validPickup) : validPickup;
     const destination = routeMode === "directions" ? (validDropoff ?? validPickup) : validDropoff;
+    // With a live driver and both stops set, route driver → pickup → drop-off
+    // so the polyline passes through the pickup point (the customer's stop)
+    // and the reported ETA is the time until the driver reaches the pickup.
+    const viaPickup = routeMode === "directions" && Boolean(validDriver && validPickup && validDropoff);
     const pathBase = [validDriver, validPickup, validDropoff].filter(isValidLatLng);
     const explicitPath = (routePath ?? []).filter(isValidLatLng);
     const routeKey = [routeMode, explicitPath.length, explicitPath[0]?.lat, explicitPath[explicitPath.length - 1]?.lng, origin?.lat, origin?.lng, destination?.lat, destination?.lng, validDropoff?.lat, validDropoff?.lng].join("|");
@@ -273,6 +277,7 @@ export const GoogleRouteMap = ({
         origin,
         destination,
         travelMode: maps.TravelMode.DRIVING,
+        ...(viaPickup && validPickup ? { waypoints: [{ location: validPickup, stopover: true }] } : {}),
       },
       (result, status) => {
         if (cancelled) return;
@@ -281,10 +286,14 @@ export const GoogleRouteMap = ({
           const routePath = route.overview_path.map((point) => ({ lat: point.lat(), lng: point.lng() }));
           drawRoute(routePath);
           const seconds = route.legs?.[0]?.duration?.value;
-          if (typeof seconds === "number") onEtaUpdate?.(Math.max(1, Math.round(seconds / 60)));
+          // With a live driver the customer-facing ETA is the time to the
+          // pickup point (the first leg), not the full driver → drop-off trip.
+          // Before a driver is assigned the route is pickup → drop-off and no
+          // ETA is reported; callers fall back to their own estimates.
+          if (validDriver && typeof seconds === "number") onEtaUpdate?.(Math.max(1, Math.round(seconds / 60)));
           return;
         }
-        drawRoute([origin, destination]);
+        drawRoute([origin, ...(viaPickup && validPickup ? [validPickup] : []), destination].filter(isValidLatLng));
       },
     );
 
