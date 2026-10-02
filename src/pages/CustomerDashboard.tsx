@@ -24,6 +24,7 @@ import RatingModal from "@/components/customer/RatingModal";
 import DriverReviewsForBooking from "@/components/customer/DriverReviewsForBooking";
 import ActiveTripCard from "@/components/customer/ActiveTripCard";
 import NotificationBell from "@/components/NotificationBell";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 import { useI18n } from "@/contexts/I18nContext";
 import TermsAgreementModal from "@/components/TermsAgreementModal";
@@ -47,6 +48,7 @@ const ACTIVE_STATUSES = ["pending", "assigned", "in_progress"];
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const { t, formatCurrency, formatDate } = useI18n();
+  usePushNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
