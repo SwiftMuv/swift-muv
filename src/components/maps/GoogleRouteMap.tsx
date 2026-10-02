@@ -206,6 +206,10 @@ export const GoogleRouteMap = ({
     // first driver GPS fix arrives.
     const origin = routeMode === "directions" ? (validDriver ?? validPickup) : validPickup;
     const destination = routeMode === "directions" ? (validDropoff ?? validPickup) : validDropoff;
+    // With a live driver and both stops set, route driver → pickup → drop-off
+    // so the polyline passes through the pickup point (the customer's stop)
+    // and the reported ETA is the time until the driver reaches the pickup.
+    const viaPickup = routeMode === "directions" && Boolean(validDriver && validPickup && validDropoff);
     const pathBase = [validDriver, validPickup, validDropoff].filter(isValidLatLng);
     const explicitPath = (routePath ?? []).filter(isValidLatLng);
     const routeKey = [routeMode, explicitPath.length, explicitPath[0]?.lat, explicitPath[explicitPath.length - 1]?.lng, origin?.lat, origin?.lng, destination?.lat, destination?.lng, validDropoff?.lat, validDropoff?.lng].join("|");
