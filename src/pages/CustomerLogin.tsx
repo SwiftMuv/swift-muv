@@ -22,6 +22,7 @@ const CustomerLogin = () => {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(
@@ -51,7 +52,29 @@ const CustomerLogin = () => {
     try {
       if (isSignUp) {
         const { error } = await signUp(email, password, "customer", fullName, { phone, address });
-        if (error) toast.error(error.message);
+        if (error) {
+          toast.error(error.message);
+        } else if (referralCode.trim()) {
+          // Claim the referral code: find the referrer and record the link.
+          // Runs right after signup while the new session is active.
+          const code = referralCode.trim().toUpperCase();
+          const { data: referrer } = await supabase
+            .from("customer_profiles")
+            .select("user_id")
+            .eq("referral_code", code)
+            .maybeSingle();
+          const { data: sessionData } = await supabase.auth.getSession();
+          const newUserId = sessionData.session?.user?.id;
+          if (referrer && newUserId && referrer.user_id !== newUserId) {
+            const { error: refError } = await supabase
+              .from("referrals")
+              .insert({ referrer_id: referrer.user_id, referee_id: newUserId, code });
+            if (refError) console.warn("referral insert failed", refError);
+            else toast.success(t("referral.applied"));
+          } else {
+            toast.error(t("referral.invalidCode"));
+          }
+        }
       } else {
         const { error } = await signIn(email, password);
         if (error) toast.error(error.message);
@@ -96,6 +119,19 @@ const CustomerLogin = () => {
             <div className="space-y-2">
               <Label htmlFor="address">{t("auth.currentAddress")}</Label>
               <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t("auth.currentAddressPlaceholder")} required />
+            </div>
+          )}
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="referral">{t("referral.haveCode")}</Label>
+              <Input
+                id="referral"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder={t("referral.codePlaceholder")}
+                maxLength={12}
+                className="uppercase"
+              />
             </div>
           )}
           <div className="space-y-2">

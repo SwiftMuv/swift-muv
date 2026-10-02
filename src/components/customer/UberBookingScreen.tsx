@@ -28,6 +28,7 @@ import { isNativeAndroid, NativeBookingMap } from "@/components/customer/NativeB
 import { GoogleRouteMap } from "@/components/maps/GoogleRouteMap";
 import { PlacesAutocomplete } from "@/components/booking/PlacesAutocomplete";
 import StripeCheckoutModal from "@/components/booking/StripeCheckoutModal";
+import PromoCodeInput, { type AppliedPromo } from "@/components/customer/PromoCodeInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
