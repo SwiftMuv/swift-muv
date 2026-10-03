@@ -32,8 +32,8 @@ android {
             logger.warn('SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY not set; building without a native Maps key. Add it to android/local.properties for full map access.')
         }
         manifestPlaceholders = [SWIFTMUV_GOOGLE_MAPS_ANDROID_KEY: mapsKey]
-        versionCode 13
-        versionName "1.0.12"
+        versionCode 14
+        versionName "2.1.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
