@@ -912,6 +912,7 @@ export type Database = {
         Args: { _job_id: string; _user_id: string }
         Returns: boolean
       }
+      claim_referral_code: { Args: { _code: string }; Returns: boolean }
       complete_job_by_geofence: {
         Args: { _job_id: string; _lat: number; _lng: number }
         Returns: boolean

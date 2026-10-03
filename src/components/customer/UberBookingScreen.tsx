@@ -376,7 +376,10 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         clientSecret?: string; publishableKey?: string; sessionId?: string; error?: string;
       }>("stripe_checkout", {
         headers: { Authorization: `Bearer ${accessToken}` },
-        body: { bookingPayload, amountCad: payableTotal, promoCode: appliedPromo?.code ?? null },
+        // Send the FULL quoted price — the server validates the promo code and
+        // subtracts the discount exactly once. Sending payableTotal here would
+        // double-apply the discount.
+        body: { bookingPayload, amountCad: quote.finalPrice, promoCode: appliedPromo?.code ?? null },
       });
 
       if (checkoutError || !payload?.clientSecret || !payload.publishableKey) {
