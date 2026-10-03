@@ -55,25 +55,14 @@ const CustomerLogin = () => {
         if (error) {
           toast.error(error.message);
         } else if (referralCode.trim()) {
-          // Claim the referral code: find the referrer and record the link.
-          // Runs right after signup while the new session is active.
-          const code = referralCode.trim().toUpperCase();
-          const { data: referrer } = await supabase
-            .from("customer_profiles")
-            .select("user_id")
-            .eq("referral_code", code)
-            .maybeSingle();
-          const { data: sessionData } = await supabase.auth.getSession();
-          const newUserId = sessionData.session?.user?.id;
-          if (referrer && newUserId && referrer.user_id !== newUserId) {
-            const { error: refError } = await supabase
-              .from("referrals")
-              .insert({ referrer_id: referrer.user_id, referee_id: newUserId, code });
-            if (refError) console.warn("referral insert failed", refError);
-            else toast.success(t("referral.applied"));
-          } else {
-            toast.error(t("referral.invalidCode"));
-          }
+          // Claim the referral code via the server-side function (the client
+          // cannot read other customers' profiles directly).
+          const { data: claimed, error: refError } = await supabase.rpc("claim_referral_code", {
+            _code: referralCode.trim().toUpperCase(),
+          });
+          if (refError) console.warn("referral claim failed", refError);
+          if (claimed) toast.success(t("referral.applied"));
+          else toast.error(t("referral.invalidCode"));
         }
       } else {
         const { error } = await signIn(email, password);
