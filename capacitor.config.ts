@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.swiftmuv.app.v2',
+  appId: 'com.swiftmuv.app',
   appName: 'swift-muv',
   webDir: 'dist',
   // Give bundled Android assets a stable, secure origin. Google Maps sees
