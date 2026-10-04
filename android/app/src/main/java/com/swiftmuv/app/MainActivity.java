@@ -1,4 +1,4 @@
-package com.swiftmuv.app.v2;
+package com.swiftmuv.app;
 
 import android.os.Bundle;
 import android.webkit.WebSettings;

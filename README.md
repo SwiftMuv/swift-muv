@@ -24,7 +24,7 @@ npx cap sync android
 
 The installed Android app now uses the native **Maps SDK for Android** for the
 background map. Create a separate Android-restricted key, enable **Maps SDK for
-Android**, and restrict it to package `com.swiftmuv.app.v2` plus your release
+Android**, and restrict it to package `com.swiftmuv.app` plus your release
 certificate SHA-1. Add it to your user Gradle properties (never commit it):
 
 ```properties

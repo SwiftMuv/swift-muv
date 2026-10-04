@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.swiftmuv.app.v2"
+    namespace = "com.swiftmuv.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.swiftmuv.app.v2"
+        applicationId "com.swiftmuv.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         def localProps = new Properties()
