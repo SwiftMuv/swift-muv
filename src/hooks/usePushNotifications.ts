@@ -11,6 +11,9 @@ export const usePushNotifications = () => {
   const { user } = useAuth();
 
   useEffect(() => {
+    // Registering without Firebase (google-services.json) crashes the native
+    // app instantly and cannot be caught in JS. Only enable once configured.
+    if (import.meta.env.VITE_PUSH_ENABLED !== "true") return;
     if (!user || !Capacitor.isNativePlatform()) return;
     let cancelled = false;
 
