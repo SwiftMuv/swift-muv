@@ -143,6 +143,12 @@ html.native-map-visible #root {
   background: transparent !important;
 }
 
+/* The native map is BELOW this element, not inside it. An opaque host hides
+   the SDK's dark tiles even after the loading overlay has been dismissed. */
+html.native-map-visible capacitor-google-map {
+  background: transparent !important;
+}
+
 capacitor-google-map {
   display: block;
   width: 100%;
