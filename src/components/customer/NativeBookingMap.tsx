@@ -113,7 +113,7 @@ export const NativeBookingMap = ({ pickup, dropoff, routePath, onReady, onError 
           resolve();
         };
         const timer = window.setTimeout(finish, 4000);
-        map!
+        map
           .setOnCameraIdleListener(() => {
             window.clearTimeout(timer);
             finish();
@@ -218,7 +218,7 @@ export const NativeBookingMap = ({ pickup, dropoff, routePath, onReady, onError 
       ref={(element) => {
         elementRef.current = element;
       }}
-      className="absolute inset-0 block h-full w-full bg-black"
+      className="absolute inset-0 block h-full w-full bg-transparent"
       aria-label="Booking route map"
     />
   );
