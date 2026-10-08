@@ -18,6 +18,7 @@ interface Props {
 }
 
 const NATIVE_MAP_ID = "swiftmuv-booking-map";
+const ANDROID_CLOUD_MAP_ID = "2631389fb4cd0d849a100fdd";
 const ANDROID_MAP_KEY =
   (import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY as string | undefined)?.trim() ||
   "AIzaSyDjl-mHd2ViaJq2SaPeHV_s7CpaRFqWkV0";
@@ -73,6 +74,7 @@ export const NativeBookingMap = ({ pickup, dropoff, routePath, onReady, onError 
         x: Math.round(rect.left),
         y: Math.round(rect.top),
         androidLiteMode: false,
+        androidMapId: ANDROID_CLOUD_MAP_ID,
       };
 
       // Retry once: the Android Maps SDK can reject the first attach while the
