@@ -8,6 +8,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(BookingMapThemePlugin.class);
         super.onCreate(savedInstanceState);
 
         // index.html carries the complete compiled theme, so an old WebView copy
