@@ -1,3 +1,4 @@
 Driver availability is set online only after a successful driver sign-in; dashboard reloads must not override an in-session offline choice.
 The Android application ID and Java namespace are `com.swiftmuv.app`; keep Capacitor and Android identity settings aligned so native registration remains valid.
 Android booking map hosts and their page layers must stay transparent because Capacitor renders native map tiles underneath the WebView; loading and error overlays stay opaque.
+Use the registered BookingMapTheme Android bridge to select the cloud map's DARK color scheme after map creation, because the Capacitor Maps plugin does not forward this SDK setting and cloud Map IDs override JSON styles.

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { GoogleMap, LatLngBounds } from "@capacitor/google-maps";
+import { applyNativeBookingMapDarkTheme } from "@/lib/nativeMapTheme";
 import {
   SWIFTMUV_DARK_MAP_STYLES,
   SWIFTMUV_DEFAULT_CENTER,
@@ -102,6 +103,15 @@ export const NativeBookingMap = ({ pickup, dropoff, routePath, onReady, onError 
       if (cancelled) {
         await map.destroy();
         return;
+      }
+
+      // A cloud Map ID overrides JSON styling, and Android defaults to LIGHT.
+      // Explicitly select its published dark variant before lifting the overlay.
+      try {
+        await applyNativeBookingMapDarkTheme(NATIVE_MAP_ID);
+      } catch (error) {
+        // Styling must never crash the app or hide an otherwise usable map.
+        console.warn("Booking map dark theme could not be selected", error);
       }
 
       // Wait for the first rendered frame (camera idle) before reporting ready,
