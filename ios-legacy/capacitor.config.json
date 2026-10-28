@@ -1,0 +1,7 @@
+{
+  "appId": "com.swiftmuv.app",
+  "appName": "SwiftMuv",
+  "webDir": "dist",
+  "includePlugins": ["@capacitor/geolocation", "@capacitor/local-notifications"],
+  "ios": { "contentInset": "automatic" }
+}
