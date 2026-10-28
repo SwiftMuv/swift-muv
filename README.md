@@ -1,5 +1,37 @@
 # SwiftMuv
 
+## iPhone with Xcode 14.2
+
+Use the separate `ios-legacy` project. It uses Capacitor 5.7.8 without changing
+the working Capacitor 8 Android app. It shares the app's current web source,
+uses browser Google Maps, and includes native location and local alerts.
+Native push is disabled: the current delivery service targets Android FCM,
+not Apple APNs. Background/closed-app GPS is not implemented for this shell.
+
+On your Mac, update your local project from your connected GitHub repository,
+then run these commands from the project root:
+
+```bash
+git pull
+npm install
+npm install --prefix ios-legacy
+npm run build --prefix ios-legacy
+(cd ios-legacy && npx cap sync ios)
+npm run open --prefix ios-legacy
+```
+
+Install CocoaPods first if `pod` is not available (`brew install cocoapods`).
+In Xcode 14.2, open `ios-legacy/ios/App/App.xcworkspace`, select the App target,
+choose your Apple team under Signing & Capabilities, select an iOS 16.2
+simulator or supported connected phone, and press Run. Do not run the root
+Capacitor 8 CLI against this iOS project. Repeat the iOS build and sync commands
+after updating app source. The simulator/device build must be verified on a Mac;
+this workspace has no Xcode. Newer iPhones may require newer Xcode device support.
+Current App Store uploads require a newer Apple SDK; this setup is for local
+Xcode 14.2 testing, not a current App Store release.
+
+See the [Capacitor mobile guide](https://lovable.dev/blog).
+
 ## Android Google Maps
 
 The project key is committed for both build paths:
