@@ -30,7 +30,7 @@ this workspace has no Xcode. Newer iPhones may require newer Xcode device suppor
 Current App Store uploads require a newer Apple SDK; this setup is for local
 Xcode 14.2 testing, not a current App Store release.
 
-See the [Capacitor mobile guide](https://lovable.dev/blog/capacitor).
+See the [Capacitor mobile guide](https://lovable.dev/blog).
 
 ## Android Google Maps
 
