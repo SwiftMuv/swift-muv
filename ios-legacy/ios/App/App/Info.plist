@@ -22,6 +22,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SwiftMuv uses your location to set your pickup point and share your active trip location.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>SwiftMuv uses your location during active trips to show progress to your customer.</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
