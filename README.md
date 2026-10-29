@@ -16,7 +16,7 @@ git pull
 npm install
 npm install --prefix ios-legacy
 npm run build --prefix ios-legacy
-(cd ios-legacy && npx cap sync ios)
+npm run sync --prefix ios-legacy
 npm run open --prefix ios-legacy
 ```
 
@@ -29,6 +29,32 @@ after updating app source. The simulator/device build must be verified on a Mac;
 this workspace has no Xcode. Newer iPhones may require newer Xcode device support.
 Current App Store uploads require a newer Apple SDK; this setup is for local
 Xcode 14.2 testing, not a current App Store release.
+
+### Missing package product `CapApp-SPM`
+
+The checked-in Xcode 14.2 project uses CocoaPods, not `CapApp-SPM`. This error
+usually means Xcode is opening a different, newer-generated project or retaining
+an older project window. Do not add `CapApp-SPM` to the legacy project or regenerate
+iOS using the root Capacitor 8 CLI.
+
+Close all Xcode project windows. After pulling the latest repository, run from
+the repository root:
+
+```bash
+npm install
+npm install --prefix ios-legacy
+npm run build --prefix ios-legacy
+npm run sync --prefix ios-legacy
+(cd ios-legacy/ios/App && pod install)
+open ios-legacy/ios/App/App.xcworkspace
+```
+
+The iOS sync/open scripts explicitly use the locally installed Capacitor 5 CLI;
+if that installation is missing, they fail instead of falling back to Capacitor 8.
+In Xcode, use **Product → Clean Build Folder**, then Run. Open the workspace above,
+not a root `ios/App` project and not `App.xcodeproj`. Keep any separately generated
+iOS project intact. If the error persists in this exact workspace, send a screenshot
+of the Xcode error and the full path of the project being opened.
 
 See the [Capacitor mobile guide](https://lovable.dev/blog).
 

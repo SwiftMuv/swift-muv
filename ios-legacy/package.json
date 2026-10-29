@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "node ../node_modules/vite/bin/vite.js build .. --config vite.config.ts --mode ios-legacy",
-    "sync": "cap sync ios",
-    "open": "cap open ios"
+    "sync": "node ./node_modules/@capacitor/cli/bin/capacitor sync ios",
+    "open": "node ./node_modules/@capacitor/cli/bin/capacitor open ios"
   },
   "dependencies": {
     "@capacitor/core": "5.7.8",
