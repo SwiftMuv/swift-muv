@@ -3,4 +3,5 @@ The Android application ID and Java namespace are `com.swiftmuv.app`; keep Capac
 Android booking map hosts and their page layers must stay transparent because Capacitor renders native map tiles underneath the WebView; loading and error overlays stay opaque.
 Use the registered BookingMapTheme Android bridge to select the cloud map's DARK color scheme after map creation, because the Capacitor Maps plugin does not forward this SDK setting and cloud Map IDs override JSON styles.
 Keep Xcode 14.2 iOS tooling isolated in ios-legacy with Capacitor 5 and matching web-runtime aliases; never downgrade the root Capacitor 8 Android dependencies to support an older Xcode.
+Legacy iOS sync/open scripts must invoke their own installed Capacitor CLI by explicit path, and Xcode must open the CocoaPods workspace; this prevents root Capacitor 8 fallback and incompatible CapApp-SPM projects.
 The legacy iOS shell uses the existing browser maps and local notifications; do not register native Google Maps or push until their iOS SDK and delivery configuration are validated.

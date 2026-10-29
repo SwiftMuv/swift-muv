@@ -13,6 +13,22 @@ describe("isolated Xcode 14.2 support", () => {
     expect(legacy.devDependencies["@capacitor/cli"]).toBe("5.7.8");
   });
 
+  it("never falls back to the root Capacitor CLI for iOS sync or open", () => {
+    expect(legacy.scripts.sync).toBe("node ./node_modules/@capacitor/cli/bin/capacitor sync ios");
+    expect(legacy.scripts.open).toBe("node ./node_modules/@capacitor/cli/bin/capacitor open ios");
+  });
+
+  it("links the CocoaPods workspace rather than a newer CapApp-SPM package", () => {
+    const project = read("ios-legacy/ios/App/App.xcodeproj/project.pbxproj");
+    expect(project).not.toContain("CapApp-SPM");
+    expect(project).not.toContain("XCSwiftPackageProductDependency");
+    expect(project).toContain("Pods_App.framework in Frameworks");
+    expect(read("ios-legacy/ios/App/App.xcworkspace/contents.xcworkspacedata"))
+      .toContain('location = "group:Pods/Pods.xcodeproj"');
+    expect(read("ios-legacy/ios/App/Podfile"))
+      .toContain("pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'");
+  });
+
   it("preserves the existing Android Capacitor 8 dependency", () => {
     const root = JSON.parse(read("package.json"));
     expect(root.dependencies["@capacitor/android"]).toBe("^8.4.0");
