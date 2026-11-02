@@ -8,7 +8,7 @@ export default defineConfig((env) => {
   const packages = ["core", "geolocation", "google-maps", "local-notifications", "push-notifications"];
   const aliases = Object.fromEntries(packages.map((name) => [
     `@capacitor/${name}`,
-    path.join(legacyRoot, "node_modules", "@capacitor", name, "dist", "esm", "index.js"),
+    path.join(legacyRoot, "node_modules", "@capacitor", name, "dist", ...(name === "core" ? [] : ["esm"]), "index.js"),
   ]));
   const base = typeof baseConfig === "function" ? baseConfig(env) : baseConfig;
   return mergeConfig(base, {
