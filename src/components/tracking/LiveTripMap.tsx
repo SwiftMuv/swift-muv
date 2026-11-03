@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Capacitor } from "@capacitor/core";
 import { GoogleMap } from "@capacitor/google-maps";
+import { isNativeAndroid } from "@/components/customer/NativeBookingMap";
 import { Loader2, WifiOff } from "lucide-react";
 import DriverTrackingMap from "@/components/tracking/DriverTrackingMap";
 import { useLiveDriverLocation } from "@/hooks/useLiveDriverLocation";
@@ -184,7 +184,7 @@ const LiveTripMap = ({ bookingId, target, destination = null, showWaitingOverlay
   const smooth = useSmoothPosition(position);
   // The native Google Maps plugin only exists in the Android build; the iOS
   // shell uses browser maps, so never mount the native surface there.
-  const native = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+  const native = isNativeAndroid();
 
   useEffect(() => {
     onDriverPosition?.(position);
