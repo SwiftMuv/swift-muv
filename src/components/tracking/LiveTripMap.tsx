@@ -182,7 +182,9 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
 const LiveTripMap = ({ bookingId, target, destination = null, showWaitingOverlay = true, onDriverPosition, onEtaUpdate }: Props) => {
   const { position, connection } = useLiveDriverLocation(bookingId);
   const smooth = useSmoothPosition(position);
-  const native = Capacitor.isNativePlatform();
+  // The native Google Maps plugin only exists in the Android build; the iOS
+  // shell uses browser maps, so never mount the native surface there.
+  const native = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
   useEffect(() => {
     onDriverPosition?.(position);
