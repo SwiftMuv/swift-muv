@@ -1,6 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import Stripe from 'npm:stripe@17';
+import { safeOrigin, safeUrl } from '../_shared/pricing.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
 
-    const origin = req.headers.get('origin') ?? req.headers.get('referer') ?? 'https://example.com';
+    const origin = safeOrigin(req);
 
     const account = await stripe.accounts.create({
       type: 'express',
@@ -82,8 +83,8 @@ Deno.serve(async (req) => {
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: body.refreshUrl ?? `${origin}/driver?stripe=refresh`,
-      return_url: body.returnUrl ?? `${origin}/driver?stripe=success`,
+      refresh_url: safeUrl(body.refreshUrl, `${origin}/driver?stripe=refresh`),
+      return_url: safeUrl(body.returnUrl, `${origin}/driver?stripe=success`),
       type: 'account_onboarding',
     });
 

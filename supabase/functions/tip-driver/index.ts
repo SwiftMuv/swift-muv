@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import Stripe from 'npm:stripe@17';
+import { safeOrigin } from '../_shared/pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
 
     // Create + confirm an off-session-free payment intent via Checkout-like API.
     // Simpler: create an embedded checkout session for the tip.
-    const origin = req.headers.get('origin') ?? 'https://swift-muv.lovable.app';
+    const origin = safeOrigin(req);
     const returnUrl = new URL('/dashboard', origin);
     returnUrl.searchParams.set('tip', 'success');
 
@@ -78,10 +79,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    // Optimistically record tip on the job/booking; webhook will confirm/transfer.
-    const newTip = Number(job.tip_amount ?? 0) + amount;
-    await admin.from('jobs').update({ tip_amount: newTip }).eq('id', jobId);
-    await admin.from('bookings').update({ tip_amount: newTip }).eq('id', job.booking_id);
+    // The tip is recorded by the webhook only after Stripe confirms payment.
 
     // Best-effort: transfer to driver's connect account immediately on session completion handled by webhook.
     // Here we return the embedded client_secret so the customer can pay in-app.

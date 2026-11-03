@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import Stripe from 'npm:stripe@17';
+import { computeServerPrice, safeOrigin } from '../_shared/pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,14 +12,6 @@ const json = (b: Record<string, unknown>, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
 const err = (e: string, details?: string) => json({ error: e, details, fallback: true }, 200);
-
-const getOrigin = (req: Request) => {
-  const o = req.headers.get('origin');
-  if (o) return o;
-  const r = req.headers.get('referer');
-  if (r) try { return new URL(r).origin; } catch { /* ignore */ }
-  return 'https://example.com';
-};
 
 // Split a string into chunks of up to `size` chars (Stripe metadata = 500 chars/value).
 const chunk = (s: string, size = 450): string[] => {
@@ -48,9 +41,16 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const payload = body.bookingPayload;
-    const amountCad = Number(body.amountCad);
-
     if (!payload || typeof payload !== 'object') return err('bookingPayload is required');
+
+    // The price is always derived server-side; the client's amount is ignored.
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const quote = await computeServerPrice(admin, payload);
+    if ('error' in quote) return err(quote.error);
+    const amountCad = quote.price;
     if (!amountCad || amountCad <= 0) return err('Invalid amount');
 
     // Re-validate any promo code server-side so discounts can't be forged.
@@ -59,10 +59,6 @@ Deno.serve(async (req) => {
       : null;
     let promoDiscount = 0;
     if (promoCode) {
-      const admin = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      );
       const { data: rows } = await admin.rpc('validate_promo_code', {
         _code: promoCode,
         _subtotal: amountCad,
@@ -81,12 +77,13 @@ Deno.serve(async (req) => {
     if (!publishableKey) return err('Stripe publishable key not configured');
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
-    const origin = getOrigin(req);
+    const origin = safeOrigin(req);
 
     // Serialize payload into chunked metadata keys (Stripe = 500 chars per value, 50 keys max).
     const serialized = JSON.stringify({
       ...payload,
       customer_id: userId,
+      recommended_vehicle: quote.vehicle,
       total_price: finalCad,
       promo_code: promoCode,
       promo_discount: promoDiscount,
