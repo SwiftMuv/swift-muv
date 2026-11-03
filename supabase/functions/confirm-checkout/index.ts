@@ -42,14 +42,12 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const sessionId = typeof body.sessionId === 'string' ? body.sessionId : null;
 
-    let sessions: Stripe.Checkout.Session[] = [];
-    if (sessionId) {
-      sessions = [await stripe.checkout.sessions.retrieve(sessionId)];
-    } else {
-      const since = Math.floor(Date.now() / 1000) - 14 * 86400;
-      const list = await stripe.checkout.sessions.list({ created: { gte: since }, limit: 100, status: 'complete' });
-      sessions = list.data;
-    }
+    // Never fetch a caller-named session directly; only consider recent
+    // completed sessions, which are then filtered to the caller below.
+    const since = Math.floor(Date.now() / 1000) - 14 * 86400;
+    const list = await stripe.checkout.sessions.list({ created: { gte: since }, limit: 100, status: 'complete' });
+    let sessions: Stripe.Checkout.Session[] = list.data;
+    if (sessionId) sessions = sessions.filter((s) => s.id === sessionId);
 
     const created: string[] = [];
     const existing: string[] = [];

@@ -80,6 +80,14 @@ Deno.serve(async (req) => {
       console.warn('tip transfer lookup failed', e);
     }
 
+    // Record the paid tip now that Stripe has confirmed payment.
+    if (session.payment_status === 'paid') {
+      const { data: jobRow } = await admin.from('jobs').select('tip_amount').eq('id', jobId).maybeSingle();
+      const newTip = Math.round((Number(jobRow?.tip_amount ?? 0) + amount) * 100) / 100;
+      await admin.from('jobs').update({ tip_amount: newTip }).eq('id', jobId);
+      if (bookingId) await admin.from('bookings').update({ tip_amount: newTip }).eq('id', bookingId);
+    }
+
     const { data: driverProfile } = await admin
       .from('driver_profiles')
       .select('stripe_connect_id')
