@@ -3,6 +3,7 @@ The Android application ID and Java namespace are `com.swiftmuv.app`; keep Capac
 Android booking map hosts and their page layers must stay transparent because Capacitor renders native map tiles underneath the WebView; loading and error overlays stay opaque.
 Use the registered BookingMapTheme Android bridge to select the cloud map's DARK color scheme after map creation, because the Capacitor Maps plugin does not forward this SDK setting and cloud Map IDs override JSON styles.
 Keep Xcode 14.2 iOS tooling isolated in ios-legacy with Capacitor 5 and matching web-runtime aliases; never downgrade the root Capacitor 8 Android dependencies to support an older Xcode.
+PostCSS resolves the shared Tailwind config by absolute file URL and Tailwind scans sources relative to that config, so legacy iOS commands work from their own directory.
 Legacy iOS web aliases must use Capacitor 5 core's dist/index.js and plugins' dist/esm/index.js; core has no dist/esm entry.
 Legacy iOS builds alias @capacitor/google-maps to ios-legacy/stubs/google-maps.ts, because the real package calls its unregistered native plugin on import and crashes iOS at launch.
 Current-location booking pickup uses GPS coordinates immediately, enriching with a street address only if the customer has not edited it; address lookup failures must not discard a valid location.
