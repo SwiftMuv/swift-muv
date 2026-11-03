@@ -15,9 +15,18 @@ describe("isolated Xcode 14.2 support", () => {
     const aliases = config.resolve?.alias;
     if (!aliases || Array.isArray(aliases)) throw new Error("Expected isolated iOS aliases");
     expect(aliases["@capacitor/core"]).toBe(path.resolve("ios-legacy/node_modules/@capacitor/core/dist/index.js"));
-    for (const name of ["geolocation", "google-maps", "local-notifications", "push-notifications"]) {
+    for (const name of ["geolocation", "local-notifications", "push-notifications"]) {
       expect(aliases[`@capacitor/${name}`]).toBe(path.resolve(`ios-legacy/node_modules/@capacitor/${name}/dist/esm/index.js`));
     }
+  });
+
+  it("replaces native Google Maps with a stub so importing it cannot crash iOS at launch", async () => {
+    const env = { command: "build" as const, mode: "ios-legacy" };
+    const config = await (typeof legacyConfig === "function" ? legacyConfig(env) : legacyConfig);
+    const aliases = config.resolve?.alias as Record<string, string>;
+    expect(aliases["@capacitor/google-maps"]).toBe(path.resolve("ios-legacy/stubs/google-maps.ts"));
+    const stub = await import("../../ios-legacy/stubs/google-maps");
+    await expect(stub.GoogleMap.create()).rejects.toThrow();
   });
 
   it("uses the Capacitor 5 iOS runtime instead of the incompatible current runtime", () => {
