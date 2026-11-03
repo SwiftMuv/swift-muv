@@ -46,6 +46,7 @@ import {
 import { usePricingVersion } from "@/lib/pricingConfig";
 import { decodePolyline } from "@/lib/mapCore";
 import { getCurrentPositionSafe } from "@/lib/locationPermission";
+import { currentPickupValue } from "@/lib/currentPickup";
 import SuvImg from "@/assets/vehicles/suv.png";
 import CargoVanImg from "@/assets/vehicles/cargo-van.png";
 import PickupImg from "@/assets/vehicles/pickup.png";
@@ -133,7 +134,7 @@ const loadRecents = (): string[] => {
 
 // Shared dark-sheet input styling with high-contrast focus ring + invalid state.
 const fieldClass =
-  "h-11 border-0 bg-transparent px-0 text-[15px] font-semibold text-white shadow-none placeholder:text-neutral-500 " +
+  "h-11 border-0 bg-transparent px-0 text-base font-semibold text-white shadow-none placeholder:text-neutral-500 " +
   "focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 rounded-md";
 const invalidFieldClass = "text-red-300 placeholder:text-red-400/70 focus-visible:ring-red-400";
 
@@ -170,6 +171,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   const [dropoffPicked, setDropoffPicked] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const locationRequestRef = useRef(false);
+  const pickupEditedRef = useRef(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const preCheckoutBookingIdRef = useRef<string | null>(null);
   const checkoutSessionIdRef = useRef<string | null>(null);
@@ -205,27 +208,39 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   // The map opens on the customer's own position and the pickup field is
   // pre-filled with their street address. Both stay fully editable.
   const detectCurrentLocation = async (opts: { overwrite?: boolean } = {}) => {
+    if (locationRequestRef.current) return;
+    locationRequestRef.current = true;
+    if (opts.overwrite) pickupEditedRef.current = false;
     setLocating(true);
     try {
       const position = await getCurrentPositionSafe();
       if (!position) {
-        if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
+        toast.error(t("cust.booking.locationUnavailable"));
         return;
       }
       setCurrentLocation(position);
+      const coordinates = currentPickupValue(position);
+      if (!pickupEditedRef.current) {
+        setPickup(coordinates);
+        setPickupPicked(true);
+      }
       const { data, error } = await supabase.functions.invoke<{ address?: string | null }>(
         "reverse-geocode",
         { body: position },
       );
-      if (error) throw error;
-      const address = data?.address?.trim();
-      if (!address) return;
-      setPickup((prev) => (opts.overwrite || !prev.trim() ? address : prev));
-      if (opts.overwrite || !pickup.trim()) setPickupPicked(true);
+      if (error) {
+        console.warn("Street lookup unavailable; using GPS pickup", error);
+        return;
+      }
+      if (!pickupEditedRef.current) {
+        setPickup(currentPickupValue(position, data?.address));
+        setPickupPicked(true);
+      }
     } catch (e) {
       console.warn("Current location lookup failed", e);
       if (opts.overwrite) toast.error(t("cust.booking.locationUnavailable"));
     } finally {
+      locationRequestRef.current = false;
       setLocating(false);
     }
   };
@@ -417,8 +432,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
 
   const snapHeights: Record<Snap, string> = {
     peek: "160px",
-    half: "56vh",
-    full: "92vh",
+    half: "min(52dvh, 440px)",
+    full: "calc(100% - 64px - env(safe-area-inset-top, 0px))",
   };
 
   const onDragStart = (clientY: number) => {
@@ -448,7 +463,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
   };
 
   return (
-    <div className={cn("fixed inset-0 z-30 font-sans text-white", nativeAndroid ? "bg-transparent" : "bg-black")}>
+    <div className={cn("fixed inset-x-0 top-0 bottom-[calc(56px+env(safe-area-inset-bottom,0px))] z-30 font-sans text-white", nativeAndroid ? "bg-transparent" : "bg-black")}>
       {/* Map — on native Android the map view consumes every touch inside its
           frame, so its frame must stop where the bottom sheet begins or the
           sheet can never scroll on a real phone. */}
@@ -495,7 +510,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
       )}
 
       {/* Top back button — Uber floating pill */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top,0px))]">
         <button
           onClick={goBack}
           className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.6)] active:scale-95 transition"
@@ -519,7 +534,6 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
           height: snapHeights[snap],
           transform: `translateY(${Math.max(0, dragOffset)}px)`,
           transition: dragStateRef.current ? "none" : "height 380ms cubic-bezier(0.22,1,0.36,1), transform 380ms cubic-bezier(0.22,1,0.36,1)",
-          paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
         {/* Drag handle */}
@@ -548,10 +562,10 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
           {step === "where" && (
-            <div className="space-y-5 pt-1">
-              <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-white">
+            <div className="space-y-3 pt-1">
+              <h1 className="text-[22px] font-extrabold leading-tight text-white">
                 {t("cust.booking.whereMoving")}
               </h1>
 
@@ -568,12 +582,13 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                     <span className="my-1 h-8 w-0.5 bg-neutral-700" />
                     <span className="h-2.5 w-2.5 rounded-sm bg-white" />
                   </div>
-                  <div className="flex-1 divide-y divide-neutral-800">
+                  <div className="min-w-0 flex-1 divide-y divide-neutral-800">
                     <div className="pb-1">
                       <PlacesAutocomplete
                         value={pickup}
-                        onChange={(v) => { setPickup(v); setPickupPicked(false); }}
+                        onChange={(v) => { pickupEditedRef.current = true; setPickup(v); setPickupPicked(false); }}
                         onSelect={() => setPickupPicked(true)}
+                        near={currentLocation}
                         placeholder={t("cust.booking.pickupLocation")}
                         className={cn(fieldClass, pickupInvalid && invalidFieldClass)}
                       />
@@ -583,6 +598,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                         value={dropoff}
                         onChange={(v) => { setDropoff(v); setDropoffPicked(false); }}
                         onSelect={() => setDropoffPicked(true)}
+                        near={currentLocation}
                         placeholder={t("cust.booking.whereTo")}
                         className={cn(fieldClass, dropoffInvalid && invalidFieldClass)}
                       />
@@ -590,7 +606,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   </div>
                   {(pickup || dropoff) && (
                     <button
-                      onClick={() => { setPickup(""); setDropoff(""); setDistance(null); setPickupPicked(false); setDropoffPicked(false); }}
+                      onClick={() => { pickupEditedRef.current = true; setPickup(""); setDropoff(""); setDistance(null); setPickupPicked(false); setDropoffPicked(false); }}
                       className="mt-2 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                       aria-label={t("cust.booking.clear")}
                     >
@@ -601,7 +617,8 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
               </div>
 
               {/* Current location — pre-filled on open, re-detect any time */}
-              <button
+              <Button
+                variant="secondary"
                 type="button"
                 onClick={() => { void detectCurrentLocation({ overwrite: true }); }}
                 disabled={locating}
@@ -618,7 +635,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                   {t("cust.booking.useCurrentLocation")}
                 </span>
                 <ChevronRight className="h-4 w-4 text-neutral-500" />
-              </button>
+              </Button>
 
 
               {(pickupInvalid || dropoffInvalid) && !distanceError && (
@@ -674,7 +691,7 @@ const UberBookingScreen = ({ onBooked, onClose }: Props) => {
                       >
                         <button
                           type="button"
-                          onClick={() => { setPickup(r); setPickupPicked(true); }}
+                          onClick={() => { pickupEditedRef.current = true; setPickup(r); setPickupPicked(true); }}
                           className="max-w-[180px] truncate px-3 py-2 text-[12px] font-semibold text-white hover:bg-neutral-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset"
                           title={t("cust.booking.useAsPickup", { place: r })}
                         >

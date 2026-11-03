@@ -127,6 +127,18 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Safari zooms the entire page when a focused form field is below 16px. */
+  @supports (-webkit-touch-callout: none) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
 }
 
 @layer utilities {
