@@ -16,6 +16,7 @@ const AUTH_FAILURE_EVENT = "swiftmuv:google-maps-auth-failure";
 const LOAD_TIMEOUT_MS = 15000;
 
 let loaderPromise: Promise<typeof google> | null = null;
+let authorizationError: string | null = null;
 
 declare global {
   interface Window {
@@ -49,7 +50,7 @@ const buildScriptUrl = (key: string) => {
   const params = new URLSearchParams({
     key,
     v: "weekly",
-    libraries: "places,geometry",
+    libraries: "geometry",
     loading: "async",
     callback: "__swiftmuvGoogleMapsReady",
   });
@@ -74,7 +75,8 @@ const loadWithKey = (key: string): Promise<typeof google> =>
       settled = true;
       window.clearTimeout(timeout);
       window.__swiftmuvGoogleMapsReady = undefined;
-      window.gm_authFailure = undefined;
+      // Google can reject authorization only AFTER the Map is constructed.
+      // Keep gm_authFailure installed after the loader callback has resolved.
       fn();
     };
 
@@ -91,7 +93,12 @@ const loadWithKey = (key: string): Promise<typeof google> =>
     };
 
     window.gm_authFailure = () => {
-      finish(() => reject(new Error("Google Maps rejected this origin or API key")));
+      authorizationError = "Google Maps rejected this app's browser key or website restrictions.";
+      if (settled) {
+        window.dispatchEvent(new Event(AUTH_FAILURE_EVENT));
+        return;
+      }
+      finish(() => reject(new Error(authorizationError ?? "Google Maps authorization failed")));
     };
 
     cleanupScript();
@@ -106,6 +113,7 @@ const loadWithKey = (key: string): Promise<typeof google> =>
 
 export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") return Promise.reject(new Error("Google Maps cannot load outside the browser"));
+  if (authorizationError) return Promise.reject(new Error(authorizationError));
   if (window.google?.maps?.importLibrary) return Promise.resolve(window.google);
   if (loaderPromise) return loaderPromise;
 
@@ -116,6 +124,7 @@ export function loadGoogleMaps(): Promise<typeof google> {
     let lastError: unknown = null;
     for (const key of keys) {
       try {
+        authorizationError = null;
         return await loadWithKey(key);
       } catch (e) {
         lastError = e;
@@ -132,7 +141,7 @@ export function loadGoogleMaps(): Promise<typeof google> {
 
 export function useGoogleMaps(enabled = true) {
   const [ready, setReady] = useState<boolean>(
-    enabled && typeof window !== "undefined" && Boolean(window.google?.maps?.importLibrary),
+    enabled && !authorizationError && typeof window !== "undefined" && Boolean(window.google?.maps?.importLibrary),
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -144,9 +153,16 @@ export function useGoogleMaps(enabled = true) {
     }
 
     let active = true;
+    const onAuthFailure = () => {
+      if (!active) return;
+      setReady(false);
+      setError(authorizationError ?? "Google Maps authorization failed");
+    };
+    window.addEventListener(AUTH_FAILURE_EVENT, onAuthFailure);
     loadGoogleMaps()
       .then(() => {
         if (!active) return;
+        if (authorizationError) { onAuthFailure(); return; }
         setReady(true);
         setError(null);
       })
@@ -158,6 +174,7 @@ export function useGoogleMaps(enabled = true) {
 
     return () => {
       active = false;
+      window.removeEventListener(AUTH_FAILURE_EVENT, onAuthFailure);
     };
   }, [enabled]);
 

@@ -91,6 +91,9 @@ export const GoogleRouteMap = ({
       disableDefaultUI: true,
       clickableIcons: false,
       gestureHandling: "greedy",
+      // JSON dark styles need a raster roadmap, not a cloud/vector Map ID.
+      mapTypeId: maps.MapTypeId.ROADMAP,
+      renderingType: maps.RenderingType.RASTER,
       backgroundColor: "#0B0F14",
       styles: SWIFTMUV_DARK_MAP_STYLES,
     });
@@ -316,10 +319,10 @@ export const GoogleRouteMap = ({
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden bg-background", rounded && "rounded-2xl", className)}>
-      <div ref={containerRef} className="h-full w-full" />
+      <div ref={containerRef} className={cn("h-full w-full bg-background", error && "invisible")} />
 
       {(!ready || error) && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background px-6 text-center text-xs text-muted-foreground">
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-10 flex min-h-24 items-center justify-center bg-background px-6 text-center text-xs text-muted-foreground">
           {error ? `Map unavailable — ${error}` : fallbackText}
         </div>
       )}
