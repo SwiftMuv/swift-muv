@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Capacitor } from "@capacitor/core";
 import { GoogleMap } from "@capacitor/google-maps";
+import { isNativeAndroid } from "@/components/customer/NativeBookingMap";
 import { Loader2, WifiOff } from "lucide-react";
 import DriverTrackingMap from "@/components/tracking/DriverTrackingMap";
 import { useLiveDriverLocation } from "@/hooks/useLiveDriverLocation";
@@ -182,7 +182,9 @@ const NativeLiveMap = ({ driver, target, destination }: { driver: LatLngLiteral 
 const LiveTripMap = ({ bookingId, target, destination = null, showWaitingOverlay = true, onDriverPosition, onEtaUpdate }: Props) => {
   const { position, connection } = useLiveDriverLocation(bookingId);
   const smooth = useSmoothPosition(position);
-  const native = Capacitor.isNativePlatform();
+  // The native Google Maps plugin only exists in the Android build; the iOS
+  // shell uses browser maps, so never mount the native surface there.
+  const native = isNativeAndroid();
 
   useEffect(() => {
     onDriverPosition?.(position);
