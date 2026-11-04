@@ -1,4 +1,5 @@
 # iOS for Xcode 14.2
+- [ ] Add the isolated hosted iPhone map, verify its message boundaries, and document publishing/device checks.
 - [x] Correct phone booking sizing and current-location pickup; verified GPS fallback/manual edits at iPhone size and 11 regression checks (physical iPhone and Google map rendering remain unverified).
 - [x] Correct the legacy core runtime entry and verify the alias regression.
 - [x] Add an isolated Capacitor 5 iOS project, preserving Android dependencies.

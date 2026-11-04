@@ -15,6 +15,9 @@ import {
   type LatLngLiteral,
 } from "@/lib/mapCore";
 import { cn } from "@/lib/utils";
+import { Capacitor } from "@capacitor/core";
+import { HostedIosMap } from "./HostedIosMap";
+import { usesHostedMap } from "@/lib/hostedMapProtocol";
 
 interface GoogleRouteMapProps {
   pickup?: LatLngLiteral | null;
@@ -37,7 +40,17 @@ interface GoogleRouteMapProps {
 const defaultPadding: google.maps.Padding = { top: 80, right: 48, bottom: 340, left: 48 };
 const compactPadding: google.maps.Padding = { top: 40, right: 40, bottom: 40, left: 40 };
 
-export const GoogleRouteMap = ({
+export const GoogleRouteMap = (props: GoogleRouteMapProps) => {
+  if (usesHostedMap(Capacitor.getPlatform())) {
+    return <HostedIosMap className={props.className} rounded={props.rounded} fallbackText={props.fallbackText} state={{
+      pickup: props.pickup ?? null, dropoff: props.dropoff ?? null, driver: props.driver ?? null,
+      routePath: props.routePath ?? [], fitMode: props.fitMode ?? "always", showLiveBadge: props.showLiveBadge ?? false,
+    }} />;
+  }
+  return <BrowserGoogleRouteMap {...props} />;
+};
+
+export const BrowserGoogleRouteMap = ({
   pickup,
   dropoff,
   driver,
