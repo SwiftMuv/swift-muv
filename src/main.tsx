@@ -1,10 +1,12 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import HostedMap from "./pages/HostedMap";
+import { HOSTED_MAP_PATH } from "./lib/hostedMapProtocol";
 import AppErrorBoundary from "./components/AppErrorBoundary.tsx";
 import "./index.css";
 
 const rootElement = document.getElementById("root");
+const App = React.lazy(() => import("./App.tsx"));
 
 // Once React has painted, the app owns the DOM. Any later error (network hiccup,
 // Google Maps auth, a rejected fetch) must NOT blank the screen — that looked
@@ -49,7 +51,9 @@ createRoot(rootElement).render(
   <React.StrictMode>
     <AppErrorBoundary>
       <MountFlag />
-      <App />
+      <React.Suspense fallback={<div className="h-dvh bg-background" />}>
+        {window.location.pathname === HOSTED_MAP_PATH ? <HostedMap /> : <App />}
+      </React.Suspense>
     </AppErrorBoundary>
   </React.StrictMode>,
 );
