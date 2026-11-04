@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { HostedIosMap } from "./HostedIosMap";
-import { decodePolyline, haversineKm, isValidLatLng, type LatLngLiteral } from "@/lib/mapCore";
+import { decodePolyline, isValidLatLng, type LatLngLiteral } from "@/lib/mapCore";
 
 interface Props {
   pickup?: LatLngLiteral | null; dropoff?: LatLngLiteral | null; driver?: LatLngLiteral | null;
@@ -10,7 +10,8 @@ interface Props {
 }
 export default function IosRouteMap(props: Props) {
   const [path, setPath] = useState<LatLngLiteral[]>([]);
-  const last = useRef<{ time: number; origin: LatLngLiteral; target: string } | null>(null);
+  const liveDriver = useRef(props.driver);
+  liveDriver.current = props.driver;
   const etaCallback = useRef(props.onEtaUpdate);
   etaCallback.current = props.onEtaUpdate;
   const pickup = isValidLatLng(props.pickup) ? props.pickup : null;
@@ -18,14 +19,16 @@ export default function IosRouteMap(props: Props) {
   const driver = isValidLatLng(props.driver) ? props.driver : null;
   useEffect(() => {
     if (props.routeMode !== "directions" || props.routePath?.length) return;
-    const origin = driver ?? pickup;
     const nextStop = driver ? (pickup ?? dropoff) : dropoff;
-    if (!origin || !nextStop) { setPath([]); return; }
-    const target = `${nextStop.lat},${nextStop.lng}|${dropoff?.lat},${dropoff?.lng}`;
-    if (last.current?.target === target && Date.now() - last.current.time < 30000 && haversineKm(last.current.origin, origin) < 0.1) return;
-    last.current = { time: Date.now(), origin, target };
+    if (!(driver ?? pickup) || !nextStop) { setPath([]); return; }
+    setPath([]);
     let active = true;
-    const timer = window.setTimeout(async () => {
+    let busy = false;
+    const refresh = async () => {
+      const currentDriver = isValidLatLng(liveDriver.current) ? liveDriver.current : null;
+      const origin = currentDriver ?? pickup;
+      if (!active || busy || !origin) return;
+      busy = true;
       try {
         // Only the authenticated iPhone parent calls the backend; the hosted
         // page receives geometry alone. Reuse the existing bounded endpoint.
@@ -40,14 +43,17 @@ export default function IosRouteMap(props: Props) {
         const first = await route(origin, nextStop);
         if (!active) return;
         setPath(first.points);
-        if (driver && typeof first.seconds === "number" && Number.isFinite(first.seconds) && first.seconds >= 0) etaCallback.current?.(Math.max(1, Math.round(first.seconds / 60)));
-        if (driver && pickup && dropoff) {
+        if (currentDriver && typeof first.seconds === "number" && Number.isFinite(first.seconds) && first.seconds >= 0) etaCallback.current?.(Math.max(1, Math.round(first.seconds / 60)));
+        if (currentDriver && pickup && dropoff) {
           const second = await route(pickup, dropoff);
           if (active) setPath([...first.points, ...second.points]);
         }
       } catch { if (active) setPath([]); }
-    }, 350);
-    return () => { active = false; window.clearTimeout(timer); };
-  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, driver?.lat, driver?.lng, props.routeMode, props.routePath]);
+      finally { busy = false; }
+    };
+    const timer = window.setTimeout(() => void refresh(), 350);
+    const poll = window.setInterval(() => void refresh(), 30000);
+    return () => { active = false; window.clearTimeout(timer); window.clearInterval(poll); };
+  }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, Boolean(driver), props.routeMode, props.routePath]);
   return <HostedIosMap className={props.className} rounded={props.rounded} fallbackText={props.fallbackText} state={{ pickup, dropoff, driver, routePath: props.routePath?.length ? props.routePath : path, fitMode: props.fitMode ?? "always", showLiveBadge: props.showLiveBadge ?? false }} />;
 }
